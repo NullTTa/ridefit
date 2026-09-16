@@ -1,41 +1,51 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+
+const FIXED_MODEL_YEAR_ID = 1 // 등록된 차량이 아직 하나뿐이라 고정값으로 사용 (추후 차량 선택 UI로 대체 예정)
 
 function MyVehicleRegister() {
-  const [memberId, setMemberId] = useState('')
-  const [modelYearId, setModelYearId] = useState('')
-  const [photoUrl, setPhotoUrl] = useState('')
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
-  const [created, setCreated] = useState(null)
 
-  // 내 차량 등록: memberId/modelYearId가 존재하지 않으면 백엔드가 404를 반환한다.
+  // 1) 회원 생성(POST /api/members) → memberId 확보
+  // 2) 그 memberId로 내 차량 등록(POST /api/my-vehicles) → myVehicleId 확보
+  // 3) 등록된 차량의 호환 부품 화면으로 자동 이동
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-    setCreated(null)
 
     try {
-      const res = await fetch('http://localhost:8080/api/my-vehicles', {
+      const memberRes = await fetch('http://localhost:8080/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name }),
+      })
+      if (!memberRes.ok) {
+        throw new Error(`회원 등록 실패 (status: ${memberRes.status})`)
+      }
+      const member = await memberRes.json()
+
+      const vehicleRes = await fetch('http://localhost:8080/api/my-vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          memberId: Number(memberId),
-          modelYearId: Number(modelYearId),
-          photoUrl: photoUrl || null,
+          memberId: member.id,
+          modelYearId: FIXED_MODEL_YEAR_ID,
         }),
       })
-
-      if (res.status === 404) {
-        throw new Error('존재하지 않는 회원(memberId) 또는 차량 연식(modelYearId)입니다.')
+      if (vehicleRes.status === 404) {
+        throw new Error('등록할 차량 정보(modelYearId)를 찾을 수 없습니다.')
       }
-      if (!res.ok) {
-        throw new Error(`등록 실패 (status: ${res.status})`)
+      if (!vehicleRes.ok) {
+        throw new Error(`차량 등록 실패 (status: ${vehicleRes.status})`)
       }
+      const myVehicle = await vehicleRes.json()
 
-      const data = await res.json()
-      setCreated(data)
+      navigate(`/my-vehicles/${myVehicle.id}/compatible-parts`)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -54,33 +64,23 @@ function MyVehicleRegister() {
         className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-md dark:bg-ridefit-bg-dark-alt"
       >
         <label className="flex flex-col gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-          회원 ID (memberId)
+          이메일
           <input
-            type="number"
+            type="email"
             required
-            value={memberId}
-            onChange={(e) => setMemberId(e.target.value)}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary dark:border-gray-700 dark:bg-ridefit-bg-dark"
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-          연식 ID (modelYearId)
-          <input
-            type="number"
-            required
-            value={modelYearId}
-            onChange={(e) => setModelYearId(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary dark:border-gray-700 dark:bg-ridefit-bg-dark"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-          사진 URL (선택)
+          이름
           <input
             type="text"
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary dark:border-gray-700 dark:bg-ridefit-bg-dark"
           />
         </label>
@@ -95,18 +95,6 @@ function MyVehicleRegister() {
       </form>
 
       {error && <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
-
-      {created && (
-        <div className="mt-4 rounded-xl bg-green-50 p-4 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
-          <p>차량이 등록됐습니다. (myVehicleId: {created.id})</p>
-          <Link
-            to={`/my-vehicles/${created.id}/compatible-parts`}
-            className="mt-2 inline-block font-semibold text-ridefit-primary hover:underline"
-          >
-            호환 부품 확인하러 가기 →
-          </Link>
-        </div>
-      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 package com.ridefit.ridefit.controller;
 
 import com.ridefit.ridefit.domain.Member;
+import com.ridefit.ridefit.dto.MemberResponse;
 import com.ridefit.ridefit.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,13 +17,13 @@ public class MemberController {
     private final MemberRepository memberRepository;
 
     @PostMapping("/api/members")
-    public ResponseEntity<Member> createMember(@RequestBody MemberRequest request) {
+    public ResponseEntity<MemberResponse> createMember(@RequestBody MemberRequest request) {
         Member member = Member.builder()
                 .email(request.email())
                 .name(request.name())
                 .build();
         Member saved = memberRepository.save(member);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        return ResponseEntity.status(HttpStatus.CREATED).body(MemberResponse.from(saved));
     }
 
     public record MemberRequest(String email, String name) {

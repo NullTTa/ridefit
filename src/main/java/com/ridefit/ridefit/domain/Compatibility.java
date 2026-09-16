@@ -2,6 +2,7 @@ package com.ridefit.ridefit.domain;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
@@ -23,10 +24,10 @@ public class Compatibility {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private ModelYear modelYear;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Part part;
 
     private String status;

@@ -1,6 +1,6 @@
 package com.ridefit.ridefit.controller;
 
-import com.ridefit.ridefit.domain.Part;
+import com.ridefit.ridefit.dto.PartResponse;
 import com.ridefit.ridefit.repository.PartRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,10 +16,10 @@ public class PartController {
     private final PartRepository partRepository;
 
     @GetMapping("/api/parts")
-    public List<Part> getParts(@RequestParam(required = false) String category) {
-        if (category != null) {
-            return partRepository.findByCategory(category);
-        }
-        return partRepository.findAll();
+    public List<PartResponse> getParts(@RequestParam(required = false) String category) {
+        List<com.ridefit.ridefit.domain.Part> parts = category != null
+                ? partRepository.findByCategory(category)
+                : partRepository.findAll();
+        return parts.stream().map(PartResponse::from).toList();
     }
 }

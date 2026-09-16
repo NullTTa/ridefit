@@ -1,6 +1,6 @@
 package com.ridefit.ridefit.controller;
 
-import com.ridefit.ridefit.domain.Compatibility;
+import com.ridefit.ridefit.dto.CompatibilityResponse;
 import com.ridefit.ridefit.repository.CompatibilityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +15,7 @@ public class CompatibilityController {
     private final CompatibilityRepository compatibilityRepository;
 
     @GetMapping("/api/compatibility")
-    public List<Compatibility> getCompatibilities() {
-        return compatibilityRepository.findAll();
+    public List<CompatibilityResponse> getCompatibilities() {
+        return compatibilityRepository.findAll().stream().map(CompatibilityResponse::from).toList();
     }
 }

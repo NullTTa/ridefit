@@ -3,6 +3,7 @@ package com.ridefit.ridefit.controller;
 import com.ridefit.ridefit.domain.Member;
 import com.ridefit.ridefit.domain.ModelYear;
 import com.ridefit.ridefit.domain.MyVehicle;
+import com.ridefit.ridefit.dto.MyVehicleResponse;
 import com.ridefit.ridefit.repository.CompatibilityRepository;
 import com.ridefit.ridefit.repository.MemberRepository;
 import com.ridefit.ridefit.repository.ModelYearRepository;
@@ -48,7 +49,7 @@ public class MyVehicleController {
                 .photoUrl(request.photoUrl())
                 .build();
         MyVehicle saved = myVehicleRepository.save(myVehicle);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        return ResponseEntity.status(HttpStatus.CREATED).body(MyVehicleResponse.from(saved));
     }
 
     @GetMapping("/api/my-vehicles/{myVehicleId}/compatible-parts")
