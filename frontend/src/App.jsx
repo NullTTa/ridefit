@@ -1,42 +1,25 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import { Route, Routes } from 'react-router-dom'
+import Header from './components/Header'
+import Footer from './components/Footer'
+import Home from './pages/Home'
+import MyVehicleRegister from './pages/MyVehicleRegister'
+import PartsSearch from './pages/PartsSearch'
+import CompatibleParts from './pages/CompatibleParts'
 
 function App() {
-  const [parts, setParts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  // 백엔드(/api/parts)에서 부품 목록을 가져와 화면에 렌더링한다.
-  useEffect(() => {
-    fetch('http://localhost:8080/api/parts')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`서버 응답 오류: ${res.status}`)
-        }
-        return res.json()
-      })
-      .then((data) => setParts(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [])
-
   return (
-    <section id="center">
-      <h1>부품 목록</h1>
-
-      {loading && <p>불러오는 중...</p>}
-      {error && <p style={{ color: 'red' }}>에러: {error}</p>}
-
-      {!loading && !error && (
-        <ul>
-          {parts.map((part) => (
-            <li key={part.id}>
-              {part.name} - {part.price.toLocaleString()}원
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <div className="flex min-h-screen flex-col bg-ridefit-bg-light text-ridefit-text-light dark:bg-ridefit-bg-dark dark:text-ridefit-text-dark">
+      <Header />
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/my-vehicle/new" element={<MyVehicleRegister />} />
+          <Route path="/parts" element={<PartsSearch />} />
+          <Route path="/my-vehicles/:myVehicleId/compatible-parts" element={<CompatibleParts />} />
+        </Routes>
+      </main>
+      <Footer />
+    </div>
   )
 }
 
