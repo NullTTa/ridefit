@@ -38,7 +38,7 @@
 
 ## 막히거나 확인이 필요한 부분
 
-- **로컬 MySQL 연결을 실제로 테스트하지 못했음.** `application-local.properties`가 `your_db_username`/`your_db_password` 플레이스홀더 상태였고, 이 세션에는 실제 DB 계정 정보가 없어서(그리고 임의로 추측/우회하지 않기로 해서) 진짜 MySQL로 붙여서 돌려보지는 못했습니다. 대신 백엔드가 **컴파일되고, JPA 스키마 생성이 되고, 시드 데이터가 들어가고, 전체 API 흐름이 실제로 동작하는지**는 H2 인메모리 DB 기반 테스트(`SmokeTest`)로 확실히 검증했습니다 — 이 과정에서 실제 버그(ModelYear 예약어 충돌, 탈퇴 FK 위반)를 2건 잡았습니다. MySQL 고유의 문제(문자셋, 타임존, 엄격 모드 등)는 여전히 미검증이니, 로컬에서 실제 MySQL로 한 번 `./gradlew bootRun` 해보고 이상 없는지 확인해주세요.
+- ~~로컬 MySQL 연결을 실제로 테스트하지 못했음~~ → **[추가 세션에서 해결됨]** 실제 로컬 MySQL(root/1234)로 접속 정보를 받아서 `application-local.properties`에 채우고, JDBC URL에 `createDatabaseIfNotExist=true`를 추가해 `ridefit` 스키마를 앱이 직접 생성하도록 했습니다. `./gradlew bootRun`으로 실제 MySQL에 붙여서 기동 확인, 시드 데이터(제조사/부품 한글 포함) 정상 조회, `user@ridefit.dev` 로그인, Swagger UI(`/swagger-ui/index.html`) 전부 실제로 확인했습니다. `application-local.properties`는 `.gitignore`되어 있어 이 계정 정보는 커밋되지 않았습니다 — 필요하면 직접 다른 계정으로 바꿔도 됩니다.
 - **브라우저 스크린샷으로 UI를 직접 보지 못했음.** 이 환경에 `chromium-cli` 같은 브라우저 자동화 도구가 없어서, Home/로그인/회원가입의 애니메이션이나 390px 모바일 레이아웃을 실제로 렌더링해서 눈으로 확인하지는 못했습니다. Tailwind 모바일 퍼스트 컨벤션(그리드 기본 1열, `sm:`/`md:`부터 확장, 테이블은 `overflow-x-auto`)을 지켜서 작성했고 빌드는 항상 통과했지만, 시각적으로 깨지는 부분이 있을 수 있으니 `npm run dev`로 직접 한 번 봐주세요. 특히 애니메이션 타이밍/글로우 위치는 눈으로 미세조정이 필요할 수 있습니다.
 - **AI_SYNTH_MODE는 계속 mock입니다.** live 전환용 Pollinations 호출 코드(`AiSynthService.callPollinations`)는 작성해뒀지만, 정확한 요청/응답 스키마는 Pollinations 공식 문서를 보고 검증된 게 아니라 합리적으로 추정해서 작성한 것입니다. 실제로 live로 켜기 전에 응답 파싱 부분(`json.path("data").path(0).path("url")`)이 실제 API 응답 구조와 맞는지 한 번 확인해주세요.
 - **차량 사진은 여전히 임시 아이콘(`frontend/src/assets/hero.png`)입니다.** `frontend/src/constants/images.js` 파일 하나만 실제 사진으로 바꾸면 Garage 카드/애니메이션 전체에 반영됩니다.
