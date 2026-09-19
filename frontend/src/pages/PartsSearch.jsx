@@ -20,6 +20,10 @@ function PartsSearch() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  const [selectedPartIds, setSelectedPartIds] = useState([])
+  const [conflicts, setConflicts] = useState(null)
+  const [checkingConflicts, setCheckingConflicts] = useState(false)
+
   const vehicleId = searchParams.get('vehicleId')
 
   useEffect(() => {
@@ -55,7 +59,29 @@ function PartsSearch() {
 
   const handleVehicleChange = (id) => {
     setCategory(null)
+    setSelectedPartIds([])
+    setConflicts(null)
     setSearchParams({ vehicleId: id })
+  }
+
+  const togglePartSelection = (partId) => {
+    setConflicts(null)
+    setSelectedPartIds((prev) =>
+      prev.includes(partId) ? prev.filter((id) => id !== partId) : [...prev, partId],
+    )
+  }
+
+  const handleCheckConflicts = async () => {
+    setCheckingConflicts(true)
+    setError(null)
+    try {
+      const result = await api.post('/api/part-conflicts/check', { partIds: selectedPartIds })
+      setConflicts(result)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setCheckingConflicts(false)
+    }
   }
 
   return (
@@ -129,25 +155,64 @@ function PartsSearch() {
           )}
 
           {!loading && !error && parts.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-              {parts.map((part) => (
-                <div
-                  key={part.partId}
-                  className={`rounded-xl border p-4 shadow-lg ${STATUS_STYLE[part.status] ?? DEFAULT_STATUS_STYLE}`}
-                >
-                  {part.imageUrl && (
-                    <img src={part.imageUrl} alt={part.name} className="mb-3 h-28 w-full rounded-lg object-cover" />
-                  )}
-                  <div className="flex items-center justify-between">
+            <>
+              <p className="mb-3 text-xs text-ridefit-text-secondary">
+                여러 부품을 함께 장착할 계획이라면 체크 후 충돌 여부를 확인해보세요.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                {parts.map((part) => (
+                  <label
+                    key={part.partId}
+                    className={`block cursor-pointer rounded-xl border p-4 shadow-lg transition ${STATUS_STYLE[part.status] ?? DEFAULT_STATUS_STYLE} ${
+                      selectedPartIds.includes(part.partId) ? 'ring-2 ring-ridefit-primary' : ''
+                    }`}
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <input
+                        type="checkbox"
+                        checked={selectedPartIds.includes(part.partId)}
+                        onChange={() => togglePartSelection(part.partId)}
+                        className="h-4 w-4 accent-ridefit-primary"
+                      />
+                      <span className="rounded-full bg-black/20 px-2 py-1 text-xs font-bold">{part.status}</span>
+                    </div>
+                    {part.imageUrl && (
+                      <img src={part.imageUrl} alt={part.name} className="mb-3 h-28 w-full rounded-lg object-cover" />
+                    )}
                     <p className="font-semibold">{part.name}</p>
-                    <span className="rounded-full bg-black/20 px-2 py-1 text-xs font-bold">{part.status}</span>
-                  </div>
-                  <p className="mt-1 text-sm opacity-80">{part.category}</p>
-                  <p className="mt-2 text-sm font-medium">{part.price.toLocaleString()}원</p>
-                  {part.note && <p className="mt-2 text-xs opacity-70">{part.note}</p>}
+                    <p className="mt-1 text-sm opacity-80">{part.category}</p>
+                    <p className="mt-2 text-sm font-medium">{part.price.toLocaleString()}원</p>
+                    {part.note && <p className="mt-2 text-xs opacity-70">{part.note}</p>}
+                  </label>
+                ))}
+              </div>
+
+              {selectedPartIds.length >= 2 && (
+                <div className="mt-6 rounded-xl border border-ridefit-border bg-ridefit-card p-4">
+                  <button
+                    type="button"
+                    onClick={handleCheckConflicts}
+                    disabled={checkingConflicts}
+                    className="rounded-lg bg-ridefit-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
+                  >
+                    {checkingConflicts ? '확인 중...' : `선택한 ${selectedPartIds.length}개 부품 충돌 확인`}
+                  </button>
+
+                  {conflicts && conflicts.length === 0 && (
+                    <p className="mt-3 text-sm text-green-400">선택한 부품 사이에 알려진 충돌이 없어요.</p>
+                  )}
+                  {conflicts && conflicts.length > 0 && (
+                    <ul className="mt-3 flex flex-col gap-2">
+                      {conflicts.map((c) => (
+                        <li key={c.id} className="rounded-lg border border-red-800 bg-red-950 px-3 py-2 text-sm text-red-300">
+                          ⚠️ {c.partAName} + {c.partBName}: {c.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </>
       )}
