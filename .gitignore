@@ -39,6 +39,9 @@ out/
 ### RIDEFIT local secrets ###
 application-local.properties
 
+### RIDEFIT uploaded files (runtime, per-environment) ###
+/uploads/
+
 ### Frontend (frontend/) ###
 frontend/node_modules/
 frontend/dist/

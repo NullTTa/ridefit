@@ -1,5 +1,6 @@
 package com.ridefit.ridefit.domain;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.FetchType;
@@ -27,6 +28,8 @@ public class ModelYear {
     @ManyToOne(fetch = FetchType.LAZY)
     private VehicleModel vehicleModel;
 
+    // "year"는 H2/일부 DB에서 예약어라 컬럼명을 명시적으로 지정한다.
+    @Column(name = "model_year_value")
     private Integer year;
 
     private String chassisCode;
