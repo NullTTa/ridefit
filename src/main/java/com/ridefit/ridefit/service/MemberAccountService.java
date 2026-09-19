@@ -57,14 +57,18 @@ public class MemberAccountService {
         favoriteRepository.deleteByMemberId(memberId);
         recentPartCheckRepository.deleteByMemberId(memberId);
         dailyUsageRepository.deleteByMemberId(memberId);
-        myVehicleRepository.deleteAll(myVehicleRepository.findByMemberId(memberId));
 
+        // MyVehicle을 지우기 전에, 그 차량을 참조하는 게시글의 연결부터 끊어야
+        // 외래키 제약 위반 없이 삭제할 수 있다. 작성자 연결도 함께 끊어 커뮤니티 글/댓글은 익명화해서 남긴다.
         for (Post post : postRepository.findByAuthorId(memberId)) {
             post.setAuthor(null);
+            post.setMyVehicle(null);
         }
         for (Comment comment : commentRepository.findByAuthorId(memberId)) {
             comment.setAuthor(null);
         }
+
+        myVehicleRepository.deleteAll(myVehicleRepository.findByMemberId(memberId));
 
         memberRepository.delete(member);
     }
