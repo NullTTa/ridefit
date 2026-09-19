@@ -7,7 +7,7 @@ function Login() {
   const from = location.state?.from?.pathname ?? '/garage'
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col md:flex-row">
+    <div className="flex flex-col md:min-h-[calc(100vh-4rem)] md:flex-row">
       <div className="hidden bg-ridefit-card md:flex md:w-1/2">
         <VehicleHighlightAnimation />
       </div>
