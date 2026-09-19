@@ -11,6 +11,9 @@ import PartImport from './pages/PartImport'
 import PartsSearch from './pages/PartsSearch'
 import MyPage from './pages/MyPage'
 import Synth from './pages/Synth'
+import Community from './pages/Community'
+import PostDetail from './pages/PostDetail'
+import PostWrite from './pages/PostWrite'
 
 function App() {
   return (
@@ -66,6 +69,16 @@ function App() {
             element={
               <RequireAuth>
                 <Synth />
+              </RequireAuth>
+            }
+          />
+          <Route path="/community" element={<Community />} />
+          <Route path="/community/:postId" element={<PostDetail />} />
+          <Route
+            path="/community/new"
+            element={
+              <RequireAuth>
+                <PostWrite />
               </RequireAuth>
             }
           />
