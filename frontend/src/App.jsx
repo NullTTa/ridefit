@@ -14,6 +14,11 @@ import Synth from './pages/Synth'
 import Community from './pages/Community'
 import PostDetail from './pages/PostDetail'
 import PostWrite from './pages/PostWrite'
+import AdminLayout from './components/AdminLayout'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminCompatibilities from './pages/admin/AdminCompatibilities'
+import AdminPartConflicts from './pages/admin/AdminPartConflicts'
+import AdminMembers from './pages/admin/AdminMembers'
 
 function App() {
   return (
@@ -82,6 +87,19 @@ function App() {
               </RequireAuth>
             }
           />
+          <Route
+            path="/admin"
+            element={
+              <RequireAuth adminOnly>
+                <AdminLayout />
+              </RequireAuth>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="compatibilities" element={<AdminCompatibilities />} />
+            <Route path="part-conflicts" element={<AdminPartConflicts />} />
+            <Route path="members" element={<AdminMembers />} />
+          </Route>
         </Routes>
       </main>
       <Footer />
