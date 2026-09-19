@@ -4,6 +4,7 @@ const TABS = [
   { to: '/admin', label: '대시보드', end: true },
   { to: '/admin/compatibilities', label: '호환성 관리' },
   { to: '/admin/part-conflicts', label: '부품 충돌 관리' },
+  { to: '/admin/part-videos', label: '설치 영상 관리' },
   { to: '/admin/members', label: '회원 관리' },
 ]
 

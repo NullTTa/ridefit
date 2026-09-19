@@ -15,6 +15,7 @@ function PostWrite() {
   const [installedPartId, setInstalledPartId] = useState('')
   const [compatibleFeedback, setCompatibleFeedback] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
@@ -61,6 +62,7 @@ function PostWrite() {
         installedPartId: installedPartId || null,
         compatibleFeedback: installedPartId ? compatibleFeedback || null : null,
         imageUrl: imageUrl || null,
+        videoUrl: videoUrl || null,
       })
       navigate(`/community/${created.id}`)
     } catch (err) {
@@ -133,6 +135,17 @@ function PostWrite() {
             </button>
           </div>
         )}
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-ridefit-text-secondary">
+          관련 영상 (유튜브 링크, 선택)
+          <input
+            type="url"
+            placeholder="https://youtube.com/watch?v=..."
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            className={inputClass}
+          />
+        </label>
 
         {installedPartId && (
           <div className="flex flex-col gap-1 text-sm font-medium text-ridefit-text-secondary">

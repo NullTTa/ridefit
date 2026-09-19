@@ -64,6 +64,7 @@ public class PostService {
                 .myVehicle(request.myVehicleId() == null ? null : myVehicleRepository.findById(request.myVehicleId()).orElse(null))
                 .compatibleFeedback(request.compatibleFeedback())
                 .imageUrl(request.imageUrl())
+                .videoUrl(request.videoUrl())
                 .createdAt(LocalDateTime.now())
                 .build();
         Post saved = postRepository.save(post);

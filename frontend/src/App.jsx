@@ -19,6 +19,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminCompatibilities from './pages/admin/AdminCompatibilities'
 import AdminPartConflicts from './pages/admin/AdminPartConflicts'
 import AdminMembers from './pages/admin/AdminMembers'
+import AdminPartVideos from './pages/admin/AdminPartVideos'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -99,6 +100,7 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="compatibilities" element={<AdminCompatibilities />} />
             <Route path="part-conflicts" element={<AdminPartConflicts />} />
+            <Route path="part-videos" element={<AdminPartVideos />} />
             <Route path="members" element={<AdminMembers />} />
           </Route>
           <Route path="*" element={<NotFound />} />

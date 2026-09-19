@@ -79,7 +79,8 @@ public class MyVehicleController {
                         c.getPart().getPrice(),
                         c.getPart().getImageUrl(),
                         c.getStatus(),
-                        c.getNote()))
+                        c.getNote(),
+                        c.getPart().getInstallVideoUrl()))
                 .toList();
 
         return ResponseEntity.ok(result);
@@ -98,6 +99,6 @@ public class MyVehicleController {
     }
 
     public record CompatiblePartResponse(Long partId, String category, String name, Integer price, String imageUrl,
-                                          String status, String note) {
+                                          String status, String note, String installVideoUrl) {
     }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import YoutubeEmbed from '../components/YoutubeEmbed'
 import { useAuth } from '../context/AuthContext'
 import { API_BASE, api } from '../lib/api'
 
@@ -74,7 +75,26 @@ function PostDetail() {
         />
       )}
 
-      <p className="mb-10 whitespace-pre-wrap text-ridefit-text">{post.content}</p>
+      <p className="mb-6 whitespace-pre-wrap text-ridefit-text">{post.content}</p>
+
+      {(post.videoUrl || post.installVideoUrl) && (
+        <div className="mb-10 flex flex-col gap-4">
+          {post.videoUrl && (
+            <div>
+              <h2 className="mb-2 text-sm font-semibold text-ridefit-text-secondary">관련 영상</h2>
+              <YoutubeEmbed url={post.videoUrl} title="관련 영상" />
+            </div>
+          )}
+          {post.installVideoUrl && (
+            <div>
+              <h2 className="mb-2 text-sm font-semibold text-ridefit-text-secondary">
+                {post.installedPartName} 설치 방법 영상
+              </h2>
+              <YoutubeEmbed url={post.installVideoUrl} title="설치 방법 영상" />
+            </div>
+          )}
+        </div>
+      )}
 
       <h2 className="mb-3 text-lg font-semibold text-ridefit-text">댓글 {post.comments.length}</h2>
       <ul className="mb-6 flex flex-col gap-2">

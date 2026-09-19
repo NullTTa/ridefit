@@ -51,4 +51,7 @@ public class Post {
 
     // 실제 장착 사진 (POST /api/uploads로 먼저 올린 뒤 받은 URL을 저장).
     private String imageUrl;
+
+    // 관련 영상(유튜브 링크). 게시글 작성자가 등록.
+    private String videoUrl;
 }

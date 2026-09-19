@@ -229,17 +229,30 @@ function PartsSearch() {
                     <p className="mt-2 text-sm font-medium">{part.price.toLocaleString()}원</p>
                     {part.note && <p className="mt-2 text-xs opacity-70">{part.note}</p>}
 
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setExpandedPartId((prev) => (prev === part.partId ? null : part.partId))
-                      }}
-                      className="mt-2 text-xs font-medium text-ridefit-primary hover:underline"
-                    >
-                      {expandedPartId === part.partId ? '판매처 비교 닫기' : '판매처 비교'}
-                    </button>
+                    <div className="mt-2 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setExpandedPartId((prev) => (prev === part.partId ? null : part.partId))
+                        }}
+                        className="text-xs font-medium text-ridefit-primary hover:underline"
+                      >
+                        {expandedPartId === part.partId ? '판매처 비교 닫기' : '판매처 비교'}
+                      </button>
+                      {part.installVideoUrl && (
+                        <a
+                          href={part.installVideoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs font-medium text-ridefit-primary hover:underline"
+                        >
+                          설치 영상 ▶
+                        </a>
+                      )}
+                    </div>
 
                     {expandedPartId === part.partId && <SellerListings partId={part.partId} />}
                   </label>

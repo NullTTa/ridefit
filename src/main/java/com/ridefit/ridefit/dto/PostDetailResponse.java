@@ -8,7 +8,7 @@ import java.util.List;
 public record PostDetailResponse(
         Long id, String title, String content, String authorName, LocalDateTime createdAt,
         Long installedPartId, String installedPartName, String compatibleFeedback, String imageUrl,
-        List<CommentResponse> comments) {
+        String videoUrl, String installVideoUrl, List<CommentResponse> comments) {
 
     public static PostDetailResponse from(Post post, List<CommentResponse> comments) {
         String authorName = post.getAuthor() == null ? "탈퇴한 사용자" : post.getAuthor().getName();
@@ -22,6 +22,8 @@ public record PostDetailResponse(
                 post.getInstalledPart() == null ? null : post.getInstalledPart().getName(),
                 post.getCompatibleFeedback(),
                 post.getImageUrl(),
+                post.getVideoUrl(),
+                post.getInstalledPart() == null ? null : post.getInstalledPart().getInstallVideoUrl(),
                 comments);
     }
 }
