@@ -4,25 +4,26 @@ import com.ridefit.ridefit.domain.Member;
 import com.ridefit.ridefit.domain.ModelYear;
 import com.ridefit.ridefit.domain.MyVehicle;
 import com.ridefit.ridefit.dto.MyVehicleResponse;
+import com.ridefit.ridefit.exception.ApiException;
 import com.ridefit.ridefit.repository.CompatibilityRepository;
 import com.ridefit.ridefit.repository.MemberRepository;
 import com.ridefit.ridefit.repository.ModelYearRepository;
 import com.ridefit.ridefit.repository.MyVehicleRepository;
+import com.ridefit.ridefit.security.CurrentMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Optional;
 
-// 내 차량 등록 + "내 차량 기준 호환 부품 조회" API.
-// 등록된 내 차량(myVehicleId)의 modelYear를 기준으로 Compatibility 테이블을 조회해서
-// 그 차량에 대해 호환 정보가 등록된 부품 목록(부품 정보 + 호환 상태)을 반환하는 것이 핵심 로직이다.
+// 내 차고(garage): 로그인한 사용자의 차량 등록/조회/삭제 + "내 차량 기준 호환 부품 조회".
 @RestController
 @RequiredArgsConstructor
 public class MyVehicleController {
@@ -31,41 +32,52 @@ public class MyVehicleController {
     private final MemberRepository memberRepository;
     private final ModelYearRepository modelYearRepository;
     private final CompatibilityRepository compatibilityRepository;
+    private final CurrentMember currentMember;
+
+    @GetMapping("/api/my-vehicles")
+    public List<MyVehicleResponse> getMyVehicles() {
+        return myVehicleRepository.findByMemberId(currentMember.id()).stream()
+                .map(MyVehicleResponse::from).toList();
+    }
 
     @PostMapping("/api/my-vehicles")
     public ResponseEntity<?> createMyVehicle(@RequestBody MyVehicleRequest request) {
-        Optional<Member> member = memberRepository.findById(request.memberId());
-        if (member.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        Optional<ModelYear> modelYear = modelYearRepository.findById(request.modelYearId());
-        if (modelYear.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+        // memberId는 클라이언트 입력이 아니라 JWT로 인증된 사용자 기준으로만 결정한다 (IDOR 방지).
+        Member member = memberRepository.findById(currentMember.id())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
+        ModelYear modelYear = modelYearRepository.findById(request.modelYearId())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "선택한 연식 정보를 찾을 수 없습니다."));
 
         MyVehicle myVehicle = MyVehicle.builder()
-                .member(member.get())
-                .modelYear(modelYear.get())
+                .member(member)
+                .modelYear(modelYear)
                 .photoUrl(request.photoUrl())
                 .build();
         MyVehicle saved = myVehicleRepository.save(myVehicle);
         return ResponseEntity.status(HttpStatus.CREATED).body(MyVehicleResponse.from(saved));
     }
 
-    @GetMapping("/api/my-vehicles/{myVehicleId}/compatible-parts")
-    public ResponseEntity<?> getCompatibleParts(@PathVariable Long myVehicleId) {
-        Optional<MyVehicle> myVehicle = myVehicleRepository.findById(myVehicleId);
-        if (myVehicle.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+    @DeleteMapping("/api/my-vehicles/{myVehicleId}")
+    public ResponseEntity<Void> deleteMyVehicle(@PathVariable Long myVehicleId) {
+        MyVehicle myVehicle = requireOwnedVehicle(myVehicleId);
+        myVehicleRepository.delete(myVehicle);
+        return ResponseEntity.noContent().build();
+    }
 
-        Long modelYearId = myVehicle.get().getModelYear().getId();
+    @GetMapping("/api/my-vehicles/{myVehicleId}/compatible-parts")
+    public ResponseEntity<?> getCompatibleParts(
+            @PathVariable Long myVehicleId, @RequestParam(required = false) String category) {
+        MyVehicle myVehicle = requireOwnedVehicle(myVehicleId);
+
+        Long modelYearId = myVehicle.getModelYear().getId();
         List<CompatiblePartResponse> result = compatibilityRepository.findByModelYearId(modelYearId).stream()
+                .filter(c -> category == null || category.equals(c.getPart().getCategory()))
                 .map(c -> new CompatiblePartResponse(
                         c.getPart().getId(),
                         c.getPart().getCategory(),
                         c.getPart().getName(),
                         c.getPart().getPrice(),
+                        c.getPart().getImageUrl(),
                         c.getStatus(),
                         c.getNote()))
                 .toList();
@@ -73,10 +85,19 @@ public class MyVehicleController {
         return ResponseEntity.ok(result);
     }
 
-    public record MyVehicleRequest(Long memberId, Long modelYearId, String photoUrl) {
+    private MyVehicle requireOwnedVehicle(Long myVehicleId) {
+        MyVehicle myVehicle = myVehicleRepository.findById(myVehicleId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 차량입니다."));
+        if (!myVehicle.getMember().getId().equals(currentMember.id())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "본인이 등록한 차량만 조회할 수 있습니다.");
+        }
+        return myVehicle;
     }
 
-    public record CompatiblePartResponse(Long partId, String category, String name, Integer price, String status,
-                                          String note) {
+    public record MyVehicleRequest(Long modelYearId, String photoUrl) {
+    }
+
+    public record CompatiblePartResponse(Long partId, String category, String name, Integer price, String imageUrl,
+                                          String status, String note) {
     }
 }

@@ -1,86 +1,155 @@
 import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { api } from '../lib/api'
 
-const CATEGORIES = ['머플러', '캐리어']
+const STATUS_STYLE = {
+  호환가능: 'bg-green-950 text-green-300 border-green-800',
+  브라켓필요: 'bg-yellow-950 text-yellow-300 border-yellow-800',
+  호환불가: 'bg-red-950 text-red-300 border-red-800',
+}
+const DEFAULT_STATUS_STYLE = 'bg-ridefit-bg text-ridefit-text-secondary border-ridefit-border'
 
+// "부품 찾아보기": 링크 없이도 내 등록 차량 기준으로 이미 호환이 확인된 부품을 카테고리별로 둘러보는 화면.
 function PartsSearch() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [vehicles, setVehicles] = useState([])
+  const [vehiclesLoading, setVehiclesLoading] = useState(true)
   const [parts, setParts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [categories, setCategories] = useState([])
   const [category, setCategory] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  // 카테고리 선택에 따라 /api/parts 또는 /api/parts?category=... 를 호출한다. (기존 App.jsx 로직 그대로 이전)
+  const vehicleId = searchParams.get('vehicleId')
+
   useEffect(() => {
-    setLoading(true)
-    const url = category
-      ? `http://localhost:8080/api/parts?category=${encodeURIComponent(category)}`
-      : 'http://localhost:8080/api/parts'
-
-    fetch(url)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`서버 응답 오류: ${res.status}`)
+    api
+      .get('/api/my-vehicles')
+      .then((data) => {
+        setVehicles(data)
+        if (!vehicleId && data.length > 0) {
+          setSearchParams({ vehicleId: String(data[0].id) }, { replace: true })
         }
-        return res.json()
       })
-      .then((data) => setParts(data))
+      .catch(() => setVehicles([]))
+      .finally(() => setVehiclesLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!vehicleId) return
+    setLoading(true)
+    setError(null)
+    const query = category ? `?category=${encodeURIComponent(category)}` : ''
+    api
+      .get(`/api/my-vehicles/${vehicleId}/compatible-parts${query}`)
+      .then((data) => {
+        setParts(data)
+        if (!category) {
+          setCategories([...new Set(data.map((p) => p.category))])
+        }
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [category])
+  }, [vehicleId, category])
+
+  const handleVehicleChange = (id) => {
+    setCategory(null)
+    setSearchParams({ vehicleId: id })
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-16">
-      <h1 className="mb-6 text-2xl font-bold text-ridefit-text-light dark:text-ridefit-text-dark">
-        부품 검색
-      </h1>
+      <h1 className="mb-6 text-2xl font-bold text-ridefit-text">부품 찾아보기</h1>
+      <p className="mb-6 text-sm text-ridefit-text-secondary">
+        내가 등록한 차량 기준으로 이미 호환이 확인된 부품만 보여줘요.
+      </p>
 
-      <div className="mb-8 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setCategory(null)}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-            category === null
-              ? 'bg-ridefit-primary text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
-          }`}
-        >
-          전체
-        </button>
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => setCategory(cat)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-              category === cat
-                ? 'bg-ridefit-primary text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
-            }`}
+      {vehiclesLoading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
+
+      {!vehiclesLoading && vehicles.length === 0 && (
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-ridefit-border bg-ridefit-card px-6 py-16 text-center">
+          <p className="text-ridefit-text-secondary">먼저 내 차고에 차량을 등록해주세요.</p>
+          <Link
+            to="/garage/new"
+            className="rounded-lg bg-ridefit-primary px-4 py-2 font-semibold text-white transition hover:brightness-110"
           >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {loading && <p className="text-gray-500 dark:text-gray-400">불러오는 중...</p>}
-      {error && <p className="text-red-600 dark:text-red-400">에러: {error}</p>}
-
-      {!loading && !error && (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {parts.map((part) => (
-            <div
-              key={part.id}
-              className="rounded-xl bg-white p-4 shadow-md transition hover:-translate-y-1 dark:bg-ridefit-bg-dark-alt"
-            >
-              <p className="text-xs font-medium text-ridefit-primary">{part.category}</p>
-              <p className="mt-1 font-semibold text-ridefit-text-light dark:text-ridefit-text-dark">
-                {part.name}
-              </p>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                {part.price.toLocaleString()}원
-              </p>
-            </div>
-          ))}
+            차량 등록하러 가기
+          </Link>
         </div>
+      )}
+
+      {!vehiclesLoading && vehicles.length > 0 && (
+        <>
+          <select
+            value={vehicleId ?? ''}
+            onChange={(e) => handleVehicleChange(e.target.value)}
+            className="mb-6 rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary"
+          >
+            {vehicles.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.modelYearLabel}
+              </option>
+            ))}
+          </select>
+
+          <div className="mb-8 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setCategory(null)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                category === null
+                  ? 'bg-ridefit-primary text-white'
+                  : 'bg-ridefit-card text-ridefit-text-secondary hover:bg-ridefit-border'
+              }`}
+            >
+              전체
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategory(cat)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  category === cat
+                    ? 'bg-ridefit-primary text-white'
+                    : 'bg-ridefit-card text-ridefit-text-secondary hover:bg-ridefit-border'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
+          {error && <p className="text-red-400">에러: {error}</p>}
+
+          {!loading && !error && parts.length === 0 && (
+            <p className="text-ridefit-text-secondary">아직 이 차량에 대해 호환이 확인된 부품이 없어요.</p>
+          )}
+
+          {!loading && !error && parts.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+              {parts.map((part) => (
+                <div
+                  key={part.partId}
+                  className={`rounded-xl border p-4 shadow-lg ${STATUS_STYLE[part.status] ?? DEFAULT_STATUS_STYLE}`}
+                >
+                  {part.imageUrl && (
+                    <img src={part.imageUrl} alt={part.name} className="mb-3 h-28 w-full rounded-lg object-cover" />
+                  )}
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold">{part.name}</p>
+                    <span className="rounded-full bg-black/20 px-2 py-1 text-xs font-bold">{part.status}</span>
+                  </div>
+                  <p className="mt-1 text-sm opacity-80">{part.category}</p>
+                  <p className="mt-2 text-sm font-medium">{part.price.toLocaleString()}원</p>
+                  {part.note && <p className="mt-2 text-xs opacity-70">{part.note}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
