@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import SellerListings from '../components/SellerListings'
 import { api } from '../lib/api'
 
 const STATUS_STYLE = {
@@ -24,6 +25,7 @@ function PartsSearch() {
   const [conflicts, setConflicts] = useState(null)
   const [checkingConflicts, setCheckingConflicts] = useState(false)
   const [favoritePartIds, setFavoritePartIds] = useState(new Set())
+  const [expandedPartId, setExpandedPartId] = useState(null)
 
   const vehicleId = searchParams.get('vehicleId')
 
@@ -226,6 +228,20 @@ function PartsSearch() {
                     <p className="mt-1 text-sm opacity-80">{part.category}</p>
                     <p className="mt-2 text-sm font-medium">{part.price.toLocaleString()}원</p>
                     {part.note && <p className="mt-2 text-xs opacity-70">{part.note}</p>}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setExpandedPartId((prev) => (prev === part.partId ? null : part.partId))
+                      }}
+                      className="mt-2 text-xs font-medium text-ridefit-primary hover:underline"
+                    >
+                      {expandedPartId === part.partId ? '판매처 비교 닫기' : '판매처 비교'}
+                    </button>
+
+                    {expandedPartId === part.partId && <SellerListings partId={part.partId} />}
                   </label>
                 ))}
               </div>
