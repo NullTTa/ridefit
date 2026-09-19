@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface DailyUsageRepository extends JpaRepository<DailyUsage, Long> {
 
     Optional<DailyUsage> findByMemberIdAndUsageDate(Long memberId, LocalDate usageDate);
+
+    void deleteByMemberId(Long memberId);
 }

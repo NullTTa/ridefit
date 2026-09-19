@@ -63,6 +63,7 @@ public class PostService {
                 .installedPart(installedPart)
                 .myVehicle(request.myVehicleId() == null ? null : myVehicleRepository.findById(request.myVehicleId()).orElse(null))
                 .compatibleFeedback(request.compatibleFeedback())
+                .imageUrl(request.imageUrl())
                 .createdAt(LocalDateTime.now())
                 .build();
         Post saved = postRepository.save(post);

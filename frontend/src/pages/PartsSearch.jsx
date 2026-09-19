@@ -23,8 +23,41 @@ function PartsSearch() {
   const [selectedPartIds, setSelectedPartIds] = useState([])
   const [conflicts, setConflicts] = useState(null)
   const [checkingConflicts, setCheckingConflicts] = useState(false)
+  const [favoritePartIds, setFavoritePartIds] = useState(new Set())
 
   const vehicleId = searchParams.get('vehicleId')
+
+  useEffect(() => {
+    api
+      .get('/api/me/favorites')
+      .then((data) => setFavoritePartIds(new Set(data.map((f) => f.partId))))
+      .catch(() => {})
+  }, [])
+
+  const toggleFavorite = async (e, partId) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const isFavorite = favoritePartIds.has(partId)
+    setFavoritePartIds((prev) => {
+      const next = new Set(prev)
+      isFavorite ? next.delete(partId) : next.add(partId)
+      return next
+    })
+    try {
+      if (isFavorite) {
+        await api.del(`/api/me/favorites/${partId}`)
+      } else {
+        await api.post('/api/me/favorites', { partId })
+      }
+    } catch {
+      // 실패하면 별 표시를 원래 상태로 되돌린다.
+      setFavoritePartIds((prev) => {
+        const next = new Set(prev)
+        isFavorite ? next.add(partId) : next.delete(partId)
+        return next
+      })
+    }
+  }
 
   useEffect(() => {
     api
@@ -174,7 +207,17 @@ function PartsSearch() {
                         onChange={() => togglePartSelection(part.partId)}
                         className="h-4 w-4 accent-ridefit-primary"
                       />
-                      <span className="rounded-full bg-black/20 px-2 py-1 text-xs font-bold">{part.status}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => toggleFavorite(e, part.partId)}
+                          aria-label="즐겨찾기"
+                          className={`text-lg leading-none ${favoritePartIds.has(part.partId) ? 'text-yellow-400' : 'text-ridefit-text-secondary/50 hover:text-yellow-400'}`}
+                        >
+                          {favoritePartIds.has(part.partId) ? '★' : '☆'}
+                        </button>
+                        <span className="rounded-full bg-black/20 px-2 py-1 text-xs font-bold">{part.status}</span>
+                      </div>
                     </div>
                     {part.imageUrl && (
                       <img src={part.imageUrl} alt={part.name} className="mb-3 h-28 w-full rounded-lg object-cover" />

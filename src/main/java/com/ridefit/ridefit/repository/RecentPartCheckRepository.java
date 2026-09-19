@@ -9,4 +9,6 @@ import java.util.List;
 public interface RecentPartCheckRepository extends JpaRepository<RecentPartCheck, Long> {
 
     List<RecentPartCheck> findByMemberIdOrderByCheckedAtDesc(Long memberId, Pageable pageable);
+
+    void deleteByMemberId(Long memberId);
 }

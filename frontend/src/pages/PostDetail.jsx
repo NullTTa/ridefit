@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { api } from '../lib/api'
+import { API_BASE, api } from '../lib/api'
 
 const FEEDBACK_LABEL = { MATCHED: '✅ 맞았어요', NOT_MATCHED: '❌ 안 맞았어요' }
 
@@ -64,6 +64,14 @@ function PostDetail() {
             <span className="ml-auto font-semibold">{FEEDBACK_LABEL[post.compatibleFeedback] ?? post.compatibleFeedback}</span>
           )}
         </div>
+      )}
+
+      {post.imageUrl && (
+        <img
+          src={post.imageUrl.startsWith('/') ? `${API_BASE}${post.imageUrl}` : post.imageUrl}
+          alt="첨부 사진"
+          className="mb-6 w-full max-w-lg rounded-lg"
+        />
       )}
 
       <p className="mb-10 whitespace-pre-wrap text-ridefit-text">{post.content}</p>

@@ -48,4 +48,7 @@ public class Post {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private MyVehicle myVehicle;
+
+    // 실제 장착 사진 (POST /api/uploads로 먼저 올린 뒤 받은 URL을 저장).
+    private String imageUrl;
 }

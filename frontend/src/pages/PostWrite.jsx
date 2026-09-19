@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../lib/api'
+import { API_BASE, api } from '../lib/api'
 
 const inputClass =
   'rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary'
@@ -14,6 +14,8 @@ function PostWrite() {
   const [parts, setParts] = useState([])
   const [installedPartId, setInstalledPartId] = useState('')
   const [compatibleFeedback, setCompatibleFeedback] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
@@ -29,6 +31,23 @@ function PostWrite() {
     api.get(`/api/my-vehicles/${myVehicleId}/compatible-parts`).then(setParts).catch(() => setParts([]))
   }, [myVehicleId])
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const result = await api.post('/api/uploads', formData)
+      setImageUrl(result.url)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
@@ -41,6 +60,7 @@ function PostWrite() {
         myVehicleId: myVehicleId || null,
         installedPartId: installedPartId || null,
         compatibleFeedback: installedPartId ? compatibleFeedback || null : null,
+        imageUrl: imageUrl || null,
       })
       navigate(`/community/${created.id}`)
     } catch (err) {
@@ -98,6 +118,20 @@ function PostWrite() {
               ))}
             </select>
           </label>
+        )}
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-ridefit-text-secondary">
+          사진 첨부 (선택)
+          <input type="file" accept="image/*" onChange={handleFileChange} className={inputClass} />
+        </label>
+        {uploading && <p className="text-xs text-ridefit-text-secondary">업로드 중...</p>}
+        {imageUrl && (
+          <div className="flex items-center gap-3">
+            <img src={`${API_BASE}${imageUrl}`} alt="첨부 미리보기" className="h-20 w-20 rounded-lg object-cover" />
+            <button type="button" onClick={() => setImageUrl('')} className="text-xs text-red-400 hover:underline">
+              제거
+            </button>
+          </div>
         )}
 
         {installedPartId && (

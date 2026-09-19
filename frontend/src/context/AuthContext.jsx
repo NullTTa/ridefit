@@ -27,6 +27,18 @@ export function AuthProvider({ children }) {
     setUser(userInfo)
   }
 
+  const updateUser = useCallback((patch) => {
+    setUser((prev) => {
+      const next = { ...prev, ...patch }
+      try {
+        localStorage.setItem(USER_KEY, JSON.stringify(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }, [])
+
   const logout = useCallback(() => {
     try {
       localStorage.removeItem(TOKEN_KEY)
@@ -65,6 +77,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    updateUser,
     sessionExpired,
     clearSessionExpired: () => setSessionExpired(false),
   }
