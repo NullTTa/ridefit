@@ -7,3 +7,7 @@ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+# 32바이트(256비트) 이상의 임의 문자열로 바꿔서 사용하세요.
+jwt.secret=change-this-to-a-long-random-secret-string
+jwt.expiration-ms=86400000
