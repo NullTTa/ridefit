@@ -56,7 +56,7 @@ public class SecurityConfig {
                                 "/api/parts/**", "/api/compatibility/**", "/api/manufacturers/**",
                                 "/api/vehicle-models/**", "/api/model-years/**", "/api/posts/**")
                         .permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/uploads/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/uploads/**", "/mock/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

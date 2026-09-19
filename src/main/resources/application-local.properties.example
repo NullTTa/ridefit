@@ -11,3 +11,9 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 # 32바이트(256비트) 이상의 임의 문자열로 바꿔서 사용하세요.
 jwt.secret=change-this-to-a-long-random-secret-string
 jwt.expiration-ms=86400000
+
+# 환경변수(AI_SYNTH_MODE, POLLINATIONS_API_KEY, GEMINI_API_KEY) 대신
+# 이 파일에 직접 값을 채워도 된다. 절대 실제 키 값을 커밋하지 말 것.
+# ai.synth.mode=mock
+# pollinations.api-key=
+# gemini.api-key=

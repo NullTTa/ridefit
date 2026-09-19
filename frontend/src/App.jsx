@@ -10,6 +10,7 @@ import VehicleRegister from './pages/VehicleRegister'
 import PartImport from './pages/PartImport'
 import PartsSearch from './pages/PartsSearch'
 import MyPage from './pages/MyPage'
+import Synth from './pages/Synth'
 
 function App() {
   return (
@@ -57,6 +58,14 @@ function App() {
             element={
               <RequireAuth>
                 <MyPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/synth"
+            element={
+              <RequireAuth>
+                <Synth />
               </RequireAuth>
             }
           />

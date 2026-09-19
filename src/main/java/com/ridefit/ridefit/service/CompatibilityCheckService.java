@@ -23,7 +23,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class CompatibilityCheckService {
 
-    private static final Set<String> PROCEED_STATUSES = Set.of("호환가능", "브라켓필요");
+    static final Set<String> PROCEED_STATUSES = Set.of("호환가능", "브라켓필요");
     private static final String NO_DATA_STATUS = "정보없음";
 
     private final PartRepository partRepository;
@@ -62,5 +62,13 @@ public class CompatibilityCheckService {
         recentPartCheckRepository.save(record);
 
         return new CompatibilityCheckResponse(status, proceedAllowed, note, message);
+    }
+
+    // AI 합성 등 다른 서비스에서 "이 부품이 이 차량과 호환되는지"만 부작용 없이(RecentPartCheck 기록 없이) 재확인할 때 사용.
+    public boolean isProceedAllowed(Long partId, Long modelYearId) {
+        return compatibilityRepository.findByPartIdAndModelYearId(partId, modelYearId)
+                .map(Compatibility::getStatus)
+                .filter(PROCEED_STATUSES::contains)
+                .isPresent();
     }
 }

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B0E14" />
+      <stop offset="100%" stop-color="#131824" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" />
+  <rect x="40" y="40" width="720" height="520" rx="16" fill="none" stroke="#232B3A" stroke-width="2" />
+  <circle cx="260" cy="330" r="70" fill="none" stroke="#3B82F6" stroke-width="10" />
+  <circle cx="540" cy="330" r="70" fill="none" stroke="#3B82F6" stroke-width="10" />
+  <rect x="260" y="230" width="280" height="20" rx="10" fill="#3B82F6" opacity="0.6" />
+  <text x="400" y="140" text-anchor="middle" font-family="sans-serif" font-size="28" fill="#E7ECF3" font-weight="bold">
+    RIDEFIT AI 합성 미리보기 (Mock)
+  </text>
+  <text x="400" y="470" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#8B95A8">
+    실제 이미지 생성 대신 표시되는 고정 샘플입니다. AI_SYNTH_MODE=live 전환 시 실제 합성 결과로 대체됩니다.
+  </text>
+</svg>
