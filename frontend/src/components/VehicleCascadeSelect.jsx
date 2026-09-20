@@ -63,7 +63,7 @@ function VehicleCascadeSelect({ onModelYearChange }) {
         disabled={!manufacturerId}
         className={selectClass}
       >
-        <option value="">모델 선택</option>
+        <option value="">{manufacturerId ? '모델 선택' : '먼저 제조사를 선택하세요'}</option>
         {models.map((m) => (
           <option key={m.id} value={m.id}>
             {m.name}
@@ -77,7 +77,7 @@ function VehicleCascadeSelect({ onModelYearChange }) {
         disabled={!vehicleModelId}
         className={selectClass}
       >
-        <option value="">연식 선택</option>
+        <option value="">{vehicleModelId ? '연식 선택' : '먼저 모델을 선택하세요'}</option>
         {years.map((y) => (
           <option key={y.id} value={y.id}>
             {y.year}
