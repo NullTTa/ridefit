@@ -1,0 +1,152 @@
+{
+  "questions": [
+    {
+      "id": "purpose",
+      "text": "바이크를 가장 자주 타는 순간은 언제일까요?",
+      "hint": "출퇴근·통학·배달처럼 매일 타는 용도인지, 주말 취미인지 골라주세요.",
+      "options": [
+        { "id": "daily", "label": "출퇴근·통학·배달 등 거의 매일 타요", "effects": { "COMMUTE": 3, "ECONOMY": 1 } },
+        { "id": "mixed", "label": "평일 출퇴근 + 주말 라이딩 반반이에요", "effects": { "COMMUTE": 2, "TOURING": 1, "COMFORT": 1 } },
+        { "id": "hobby", "label": "주로 주말에 즐기는 취미예요", "effects": { "DESIGN": 1, "PERFORMANCE": 1, "TOURING": 1 } }
+      ]
+    },
+    {
+      "id": "long-ride",
+      "text": "한 번에 100km 넘게 타는 장거리 주행, 어떠세요?",
+      "hint": "지금 안 타봤어도 '타고 싶은가'를 기준으로 답해주세요.",
+      "options": [
+        { "id": "love", "label": "좋아해요! 멀리 갈수록 신나요", "effects": { "TOURING": 3, "COMFORT": 1 } },
+        { "id": "sometimes", "label": "가끔은 괜찮지만 자주는 부담돼요", "effects": { "TOURING": 1, "COMFORT": 1 } },
+        { "id": "short", "label": "가까운 거리 위주가 좋아요", "effects": { "CITY": 2, "ECONOMY": 1 } }
+      ]
+    },
+    {
+      "id": "design",
+      "text": "바이크를 고를 때 디자인은 얼마나 중요한가요?",
+      "hint": "길에서 눈에 띄는 느낌, 감성, 스타일 같은 것들이요.",
+      "options": [
+        { "id": "top", "label": "가장 중요해요. 보자마자 끌려야 해요", "effects": { "DESIGN": 3, "TUNING": 1 } },
+        { "id": "medium", "label": "예쁘면 좋지만 실용이 먼저예요", "effects": { "DESIGN": 1, "COMMUTE": 1 } },
+        { "id": "low", "label": "굴러가면 됩니다. 디자인은 크게 안 봐요", "effects": { "ECONOMY": 2, "COMMUTE": 1 } }
+      ]
+    },
+    {
+      "id": "speed",
+      "text": "속도감과 가속 성능은 얼마나 중요한가요?",
+      "hint": "신호 대기 후 치고 나가는 느낌, 고속 안정감 등을 떠올려보세요.",
+      "options": [
+        { "id": "high", "label": "아주 중요해요. 시원하게 달리고 싶어요", "effects": { "PERFORMANCE": 3, "DESIGN": 1 } },
+        { "id": "balanced", "label": "차 흐름을 따라갈 정도면 충분해요", "effects": { "PERFORMANCE": 1, "COMMUTE": 1, "COMFORT": 1 } },
+        { "id": "relaxed", "label": "빠른 것보다 여유롭고 안전한 게 좋아요", "effects": { "COMFORT": 2, "ECONOMY": 1 } }
+      ]
+    },
+    {
+      "id": "comfort",
+      "text": "탑승 편안함(시트, 자세, 짐 싣기)은 얼마나 중요한가요?",
+      "hint": "오래 타도 덜 피곤한지, 짐을 수납할 공간이 있는지 등이에요.",
+      "options": [
+        { "id": "must", "label": "꼭 필요해요. 편해야 자주 타게 돼요", "effects": { "COMFORT": 3, "TOURING": 1 } },
+        { "id": "ok", "label": "적당히 편하면 돼요", "effects": { "COMFORT": 1, "COMMUTE": 1 } },
+        { "id": "sport", "label": "조금 불편해도 스포티한 자세가 좋아요", "effects": { "PERFORMANCE": 2, "DESIGN": 1 } }
+      ]
+    },
+    {
+      "id": "cost",
+      "text": "연비·소모품·보험 같은 유지비는 얼마나 신경 쓰이나요?",
+      "hint": "구매 가격이 아니라 타면서 계속 드는 비용이에요.",
+      "options": [
+        { "id": "very", "label": "매우 신경 써요. 최대한 아끼고 싶어요", "effects": { "ECONOMY": 3, "COMMUTE": 1 } },
+        { "id": "some", "label": "어느 정도는 고려해요", "effects": { "ECONOMY": 1 } },
+        { "id": "less", "label": "좋아하는 바이크라면 비용은 감수해요", "effects": { "PERFORMANCE": 1, "DESIGN": 1, "TUNING": 1 } }
+      ]
+    },
+    {
+      "id": "tuning",
+      "text": "직접 부품을 바꾸고 튜닝하는 건 어떤가요?",
+      "hint": "머플러, 캐리어, 미러처럼 내 취향대로 바꾸는 재미요.",
+      "options": [
+        { "id": "love", "label": "튜닝이 바이크의 절반이에요", "effects": { "TUNING": 3, "DESIGN": 1 } },
+        { "id": "little", "label": "필요한 것만 조금 바꾸고 싶어요", "effects": { "TUNING": 1, "COMMUTE": 1 } },
+        { "id": "none", "label": "순정 그대로 타는 게 편해요", "effects": { "ECONOMY": 1, "COMFORT": 1 } }
+      ]
+    },
+    {
+      "id": "city",
+      "text": "주로 다니는 길은 어디에 가깝나요?",
+      "hint": "정체가 많은 도심인지, 국도·고속도로 위주인지 골라주세요.",
+      "options": [
+        { "id": "city", "label": "신호와 골목이 많은 도심이에요", "effects": { "CITY": 3, "COMMUTE": 1 } },
+        { "id": "mixed", "label": "도심과 외곽 도로가 섞여 있어요", "effects": { "CITY": 1, "TOURING": 1, "COMFORT": 1 } },
+        { "id": "road", "label": "국도·고속도로처럼 트인 길이 많아요", "effects": { "TOURING": 2, "PERFORMANCE": 1 } }
+      ]
+    },
+    {
+      "id": "travel",
+      "text": "여행이나 투어링(짐 싣고 며칠 이동)을 즐기고 싶으신가요?",
+      "hint": "캠핑, 전국 일주, 1박 2일 코스 같은 라이딩이에요.",
+      "options": [
+        { "id": "yes", "label": "네, 짐 싣고 멀리 떠나는 게 로망이에요", "effects": { "TOURING": 3, "COMFORT": 2 } },
+        { "id": "day", "label": "당일치기 드라이브 정도면 좋아요", "effects": { "TOURING": 1, "DESIGN": 1 } },
+        { "id": "no", "label": "여행보다는 일상 이동이 우선이에요", "effects": { "COMMUTE": 2, "CITY": 1 } }
+      ]
+    }
+  ],
+  "riderTypes": {
+    "COMMUTE": {
+      "code": "DAILY_RUNNER",
+      "name": "데일리 러너",
+      "tagline": "매일 같은 시간, 가장 믿음직한 발",
+      "description": "바이크를 '이동 수단'으로서 가장 잘 활용하는 타입이에요. 시동이 잘 걸리고, 연료가 적게 들고, 고장 걱정 없이 매일 탈 수 있는 차량이 잘 맞아요.",
+      "tips": ["소모품(오일·타이어·체인) 교환 주기를 캘린더에 등록해두세요.", "비 오는 날 대비 방수 장비와 미끄럼에 강한 타이어를 챙기세요."]
+    },
+    "TOURING": {
+      "code": "ROAD_TRAVELER",
+      "name": "로드 트래블러",
+      "tagline": "목적지보다 길 위의 시간이 좋은 사람",
+      "description": "멀리 오래 달리는 것 자체를 즐기는 타입이에요. 장거리에서 피로가 적고 짐을 싣기 좋으며 고속 안정감이 있는 차량이 잘 맞아요.",
+      "tips": ["장거리 전에 타이어 공기압·체인·오일 상태를 점검하세요.", "탑박스·윈드스크린처럼 투어링 부품은 호환 여부를 먼저 확인하세요."]
+    },
+    "DESIGN": {
+      "code": "STYLE_CREATOR",
+      "name": "스타일 크리에이터",
+      "tagline": "보는 순간 마음이 움직여야 시작이죠",
+      "description": "바이크의 실루엣과 분위기를 가장 중요하게 보는 타입이에요. 디자인 만족도가 높으면 손이 더 자주 가고 관리도 정성스럽게 하게 돼요.",
+      "tips": ["디자인 좋은 차량일수록 커스텀 부품 종류가 다양한지 미리 확인해보세요.", "튜닝은 구조변경·소음 규정을 먼저 확인하고 진행하세요."]
+    },
+    "PERFORMANCE": {
+      "code": "SPEED_SEEKER",
+      "name": "스피드 시커",
+      "tagline": "가속의 한 방, 코너의 손맛",
+      "description": "달리는 재미가 최우선인 타입이에요. 가속과 핸들링이 좋은 차량이 잘 맞고, 브레이크·타이어·서스펜션 같은 기본기 부품에 신경 쓰는 게 좋아요.",
+      "tips": ["성능을 올리기 전에 브레이크와 타이어 상태부터 점검하세요.", "안전 장비(헬멧, 프로텍터)는 성능만큼 중요해요."]
+    },
+    "COMFORT": {
+      "code": "COMFORT_CRUISER",
+      "name": "컴포트 크루저",
+      "tagline": "편해야 오래, 오래 타야 즐겁다",
+      "description": "탑승 편안함을 가장 크게 보는 타입이에요. 넉넉한 시트와 수납, 안정적인 승차감을 가진 차량이 잘 맞아요.",
+      "tips": ["시트·윈드스크린·그립 같은 편의 부품이 만족도를 크게 올려줘요.", "시승해서 발 닿는 느낌과 자세를 꼭 확인해보세요."]
+    },
+    "ECONOMY": {
+      "code": "SMART_SAVER",
+      "name": "스마트 세이버",
+      "tagline": "똑똑하게 타고, 똑똑하게 아낀다",
+      "description": "구매 후에 들어가는 비용까지 계산하는 타입이에요. 연비가 좋고 소모품이 저렴하며 정비가 쉬운 차량이 잘 맞아요.",
+      "tips": ["기본 점검을 직접 할 수 있으면 유지비가 크게 줄어요 (DIY 가이드 참고).", "소모품은 규격만 맞으면 선택지가 넓은 차량이 유리해요."]
+    },
+    "TUNING": {
+      "code": "CUSTOM_BUILDER",
+      "name": "커스텀 빌더",
+      "tagline": "내 손으로 완성하는 나만의 바이크",
+      "description": "바이크를 바꾸고 만드는 과정 자체를 즐기는 타입이에요. 애프터마켓 부품이 풍부하고 구조가 단순한 차량이 잘 맞아요.",
+      "tips": ["부품을 사기 전에 호환 여부와 동시 장착 충돌부터 확인하세요.", "정비 난이도가 높은 작업은 전문가 점검을 병행하세요."]
+    },
+    "CITY": {
+      "code": "CITY_NAVIGATOR",
+      "name": "시티 내비게이터",
+      "tagline": "막히는 도심도 가볍게 빠져나가는 사람",
+      "description": "좁은 골목과 신호가 많은 도심에서 가장 빛나는 타입이에요. 가볍고 다루기 쉬우며 발착이 편한 차량이 잘 맞아요.",
+      "tips": ["시트 높이와 차체 무게는 도심 주행 피로도에 큰 영향을 줘요.", "도심 주행은 브레이크 소모가 빨라서 패드 점검 주기를 짧게 잡으세요."]
+    }
+  }
+}

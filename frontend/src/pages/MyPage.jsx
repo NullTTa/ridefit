@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 
@@ -15,6 +15,9 @@ function MyPage() {
 
   const [favorites, setFavorites] = useState([])
   const [favoritesLoading, setFavoritesLoading] = useState(true)
+
+  const [interests, setInterests] = useState([])
+  const [reservations, setReservations] = useState([])
 
   const [name, setName] = useState(user?.name ?? '')
   const [nicknameSaving, setNicknameSaving] = useState(false)
@@ -32,6 +35,8 @@ function MyPage() {
   useEffect(() => {
     api.get('/api/me/recent-checks').then(setRecentChecks).catch((err) => setError(err.message)).finally(() => setRecentLoading(false))
     api.get('/api/me/favorites').then(setFavorites).catch((err) => setError(err.message)).finally(() => setFavoritesLoading(false))
+    api.get('/api/me/vehicle-interests').then(setInterests).catch(() => setInterests([]))
+    api.get('/api/me/reservations').then(setReservations).catch(() => setReservations([]))
   }, [])
 
   const handleNicknameSubmit = async (e) => {
@@ -163,6 +168,67 @@ function MyPage() {
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-3 text-lg font-semibold text-ridefit-text">관심 차량</h2>
+        {interests.length === 0 ? (
+          <p className="text-sm text-ridefit-text-secondary">
+            아직 관심 차량이 없어요.{' '}
+            <Link to="/finder" className="text-ridefit-primary hover:underline">
+              성향 테스트
+            </Link>
+            나{' '}
+            <Link to="/vehicles" className="text-ridefit-primary hover:underline">
+              차량 둘러보기
+            </Link>
+            에서 등록해보세요.
+          </p>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {interests.map((v) => (
+              <li key={v.id}>
+                <Link
+                  to={`/vehicles/${v.id}`}
+                  className="block rounded-lg border border-ridefit-border bg-ridefit-card px-4 py-2 text-sm text-ridefit-text transition hover:border-ridefit-primary"
+                >
+                  {v.manufacturerName} {v.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mb-10">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-ridefit-text">내 가상 예약</h2>
+          <Link to="/reservations" className="text-sm text-ridefit-primary hover:underline">
+            전체 보기
+          </Link>
+        </div>
+        {reservations.length === 0 ? (
+          <p className="text-sm text-ridefit-text-secondary">
+            아직 예약 기록이 없어요.{' '}
+            <Link to="/services" className="text-ridefit-primary hover:underline">
+              정비 · 세차 서비스
+            </Link>
+            에서 예약 과정을 체험해보세요.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {reservations.slice(0, 3).map((r) => (
+              <li key={r.id} className="rounded-lg border border-ridefit-border bg-ridefit-card px-4 py-3 text-sm">
+                <span className="font-medium text-ridefit-text">{r.shopName}</span>
+                <span className="text-ridefit-text-secondary">
+                  {' '}
+                  · {r.serviceName} · {r.preferredAt?.slice(0, 16).replace('T', ' ')}
+                  {r.status === 'CANCELED' && ' · 취소됨'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="mb-10">

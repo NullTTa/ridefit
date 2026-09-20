@@ -58,4 +58,18 @@ public class Post {
     // 장착 부품에 대한 평점(1~5). installedPart가 있을 때만 선택적으로 입력. AI나 시드가
     // 임의로 채우지 않고, 실제 작성자가 입력했을 때만 값이 들어간다.
     private Integer rating;
+
+    // 커뮤니티 섹션(PostCategory 이름: VETERAN / NEWBIE / FREE)과 그 안의 주제(topic).
+    // 기존 게시글은 null일 수 있어서 응답에서는 null을 FREE로 취급한다.
+    private String category;
+
+    private String topic;
+
+    // 상세 화면을 열 때마다 +1 (POST /api/posts/{id}/view). 화면용 숫자가 아니라 실제 카운터다.
+    @Builder.Default
+    private int viewCount = 0;
+
+    // PostLike 행 개수와 같은 값을 유지하는 비정규화 카운터 (추천순 정렬을 위해 둠).
+    @Builder.Default
+    private int likeCount = 0;
 }

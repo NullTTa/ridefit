@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import SimilarVehicles from '../components/SimilarVehicles'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
 import { api } from '../lib/api'
 
@@ -75,6 +76,9 @@ function Garage() {
               <div className="p-4">
                 <p className="text-xs font-medium text-ridefit-primary">{vehicle.manufacturerName}</p>
                 <p className="mt-1 text-lg font-semibold text-ridefit-text">{vehicle.modelYearLabel}</p>
+                <Link to={`/vehicles/${vehicle.vehicleModelId}`} className="mt-1 inline-block text-xs font-medium text-ridefit-primary hover:underline">
+                  차량 정보 · 비슷한 차량 보기 →
+                </Link>
 
                 <Link
                   to={`/garage/${vehicle.id}/fit`}
@@ -110,6 +114,15 @@ function Garage() {
             </div>
           ))}
         </div>
+      )}
+
+      {!loading && vehicles.length > 0 && (
+        <SimilarVehicles
+          className="mt-16"
+          ids={[...new Set(vehicles.map((v) => v.vehicleModelId))]}
+          title="내 차량과 비슷한 차량"
+          description="내 차고의 차량과 배기량, 차체 형태, 가격대, 라이딩 성향이 비슷한 차량이에요."
+        />
       )}
     </div>
   )

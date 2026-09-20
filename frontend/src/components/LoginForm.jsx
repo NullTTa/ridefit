@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 // Home 히어로와 /login 페이지에서 공통으로 쓰는 로그인 폼.
-function LoginForm({ redirectTo = '/garage', title = '로그인', description }) {
+function LoginForm({ redirectTo = '/garage', title = '로그인', description, as: Heading = 'h1' }) {
   const { login, sessionExpired, clearSessionExpired } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -30,7 +30,7 @@ function LoginForm({ redirectTo = '/garage', title = '로그인', description })
   return (
     <div className="flex w-full max-w-sm flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-ridefit-text">{title}</h1>
+        <Heading className="text-2xl font-bold text-ridefit-text">{title}</Heading>
         {description && <p className="mt-1 text-sm text-ridefit-text-secondary">{description}</p>}
       </div>
 

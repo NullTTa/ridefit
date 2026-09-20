@@ -40,6 +40,7 @@ public class MyVehicleController {
     private final CompatibilityRepository compatibilityRepository;
     private final CurrentMember currentMember;
     private final PartPopularityService partPopularityService;
+    private final com.ridefit.ridefit.repository.ReservationRepository reservationRepository;
 
     @GetMapping("/api/my-vehicles")
     public List<MyVehicleResponse> getMyVehicles() {
@@ -64,8 +65,11 @@ public class MyVehicleController {
     }
 
     @DeleteMapping("/api/my-vehicles/{myVehicleId}")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Void> deleteMyVehicle(@PathVariable Long myVehicleId) {
         MyVehicle myVehicle = requireOwnedVehicle(myVehicleId);
+        // 이 차량으로 만든 가상 예약은 예약 기록만 남기고 차량 연결만 끊는다.
+        reservationRepository.findByMyVehicleId(myVehicleId).forEach(r -> r.setMyVehicle(null));
         myVehicleRepository.delete(myVehicle);
         return ResponseEntity.noContent().build();
     }

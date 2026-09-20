@@ -23,6 +23,14 @@ import AdminMembers from './pages/admin/AdminMembers'
 import AdminPartVideos from './pages/admin/AdminPartVideos'
 import AdminVehicleModels from './pages/admin/AdminVehicleModels'
 import FitRoom from './pages/FitRoom'
+import Vehicles from './pages/Vehicles'
+import VehicleDetail from './pages/VehicleDetail'
+import Finder from './pages/Finder'
+import Guide from './pages/Guide'
+import GuideArticle from './pages/GuideArticle'
+import Services from './pages/Services'
+import ServiceDetail from './pages/ServiceDetail'
+import Reservations from './pages/Reservations'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -95,6 +103,21 @@ function App() {
             element={
               <RequireAuth>
                 <Synth />
+              </RequireAuth>
+            }
+          />
+          <Route path="/vehicles" element={<Vehicles />} />
+          <Route path="/vehicles/:vehicleId" element={<VehicleDetail />} />
+          <Route path="/finder" element={<Finder />} />
+          <Route path="/guide" element={<Guide />} />
+          <Route path="/guide/:slug" element={<GuideArticle />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/services/:shopId" element={<ServiceDetail />} />
+          <Route
+            path="/reservations"
+            element={
+              <RequireAuth>
+                <Reservations />
               </RequireAuth>
             }
           />

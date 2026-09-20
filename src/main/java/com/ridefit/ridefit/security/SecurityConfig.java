@@ -54,8 +54,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/parts/**", "/api/compatibility/**", "/api/manufacturers/**",
-                                "/api/vehicle-models/**", "/api/model-years/**", "/api/posts/**")
+                                "/api/vehicle-models/**", "/api/model-years/**", "/api/posts/**",
+                                "/api/vehicles/**", "/api/guide/**", "/api/services/**", "/api/finder/**")
                         .permitAll()
+                        // 성향 테스트 결과 계산(로그인 불필요), 게시글 조회수 증가(비로그인 방문자도 집계)
+                        .requestMatchers(HttpMethod.POST, "/api/finder/result", "/api/posts/*/view").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/uploads/**", "/mock/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())

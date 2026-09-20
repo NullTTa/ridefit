@@ -3,6 +3,7 @@ package com.ridefit.ridefit.service;
 import com.ridefit.ridefit.domain.Comment;
 import com.ridefit.ridefit.domain.Member;
 import com.ridefit.ridefit.domain.Post;
+import com.ridefit.ridefit.domain.PostLike;
 import com.ridefit.ridefit.dto.ChangePasswordRequest;
 import com.ridefit.ridefit.dto.MemberSummaryResponse;
 import com.ridefit.ridefit.dto.UpdateNicknameRequest;
@@ -12,13 +13,18 @@ import com.ridefit.ridefit.repository.DailyUsageRepository;
 import com.ridefit.ridefit.repository.FavoriteRepository;
 import com.ridefit.ridefit.repository.MemberRepository;
 import com.ridefit.ridefit.repository.MyVehicleRepository;
+import com.ridefit.ridefit.repository.PostLikeRepository;
 import com.ridefit.ridefit.repository.PostRepository;
+import com.ridefit.ridefit.repository.ReservationRepository;
+import com.ridefit.ridefit.repository.VehicleInterestRepository;
 import com.ridefit.ridefit.repository.RecentPartCheckRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

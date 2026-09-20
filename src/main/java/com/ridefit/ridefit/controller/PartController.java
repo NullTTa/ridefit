@@ -56,6 +56,15 @@ public class PartController {
         return parts.stream().map(PartResponse::from).toList();
     }
 
+    // 홈 화면 "인기 부품". 신호(조회/장착해보기)가 하나도 없으면 빈 목록을 돌려주고, 임의로 채우지 않는다.
+    @GetMapping("/api/parts/popular")
+    public List<PopularPartResponse> getPopularParts(@RequestParam(defaultValue = "6") int limit) {
+        int size = Math.max(1, Math.min(20, limit));
+        return partRepository.findPopular(org.springframework.data.domain.PageRequest.of(0, size)).stream()
+                .map(p -> new PopularPartResponse(PartResponse.from(p), partPopularityService.soloStats(p)))
+                .toList();
+    }
+
     // 부품 상세. myVehicleId가 있으면 "그 차량의 같은 카테고리" 안에서 경쟁 배지(인기상품 등)를 계산하고,
     // 없으면 비교 맥락이 없다는 뜻이라 실측치만 보여주고 경쟁 배지는 붙이지 않는다.
     @GetMapping("/api/parts/{id}")
@@ -123,5 +132,8 @@ public class PartController {
     }
 
     public record ImportRequest(String url) {
+    }
+
+    public record PopularPartResponse(PartResponse part, PartPopularityStats stats) {
     }
 }

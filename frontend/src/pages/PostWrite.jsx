@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { API_BASE, api } from '../lib/api'
 
 const inputClass =
@@ -7,6 +7,10 @@ const inputClass =
 
 function PostWrite() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [sections, setSections] = useState([])
+  const [category, setCategory] = useState(searchParams.get('category') || 'FREE')
+  const [topic, setTopic] = useState('')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [vehicles, setVehicles] = useState([])
@@ -22,6 +26,7 @@ function PostWrite() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    api.get('/api/posts/categories', { auth: false }).then(setSections).catch(() => setSections([]))
     api.get('/api/my-vehicles').then(setVehicles).catch(() => setVehicles([]))
   }, [])
 
@@ -66,6 +71,8 @@ function PostWrite() {
         imageUrl: imageUrl || null,
         videoUrl: videoUrl || null,
         rating: installedPartId && rating > 0 ? rating : null,
+        category,
+        topic: topic || null,
       })
       navigate(`/community/${created.id}`)
     } catch (err) {
@@ -83,6 +90,43 @@ function PostWrite() {
         onSubmit={handleSubmit}
         className="flex flex-col gap-4 rounded-xl border border-ridefit-border bg-ridefit-card p-6 shadow-lg"
       >
+        <div className="flex flex-col gap-2 text-sm font-medium text-ridefit-text-secondary">
+          어디에 올릴까요?
+          <div className="grid gap-2 sm:grid-cols-3">
+            {sections.map((section) => (
+              <button
+                key={section.code}
+                type="button"
+                onClick={() => {
+                  setCategory(section.code)
+                  setTopic('')
+                }}
+                aria-pressed={category === section.code}
+                className={`rounded-lg border px-3 py-2 text-left transition ${
+                  category === section.code
+                    ? 'border-ridefit-primary bg-ridefit-primary/10 text-ridefit-text'
+                    : 'border-ridefit-border bg-ridefit-bg text-ridefit-text-secondary hover:border-ridefit-primary/60'
+                }`}
+              >
+                <span className="block text-sm font-semibold">{section.label}</span>
+                <span className="block text-xs font-normal">{section.description}</span>
+              </button>
+            ))}
+          </div>
+          {sections.find((s) => s.code === category) && (
+            <select value={topic} onChange={(e) => setTopic(e.target.value)} className={inputClass} aria-label="주제">
+              <option value="">주제 선택 (선택)</option>
+              {sections
+                .find((s) => s.code === category)
+                .topics.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+            </select>
+          )}
+        </div>
+
         <label className="flex flex-col gap-1 text-sm font-medium text-ridefit-text-secondary">
           제목
           <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />

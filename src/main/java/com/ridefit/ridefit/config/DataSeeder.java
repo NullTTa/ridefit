@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,7 @@ import java.util.Optional;
 // 항목마다 이미 존재하면 건너뛰는 방식(idempotent)이라, DB가 이미 예전 시드로 채워져 있어도
 // 앱을 재시작하면 새로 추가된 시드만 안전하게 채워진다.
 @Slf4j
+@Order(1)
 @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {

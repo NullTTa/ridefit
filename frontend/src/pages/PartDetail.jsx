@@ -4,6 +4,7 @@ import PartBadges from '../components/PartBadges'
 import SellerListings from '../components/SellerListings'
 import YoutubeEmbed from '../components/YoutubeEmbed'
 import { api } from '../lib/api'
+import { loadPartCategorySlugs } from '../lib/guide'
 
 const FEEDBACK_LABEL = { MATCHED: '✅ 맞았어요', NOT_MATCHED: '❌ 안 맞았어요' }
 
@@ -22,8 +23,13 @@ function PartDetail() {
   const [part, setPart] = useState(null)
   const [reviews, setReviews] = useState([])
   const [checkResult, setCheckResult] = useState(null)
+  const [categorySlugs, setCategorySlugs] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    loadPartCategorySlugs().then(setCategorySlugs)
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -65,7 +71,14 @@ function PartDetail() {
 
         <div className="flex flex-col gap-2">
           <PartBadges badges={stats.badges} />
-          <p className="text-xs font-medium text-ridefit-primary">{part.category}</p>
+          <p className="text-xs font-medium text-ridefit-primary">
+            {part.category}
+            {categorySlugs[part.category] && (
+              <Link to={`/guide/${categorySlugs[part.category]}`} className="ml-2 text-ridefit-text-secondary hover:text-ridefit-primary hover:underline">
+                {part.category}이(가) 뭔가요? →
+              </Link>
+            )}
+          </p>
           <h1 className="text-xl font-bold text-ridefit-text">{part.name}</h1>
 
           {/* 외부 평점과 RIDEFIT 평점은 출처를 표시해 분리하고, 절대 하나의 점수로 합치지 않는다. */}

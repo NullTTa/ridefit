@@ -4,7 +4,11 @@ import { useAuth } from '../context/AuthContext'
 
 const NAV_ITEMS = [
   { to: '/', label: '홈' },
+  { to: '/vehicles', label: '차량' },
+  { to: '/finder', label: '성향 테스트' },
   { to: '/parts', label: '부품 찾아보기' },
+  { to: '/guide', label: '정보' },
+  { to: '/services', label: '정비·예약' },
   { to: '/community', label: '커뮤니티' },
 ]
 
@@ -35,7 +39,7 @@ function Header() {
           <span className="text-lg font-bold text-ridefit-text">RIDEFIT</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-4 lg:flex">
           {NAV_ITEMS.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === '/'} className={navLinkClass}>
               {item.label}
@@ -48,7 +52,7 @@ function Header() {
           )}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-3 lg:flex">
           {isAuthenticated ? (
             <>
               <Link to="/mypage" className="text-sm text-ridefit-text-secondary hover:text-ridefit-primary">
@@ -89,14 +93,14 @@ function Header() {
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
           aria-label="메뉴 열기"
-          className="rounded-md p-2 text-xl text-ridefit-text md:hidden"
+          className="rounded-md p-2 text-xl text-ridefit-text lg:hidden"
         >
           ☰
         </button>
       </div>
 
       {menuOpen && (
-        <nav className="flex flex-col gap-1 border-t border-ridefit-border bg-ridefit-bg px-4 py-3 md:hidden">
+        <nav className="flex flex-col gap-2 border-t border-ridefit-border bg-ridefit-bg px-4 py-3 lg:hidden">
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
@@ -116,6 +120,11 @@ function Header() {
           {isAuthenticated && (
             <NavLink to="/mypage" onClick={() => setMenuOpen(false)} className={navLinkClass}>
               마이페이지
+            </NavLink>
+          )}
+          {isAuthenticated && (
+            <NavLink to="/reservations" onClick={() => setMenuOpen(false)} className={navLinkClass}>
+              내 예약
             </NavLink>
           )}
           {isAdmin && (

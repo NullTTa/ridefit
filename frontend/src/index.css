@@ -13,3 +13,115 @@ body {
   background-color: #0b0e14;
   color-scheme: dark;
 }
+
+/* ---------- 히어로: 설계도(블루프린트) 애니메이션 ----------
+   순서: 선이 그려지고 -> 포인트가 나타나고 -> 이름표가 나타난다. 각 요소의 시작 시점은 --d 로 지정한다. */
+@keyframes bp-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes bp-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes bp-ring {
+  0% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.6);
+  }
+}
+@keyframes bp-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes bp-label {
+  from {
+    opacity: 0;
+    transform: translate(var(--tx, -50%), var(--ty, 0)) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(var(--tx, -50%), var(--ty, 0));
+  }
+}
+
+.bp-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: bp-draw 0.7s ease-out forwards;
+  animation-delay: var(--d, 0s);
+}
+.bp-dot {
+  opacity: 0;
+  animation: bp-pop 0.35s ease-out forwards;
+  animation-delay: calc(var(--d, 0s) + 0.55s);
+}
+.bp-ring {
+  opacity: 0;
+  animation: bp-ring 2.8s ease-out infinite;
+  animation-delay: calc(var(--d, 0s) + 1.2s);
+}
+.bp-label {
+  opacity: 0;
+  animation: bp-label 0.45s ease-out forwards;
+  animation-delay: calc(var(--d, 0s) + 0.6s);
+}
+.bp-fade {
+  opacity: 0;
+  animation: bp-fade 0.9s ease-out forwards;
+  animation-delay: var(--d, 0s);
+}
+
+/* ---------- 홈: 스크롤 등장 (과하지 않게 살짝 떠오르는 정도) ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  transition-delay: var(--reveal-delay, 0s);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* 모션을 줄이도록 설정한 사용자에게는 애니메이션 없이 최종 상태만 보여준다. */
+@media (prefers-reduced-motion: reduce) {
+  .bp-line,
+  .bp-dot,
+  .bp-label,
+  .bp-fade {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+  .bp-dot {
+    transform: translate(-50%, -50%);
+  }
+  .bp-label {
+    transform: translate(var(--tx, -50%), var(--ty, 0));
+  }
+  .bp-ring {
+    animation: none;
+    opacity: 0;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

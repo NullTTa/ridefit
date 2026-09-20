@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import PartBadges from '../components/PartBadges'
 import SellerListings from '../components/SellerListings'
 import { api } from '../lib/api'
+import { loadPartCategorySlugs } from '../lib/guide'
 
 const STATUS_STYLE = {
   호환가능: 'bg-green-950 text-green-300 border-green-800',
@@ -29,6 +30,11 @@ function PartsSearch() {
   const [expandedPartId, setExpandedPartId] = useState(null)
 
   const vehicleId = searchParams.get('vehicleId')
+  const [categorySlugs, setCategorySlugs] = useState({})
+
+  useEffect(() => {
+    loadPartCategorySlugs().then(setCategorySlugs)
+  }, [])
 
   useEffect(() => {
     api
@@ -123,8 +129,24 @@ function PartsSearch() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-16">
       <h1 className="mb-6 text-2xl font-bold text-ridefit-text">부품 찾아보기</h1>
-      <p className="mb-6 text-sm text-ridefit-text-secondary">
+      <p className="mb-2 text-sm text-ridefit-text-secondary">
         내가 등록한 차량 기준으로 이미 호환이 확인된 부품만 보여줘요.
+      </p>
+      <p className="mb-6 text-sm text-ridefit-text-secondary">
+        부품이 무엇인지 궁금하다면{' '}
+        <Link to="/guide" className="font-medium text-ridefit-primary hover:underline">
+          부품 · 소모품 정보
+        </Link>
+        를 먼저 살펴보세요.
+        {category && categorySlugs[category] && (
+          <>
+            {' '}
+            ·{' '}
+            <Link to={`/guide/${categorySlugs[category]}`} className="font-medium text-ridefit-primary hover:underline">
+              {category}이(가) 뭔가요?
+            </Link>
+          </>
+        )}
       </p>
 
       {vehiclesLoading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}

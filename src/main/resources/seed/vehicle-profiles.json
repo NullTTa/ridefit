@@ -1,0 +1,89 @@
+{
+  "_comment": "개발용 초기 프로필(DEV_SEED). displacementCc는 제조사 공개 스펙 기준의 배기량 등급, bodyStyle은 차체 분류, priceTier(1~4)는 실제 판매가가 아니라 등록 차종 사이의 상대 분류, traits(1~5)는 RIDEFIT 편집 점수(공식/실측 아님)입니다. 실제 데이터로 교체하려면 이 파일 값만 바꾸면 되고, 시더는 dataSource가 DEV_SEED인 행만 갱신합니다.",
+  "vehicles": [
+    {
+      "manufacturer": "Honda", "model": "Super Cub 110", "displacementCc": 109, "bodyStyle": "커브(스텝스루)", "priceTier": 2,
+      "traits": { "COMMUTE": 5, "TOURING": 2, "DESIGN": 4, "PERFORMANCE": 1, "COMFORT": 3, "ECONOMY": 5, "TUNING": 4, "CITY": 5 },
+      "summary": "스텝스루 프레임에 반자동 변속을 쓰는 클래식 커브. 매일 타는 생활형 이동 수단으로 오래 사랑받아 온 모델이에요.",
+      "pros": ["구조가 단순해 정비와 유지가 쉬운 편", "연료 소모가 적어 매일 타기 부담이 적음", "커스텀·애프터마켓 부품 선택지가 넓음", "차체가 가볍고 발착이 편해 도심 취급이 쉬움"],
+      "cons": ["고속·장거리 주행에서는 여유가 적음", "짐을 많이 싣으려면 캐리어 등 추가 부품이 필요", "제동·서스펜션은 기본 성능 위주라 과한 주행에는 한계가 있음"]
+    },
+    {
+      "manufacturer": "Honda", "model": "PCX", "displacementCc": 124, "bodyStyle": "맥시스쿠터", "priceTier": 3,
+      "traits": { "COMMUTE": 5, "TOURING": 3, "DESIGN": 4, "PERFORMANCE": 3, "COMFORT": 5, "ECONOMY": 4, "TUNING": 3, "CITY": 5 },
+      "summary": "넉넉한 시트와 수납, 수냉 엔진을 갖춘 125cc 맥시스쿠터. 출퇴근부터 근교 라이딩까지 두루 소화해요.",
+      "pros": ["시트 아래 수납과 편안한 자세로 일상 활용도가 높음", "수냉 엔진으로 도심 정체에서도 안정적", "125cc급에서 완성도 높은 승차감"],
+      "cons": ["차체가 큰 편이라 좁은 골목에서는 커브·소형 스쿠터보다 무거움", "125cc라 장거리 고속 주행은 한계가 있음"]
+    },
+    {
+      "manufacturer": "Yamaha", "model": "Tricity 125", "displacementCc": 125, "bodyStyle": "쓰리휠 스쿠터", "priceTier": 3,
+      "traits": { "COMMUTE": 4, "TOURING": 2, "DESIGN": 4, "PERFORMANCE": 3, "COMFORT": 4, "ECONOMY": 3, "TUNING": 3, "CITY": 5 },
+      "summary": "앞바퀴가 두 개인 쓰리휠 스쿠터. 코너와 노면 불안한 구간에서 안정감이 장점인 독특한 모델이에요.",
+      "pros": ["앞바퀴 두 개 구조로 저속·코너에서 안정적인 느낌", "스쿠터 편의성과 색다른 디자인을 함께 갖춤"],
+      "cons": ["구조가 복잡해 정비 부담과 부품 가격이 높을 수 있음", "일반 스쿠터보다 차체 무게가 나감"]
+    },
+    {
+      "manufacturer": "Yamaha", "model": "Vino 125", "displacementCc": 125, "bodyStyle": "스쿠터", "priceTier": 1,
+      "traits": { "COMMUTE": 4, "TOURING": 1, "DESIGN": 4, "PERFORMANCE": 2, "COMFORT": 3, "ECONOMY": 4, "TUNING": 2, "CITY": 5 },
+      "summary": "레트로 감성의 작은 스쿠터. 국내에서는 예전에 판매되어 중고 위주로 만나볼 수 있는 모델이에요.",
+      "pros": ["작고 가벼워 도심 취급이 쉬움", "귀여운 레트로 디자인", "중고 시세가 비교적 부담 적은 편"],
+      "cons": ["국내 단종 모델이라 신품 부품 수급이 제한될 수 있음", "장거리·고속 주행에는 맞지 않음"]
+    },
+    {
+      "manufacturer": "Yamaha", "model": "NMAX 125", "newModel": { "type": "맥시스쿠터", "years": [2021, 2023] }, "displacementCc": 125, "bodyStyle": "맥시스쿠터", "priceTier": 3,
+      "traits": { "COMMUTE": 5, "TOURING": 3, "DESIGN": 4, "PERFORMANCE": 3, "COMFORT": 4, "ECONOMY": 4, "TUNING": 3, "CITY": 5 },
+      "summary": "스포티한 디자인과 실용성을 함께 갖춘 125cc 맥시스쿠터. 출퇴근용으로 많이 선택되는 모델이에요.",
+      "pros": ["스포티한 외관과 편리한 수납의 균형", "125cc급에서 무난한 출력과 연비", "도심 출퇴근에 잘 맞는 크기"],
+      "cons": ["장거리에서는 배기량의 한계가 있음", "RIDEFIT에 등록된 호환 부품 데이터는 아직 준비 중"]
+    },
+    {
+      "manufacturer": "Yamaha", "model": "XMAX 300", "newModel": { "type": "맥시스쿠터", "years": [2019, 2023] }, "displacementCc": 292, "bodyStyle": "맥시스쿠터", "priceTier": 4,
+      "traits": { "COMMUTE": 4, "TOURING": 5, "DESIGN": 4, "PERFORMANCE": 4, "COMFORT": 5, "ECONOMY": 2, "TUNING": 3, "CITY": 3 },
+      "summary": "300cc급 맥시스쿠터. 편안한 자세와 넉넉한 출력으로 출퇴근과 장거리 투어링을 함께 노리는 라이더에게 어울려요.",
+      "pros": ["300cc급 출력으로 고속·장거리 여유가 있음", "편안한 시트와 큰 수납 공간", "스쿠터 편의성으로 투어링 진입장벽이 낮음"],
+      "cons": ["125cc급 대비 차체가 크고 무거워 도심 골목에서는 부담", "보험·소모품 등 유지비가 더 나옴", "RIDEFIT 호환 부품 데이터는 아직 준비 중"]
+    },
+    {
+      "manufacturer": "Suzuki", "model": "Address 125", "displacementCc": 124, "bodyStyle": "스쿠터", "priceTier": 1,
+      "traits": { "COMMUTE": 5, "TOURING": 2, "DESIGN": 2, "PERFORMANCE": 2, "COMFORT": 3, "ECONOMY": 5, "TUNING": 3, "CITY": 5 },
+      "summary": "가볍고 실용적인 125cc 스쿠터. 화려함보다 가성비와 생활 편의에 초점을 둔 모델이에요.",
+      "pros": ["가벼운 차체와 낮은 유지비", "가격 대비 실용성이 높음", "출퇴근·배달 같은 생활 용도에 적합"],
+      "cons": ["디자인은 무난한 편이라 개성을 원하면 커스텀이 필요", "장거리 편안함은 상급 스쿠터보다 낮음"]
+    },
+    {
+      "manufacturer": "Suzuki", "model": "Burgman Street 125", "displacementCc": 124, "bodyStyle": "맥시스쿠터", "priceTier": 2,
+      "traits": { "COMMUTE": 5, "TOURING": 3, "DESIGN": 3, "PERFORMANCE": 2, "COMFORT": 5, "ECONOMY": 4, "TUNING": 2, "CITY": 4 },
+      "summary": "넓은 시트와 수납을 갖춘 맥시스쿠터 스타일의 125cc. 편안한 출퇴근용으로 잘 맞아요.",
+      "pros": ["넉넉한 시트와 수납공간으로 편안함이 좋음", "125cc급에서 부담 적은 유지비", "차분한 승차감"],
+      "cons": ["성능·가속은 온순한 편", "커스텀 부품 선택지는 제한적일 수 있음"]
+    },
+    {
+      "manufacturer": "Honda", "model": "CB125R", "newModel": { "type": "네이키드", "years": [2019, 2021] }, "displacementCc": 124, "bodyStyle": "네이키드", "priceTier": 3,
+      "traits": { "COMMUTE": 3, "TOURING": 2, "DESIGN": 5, "PERFORMANCE": 4, "COMFORT": 2, "ECONOMY": 3, "TUNING": 4, "CITY": 4 },
+      "summary": "스포티한 스타일의 125cc 네이키드 모터사이클. 디자인과 조작감을 중요하게 보는 입문 라이더에게 어울려요.",
+      "pros": ["세련된 디자인과 스포티한 자세", "수동 변속으로 라이딩의 재미를 느낄 수 있음", "125cc급이라 입문 진입장벽이 낮음"],
+      "cons": ["수납이 거의 없어 출퇴근 짐 관리가 번거로움", "스쿠터보다 자세가 공격적이라 오래 타면 피곤할 수 있음", "RIDEFIT 호환 부품 데이터는 아직 준비 중"]
+    },
+    {
+      "manufacturer": "Kawasaki", "model": "Ninja 125", "displacementCc": 125, "bodyStyle": "스포츠", "priceTier": 3,
+      "traits": { "COMMUTE": 2, "TOURING": 2, "DESIGN": 5, "PERFORMANCE": 4, "COMFORT": 2, "ECONOMY": 3, "TUNING": 4, "CITY": 3 },
+      "summary": "닌자 시리즈의 감성을 담은 125cc 스포츠 바이크. 스타일과 스포티한 주행을 원하는 입문자에게 인기 있어요.",
+      "pros": ["스포츠 바이크다운 외관과 카울 디자인", "수동 변속과 스포티한 핸들링", "튜닝·커스텀 재미가 큼"],
+      "cons": ["자세가 숙여져 출퇴근 편안함은 낮음", "짐 싣기와 수납이 불편함", "125cc라 실제 속도 성능은 외관보다 온순함"]
+    },
+    {
+      "manufacturer": "Kawasaki", "model": "Z125", "displacementCc": 125, "bodyStyle": "네이키드", "priceTier": 3,
+      "traits": { "COMMUTE": 3, "TOURING": 2, "DESIGN": 4, "PERFORMANCE": 4, "COMFORT": 2, "ECONOMY": 3, "TUNING": 4, "CITY": 4 },
+      "summary": "작고 가벼운 미니 네이키드. 도심에서 민첩하게 다니면서 스포티한 손맛을 즐기기 좋아요.",
+      "pros": ["가벼운 차체와 민첩한 핸들링", "네이키드 스타일 디자인", "커스텀 부품으로 개성을 내기 좋음"],
+      "cons": ["수납이 부족함", "장거리에서는 바람 부담이 크고 피로가 누적될 수 있음"]
+    },
+    {
+      "manufacturer": "Kawasaki", "model": "Versys-X 300", "newModel": { "type": "어드벤처", "years": [2019, 2021] }, "displacementCc": 296, "bodyStyle": "어드벤처", "priceTier": 4,
+      "traits": { "COMMUTE": 2, "TOURING": 5, "DESIGN": 3, "PERFORMANCE": 3, "COMFORT": 4, "ECONOMY": 2, "TUNING": 4, "CITY": 2 },
+      "summary": "300cc급 어드벤처 투어러. 높은 시트와 긴 서스펜션으로 장거리·여행 라이딩에 초점을 둔 모델이에요.",
+      "pros": ["장거리 투어링에 유리한 자세와 서스펜션", "짐 적재용 부품 확장성이 좋음", "여행·캠핑 라이딩에 어울림"],
+      "cons": ["시트가 높고 차체가 커서 도심 골목에서는 부담", "유지비와 부품 비용이 125cc급보다 큼", "RIDEFIT 호환 부품 데이터는 아직 준비 중"]
+    }
+  ]
+}
