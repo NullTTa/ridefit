@@ -8,7 +8,6 @@ public record CompatibilityResponse(
 
     public static CompatibilityResponse from(Compatibility compatibility) {
         ModelYear modelYear = compatibility.getModelYear();
-        String modelYearLabel = modelYear.getYear() + " " + modelYear.getVehicleModel().getName();
 
         return new CompatibilityResponse(
                 compatibility.getId(),
@@ -16,6 +15,6 @@ public record CompatibilityResponse(
                 compatibility.getNote(),
                 PartResponse.from(compatibility.getPart()),
                 modelYear.getId(),
-                modelYearLabel);
+                ModelYearLabel.of(modelYear));
     }
 }

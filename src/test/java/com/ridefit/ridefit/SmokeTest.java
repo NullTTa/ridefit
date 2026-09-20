@@ -54,7 +54,7 @@ class SmokeTest {
 
         // 3) 내 차량 등록
         JsonNode myVehicle = postJson("/api/my-vehicles",
-                "{\"modelYearId\":%d,\"photoUrl\":null}".formatted(modelYearId), userToken, 201);
+                "{\"modelYearId\":%d}".formatted(modelYearId), userToken, 201);
         long myVehicleId = myVehicle.get("id").asLong();
 
         // 4) 부품 등록 - 크롤링 실패 시 이어지는 "수동 입력" 경로를 그대로 검증한다

@@ -30,4 +30,7 @@ public class VehicleModel {
     private String type;
 
     private String name;
+
+    // 이 모델의 대표 이미지. 관리자가 관리자 페이지에서 등록/수정하며, null이면 프론트가 임시 아이콘을 보여준다.
+    private String imageUrl;
 }

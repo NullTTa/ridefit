@@ -51,7 +51,6 @@ public class MyVehicleController {
         MyVehicle myVehicle = MyVehicle.builder()
                 .member(member)
                 .modelYear(modelYear)
-                .photoUrl(request.photoUrl())
                 .build();
         MyVehicle saved = myVehicleRepository.save(myVehicle);
         return ResponseEntity.status(HttpStatus.CREATED).body(MyVehicleResponse.from(saved));
@@ -95,7 +94,7 @@ public class MyVehicleController {
         return myVehicle;
     }
 
-    public record MyVehicleRequest(Long modelYearId, String photoUrl) {
+    public record MyVehicleRequest(Long modelYearId) {
     }
 
     public record CompatiblePartResponse(Long partId, String category, String name, Integer price, String imageUrl,

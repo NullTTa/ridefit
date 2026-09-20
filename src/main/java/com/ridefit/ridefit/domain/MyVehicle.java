@@ -29,6 +29,4 @@ public class MyVehicle {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private ModelYear modelYear;
-
-    private String photoUrl;
 }

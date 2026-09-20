@@ -6,7 +6,6 @@ import { api } from '../lib/api'
 function VehicleRegister() {
   const navigate = useNavigate()
   const [modelYearId, setModelYearId] = useState(null)
-  const [photoUrl, setPhotoUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
@@ -20,7 +19,7 @@ function VehicleRegister() {
     setError(null)
 
     try {
-      await api.post('/api/my-vehicles', { modelYearId, photoUrl: photoUrl || null })
+      await api.post('/api/my-vehicles', { modelYearId })
       navigate('/garage')
     } catch (err) {
       setError(err.message)
@@ -42,16 +41,9 @@ function VehicleRegister() {
           <VehicleCascadeSelect onModelYearChange={setModelYearId} />
         </div>
 
-        <label className="flex flex-col gap-1 text-sm font-medium text-ridefit-text-secondary">
-          사진 URL (선택)
-          <input
-            type="url"
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            placeholder="나중에 실제 사진으로 교체할 수 있어요"
-            className="rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary"
-          />
-        </label>
+        <p className="text-xs text-ridefit-text-secondary">
+          차량 사진은 별도로 입력하지 않아도 돼요 — 선택한 모델에 등록된 대표 이미지가 자동으로 적용됩니다.
+        </p>
 
         <button
           type="submit"
