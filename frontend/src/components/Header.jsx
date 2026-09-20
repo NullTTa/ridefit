@@ -46,11 +46,6 @@ function Header() {
               내 차고
             </NavLink>
           )}
-          {isAdmin && (
-            <NavLink to="/admin" className={navLinkClass}>
-              관리자
-            </NavLink>
-          )}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -59,6 +54,14 @@ function Header() {
               <Link to="/mypage" className="text-sm text-ridefit-text-secondary hover:text-ridefit-primary">
                 {user?.name}님
               </Link>
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="rounded-lg bg-ridefit-primary px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110"
+                >
+                  관리자
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={handleLogout}

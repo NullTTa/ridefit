@@ -80,22 +80,50 @@ public class DataSeeder implements CommandLineRunner {
         VehicleModel ninja125 = vehicleModel(kawasaki, "Ninja 125", "스포츠");
         VehicleModel z125 = vehicleModel(kawasaki, "Z125", "네이키드");
 
+        // 실제 차량 사진이 있는 모델만 등록해둔다. 나머지는 프론트에서 임시 아이콘을 그대로 보여준다.
+        modelImage(superCub, "/assets/vehicles/super-cub-110.png");
+
+        // 연식/세대(프레임 코드)는 검색으로 확인한 실제 값만 사용한다(지어내지 않음). 코드가 붙어있으면
+        // "같은 코드끼리는 부품이 호환된다"는 걸 사용자가 알아볼 수 있게 라벨에 그대로 노출된다(ModelYearLabel).
+        // 혼다 커브/PCX는 세대별 코드가 국내에 잘 알려져 있어 예전 연식까지 추가해서 세대 대비를 보여준다.
+        // 확실한 코드를 찾지 못한 모델(야마하/스즈키/가와사키 일부)은 코드를 지어내는 대신 null로 비워두되,
+        // 연식 자체는 실제 판매/생산 시기에 맞게 바로잡았다.
+        //
+        // Honda Super Cub 110: JA07(2009~, "동글이") -> JA10(2011~2017, "각진놈") -> JA44(2018~, 복고 디자인)
+        ModelYear cub10 = modelYear(superCub, 2010, "JA07");
+        ModelYear cub15 = modelYear(superCub, 2015, "JA10");
         ModelYear cub21 = modelYear(superCub, 2021, "JA44");
         ModelYear cub23 = modelYear(superCub, 2023, "JA44");
-        ModelYear pcx21 = modelYear(pcx, 2021, "KF30");
-        ModelYear pcx23 = modelYear(pcx, 2023, "KF30");
+        // Honda PCX125: JF28(2010~2013) -> JF56(2014~2017) -> JF81(2018~). 예전 시드의 "KF30"은
+        // 검색해보니 실제로는 다른(150cc 계열) 코드라 잘못된 값이었어서 JF81로 바로잡는다.
+        ModelYear pcx11 = modelYear(pcx, 2011, "JF28");
+        ModelYear pcx16 = modelYear(pcx, 2016, "JF56");
+        ModelYear pcx21 = modelYear(pcx, 2021, "JF81");
+        ModelYear pcx23 = modelYear(pcx, 2023, "JF81");
+        setChassisCode(pcx21, "KF30", "JF81");
+        setChassisCode(pcx23, "KF30", "JF81");
+
         ModelYear tricity21 = modelYear(tricity, 2021, null);
         ModelYear tricity23 = modelYear(tricity, 2023, null);
-        ModelYear vino21 = modelYear(vino, 2021, null);
-        ModelYear vino23 = modelYear(vino, 2023, null);
+        // Yamaha Vino 125: 국내엔 2004~2009년식으로만 판매되고 단종됨(2021/2023년식은 존재하지 않아 실제
+        // 판매 시기로 바로잡음). 코드는 국내 부품몰 분류 기준 "5YR" 사용.
+        ModelYear vino05 = modelYear(vino, 2005, "5YR");
+        ModelYear vino08 = modelYear(vino, 2008, "5YR");
+        // Suzuki Address 125: 2008년 국내 첫 출시(구형 플랫폼) -> 2021년 풀체인지(프레임/엔진 신설계).
+        ModelYear address15 = modelYear(address, 2015, null);
         ModelYear address21 = modelYear(address, 2021, null);
         ModelYear address23 = modelYear(address, 2023, null);
-        ModelYear burgman21 = modelYear(burgmanStreet, 2021, null);
+        // Suzuki Burgman Street 125: 국내엔 2023년에야 처음 출시되어, 그 이전 연식은 존재하지 않는다
+        // (예전 시드의 2021년식은 실제로 국내에 없던 연식이라 바로잡음).
         ModelYear burgman23 = modelYear(burgmanStreet, 2023, null);
-        ModelYear ninja21 = modelYear(ninja125, 2021, null);
+        ModelYear burgman25 = modelYear(burgmanStreet, 2025, null);
+        ModelYear ninja19 = modelYear(ninja125, 2019, null);
         ModelYear ninja23 = modelYear(ninja125, 2023, null);
-        ModelYear z12521 = modelYear(z125, 2021, null);
-        ModelYear z12523 = modelYear(z125, 2023, null);
+        // Kawasaki Z125: 형식코드 BR125(K/L 세부형식까지는 연식별로 명확히 확인되지 않아 접두 코드만 사용).
+        ModelYear z12521 = modelYear(z125, 2021, "BR125");
+        ModelYear z12523 = modelYear(z125, 2023, "BR125");
+        setChassisCode(z12521, null, "BR125");
+        setChassisCode(z12523, null, "BR125");
 
         // ---- Honda 부품 (기존) ----
         Part cubMuffler = part("순정 스타일 스테인리스 머플러 (Cub 110)", "머플러", 189000);
@@ -108,23 +136,30 @@ public class DataSeeder implements CommandLineRunner {
         Part pcxLamp = part("LED 방향지시등 세트 (PCX)", "램프", 38000);
         Part pcxOldMuffler = part("구형 머플러 (2018 PCX 호환, 신형 불가)", "머플러", 210000);
 
+        // JA44 세대(2018~) 전용 부품 — 바디/배기 형상이 이전 세대(JA07/JA10)와 달라서 옛 연식엔 안 맞는다.
         compat(cub21, cubMuffler, "호환가능", "정품 브라켓 포함");
         compat(cub23, cubMuffler, "호환가능", "정품 브라켓 포함");
         compat(cub21, cubCarrier, "브라켓필요", "별도 서브 브라켓 구매 필요");
         compat(cub23, cubCarrier, "호환가능", null);
-        compat(cub21, cubMirror, "호환가능", null);
-        compat(cub23, cubMirror, "호환가능", null);
         compat(cub23, cubSeat, "호환가능", null);
+        // 범용 클램프온 미러는 핸들바 규격이 같아서 세대를 넘어 두루 호환된다 — 세대별로 다른 부품과 대비됨.
+        for (ModelYear y : List.of(cub10, cub15, cub21, cub23)) {
+            compat(y, cubMirror, "호환가능", null);
+        }
+
+        // JF81 세대(2018~) 전용 부품. JF28/JF56은 프레임 자체가 언더본->더블크래들로 바뀌어서 대부분 안 맞는다.
         compat(pcx21, pcxScreen, "호환가능", null);
         compat(pcx23, pcxScreen, "호환가능", null);
         compat(pcx21, pcxCarrier, "호환가능", "탑케이스 별매");
         compat(pcx23, pcxCarrier, "호환가능", "탑케이스 별매");
         compat(pcx21, pcxLever, "호환가능", null);
         compat(pcx23, pcxLever, "호환가능", null);
-        compat(pcx21, pcxLamp, "호환가능", null);
-        compat(pcx23, pcxLamp, "호환가능", null);
         compat(pcx21, pcxOldMuffler, "호환불가", "구형 배기 매니폴드 규격이 달라 장착 불가");
         compat(pcx23, pcxOldMuffler, "호환불가", "구형 배기 매니폴드 규격이 달라 장착 불가");
+        // LED 방향지시등은 커넥터 규격이 오래 유지돼서 구형(JF28/JF56)에도 그대로 맞는다.
+        for (ModelYear y : List.of(pcx11, pcx16, pcx21, pcx23)) {
+            compat(y, pcxLamp, "호환가능", null);
+        }
 
         // ---- Yamaha 부품 (Tricity 125 / Vino 125) ----
         Part yamahaGrip = part("야마하 범용 핸들바 그립 세트", "핸들바", 18000);
@@ -135,7 +170,7 @@ public class DataSeeder implements CommandLineRunner {
         Part vinoMuffler = part("비노 크롬 슬립온 머플러", "머플러", 175000);
         Part yamahaWheel = part("야마하 범용 알로이 휠 커버 세트", "휠", 36000);
 
-        for (ModelYear y : List.of(tricity21, tricity23, vino21, vino23)) {
+        for (ModelYear y : List.of(tricity21, tricity23, vino05, vino08)) {
             compat(y, yamahaGrip, "호환가능", null);
             compat(y, yamahaMirror, "호환가능", null);
             compat(y, yamahaWheel, "호환가능", null);
@@ -144,10 +179,11 @@ public class DataSeeder implements CommandLineRunner {
         compat(tricity23, tricityCarrier, "호환가능", null);
         compat(tricity21, tricityScreen, "브라켓필요", "별도 스크린 마운트 브라켓 필요");
         compat(tricity23, tricityScreen, "브라켓필요", "별도 스크린 마운트 브라켓 필요");
-        compat(vino21, vinoSeat, "호환가능", null);
-        compat(vino23, vinoSeat, "호환가능", null);
-        compat(vino21, vinoMuffler, "호환가능", "정품 개스킷 포함");
-        compat(vino23, vinoMuffler, "호환불가", "2023년식부터 배기 인증 규격이 변경되어 장착 불가");
+        // vino05/vino08은 같은 세대(5YR)라 부품이 그대로 호환된다.
+        compat(vino05, vinoSeat, "호환가능", null);
+        compat(vino08, vinoSeat, "호환가능", null);
+        compat(vino05, vinoMuffler, "호환가능", "정품 개스킷 포함");
+        compat(vino08, vinoMuffler, "호환가능", "정품 개스킷 포함");
 
         // ---- Suzuki 부품 (Address 125 / Burgman Street 125) ----
         Part suzukiLamp = part("스즈키 범용 LED 방향지시등 세트", "램프", 33000);
@@ -158,19 +194,22 @@ public class DataSeeder implements CommandLineRunner {
         Part suzukiMuffler = part("스즈키 범용 스포츠 머플러", "머플러", 198000);
         Part addressVisor = part("어드레스 스크린 바이저", "스크린", 39000);
 
-        for (ModelYear y : List.of(address21, address23, burgman21, burgman23)) {
+        // address15(풀체인지 이전 구형 플랫폼)는 일부러 이 범용 목록에서 빼둔다 — 지금 카탈로그의
+        // 부품들은 2021년 풀체인지 이후 신형 플랫폼 기준이라 구형엔 실제로 맞지 않을 가능성이 높다.
+        for (ModelYear y : List.of(address21, address23, burgman23, burgman25)) {
             compat(y, suzukiLamp, "호환가능", null);
             compat(y, suzukiMuffler, "브라켓필요", "전용 마운트 브라켓 별매");
         }
         compat(address21, addressCarrier, "호환가능", null);
         compat(address23, addressCarrier, "호환가능", null);
         compat(address23, addressWheel, "브라켓필요", "타이어 사이즈 변경 필요");
-        compat(burgman21, burgmanSeat, "호환가능", null);
         compat(burgman23, burgmanSeat, "호환가능", null);
-        compat(burgman21, burgmanMirror, "호환가능", null);
+        compat(burgman25, burgmanSeat, "호환가능", null);
         compat(burgman23, burgmanMirror, "호환가능", null);
+        compat(burgman25, burgmanMirror, "호환가능", null);
         compat(address21, addressVisor, "호환가능", null);
-        compat(address23, addressVisor, "호환불가", "풀체인지로 전면부 형상이 바뀌어 장착 불가");
+        compat(address23, addressVisor, "호환가능", null);
+        compat(address15, addressVisor, "호환불가", "2021년 풀체인지 이전 구형 플랫폼은 전면부 형상이 달라 장착 불가");
 
         // ---- Kawasaki 부품 (Ninja 125 / Z125) ----
         Part kawasakiMuffler = part("가와사키 범용 레이싱 머플러", "머플러", 245000);
@@ -181,18 +220,18 @@ public class DataSeeder implements CommandLineRunner {
         Part kawasakiWheel = part("가와사키 범용 휠 스프로킷 세트", "휠", 119000);
         Part ninjaSeatCowl = part("닌자125 레이스 시트카울", "시트", 145000);
 
-        for (ModelYear y : List.of(ninja21, ninja23, z12521, z12523)) {
+        for (ModelYear y : List.of(ninja19, ninja23, z12521, z12523)) {
             compat(y, kawasakiMuffler, "브라켓필요", "레이스용 서브 브라켓 필요");
             compat(y, kawasakiWheel, "호환가능", null);
         }
-        compat(ninja21, ninjaScreen, "호환가능", null);
+        compat(ninja19, ninjaScreen, "호환가능", null);
         compat(ninja23, ninjaScreen, "호환가능", null);
         compat(ninja23, ninjaClipOn, "호환가능", "순정 핸들바 제거 필요");
         compat(z12521, z125Mirror, "호환가능", null);
         compat(z12523, z125Mirror, "호환가능", null);
         compat(z12521, z125Lever, "호환가능", null);
         compat(z12523, z125Lever, "호환가능", null);
-        compat(ninja21, ninjaSeatCowl, "호환가능", null);
+        compat(ninja19, ninjaSeatCowl, "호환가능", null);
         compat(ninja23, ninjaSeatCowl, "호환불가", "페어링 형상이 변경되어 장착 불가");
 
         // ---- 부품 충돌 ----
@@ -227,6 +266,8 @@ public class DataSeeder implements CommandLineRunner {
         // ---- 회원 ----
         Member testUser = member("user@ridefit.dev", "user1234!", "테스트유저", Role.USER);
         member("admin@ridefit.dev", "admin1234!", "관리자", Role.ADMIN);
+        // 실제로 가입되어 있는 회원을 관리자로 지정. 없으면 만들지 않고, role만 idempotent하게 맞춘다.
+        promoteToAdminIfExists("sk05ek@naver.com");
         Member riderMin = member("rider_min@ridefit.dev", "rider1234!", "라이더민수", Role.USER);
         Member scooterFan = member("scooter_fan@ridefit.dev", "rider1234!", "스쿠터매니아", Role.USER);
         Member commuterKim = member("commuter_kim@ridefit.dev", "rider1234!", "출퇴근김씨", Role.USER);
@@ -264,15 +305,15 @@ public class DataSeeder implements CommandLineRunner {
             comment(post4, scooterFan, "아 그거 부품 충돌 목록에도 있더라고요 ㅋㅋ 저도 캐리어만 달았어요.");
             comment(post4, newbiePark, "정보 감사합니다, 스크린은 나중에 다른 방법 찾아봐야겠네요.");
 
-            post(newbiePark, "닌자125 레이싱 클립온 핸들바 2021년식에도 될까요?",
-                    "중고로 2021년식 닌자125 구했는데 클립온 핸들바 장착 정보 보니까 2023년식만 나와있어서요. "
+            post(newbiePark, "닌자125 레이싱 클립온 핸들바 2019년식에도 될까요?",
+                    "중고로 2019년식 닌자125 구했는데 클립온 핸들바 장착 정보 보니까 2023년식만 나와있어서요. "
                             + "혹시 아시는 분?",
                     ninjaClipOn, null, null);
 
-            Post post6 = post(scooterFan, "비노125 2023년식엔 크롬 머플러 장착 안 됩니다 (주의)",
-                    "2021년식엔 문제없이 달았는데 친구 2023년식엔 배기 인증 규격이 바뀌어서 장착이 안 된다고 하네요. "
-                            + "구매 전에 꼭 연식 확인하세요.",
-                    vinoMuffler, "NOT_MATCHED", null);
+            Post post6 = post(scooterFan, "어드레스125 풀체인지 전 구형엔 스크린 바이저 장착 안 됩니다 (주의)",
+                    "2021년 풀체인지 이후 나온 스크린 바이저인데, 그 전 구형 어드레스는 전면부 형상 자체가 달라서 "
+                            + "장착이 안 된다고 하네요. 중고로 구형 사신 분들은 구매 전에 꼭 연식 확인하세요.",
+                    addressVisor, "NOT_MATCHED", null);
             comment(post6, riderMin, "오 저도 몰랐던 정보네요, 알려주셔서 감사합니다.");
 
             Post post7 = post(riderMin, "Z125 브레이크 레버 교체 - 손맛이 달라졌어요",
@@ -314,6 +355,26 @@ public class DataSeeder implements CommandLineRunner {
                         ModelYear.builder().vehicleModel(vehicleModel).year(year).chassisCode(chassisCode).build()));
     }
 
+    // 이미 시드된 ModelYear의 세대 코드가 비어있거나(oldValue=null) 알려진 잘못된 값(oldValue)일 때만
+    // 새 코드로 바로잡는다. 관리자가 직접 다른 값으로 고쳐뒀다면 건드리지 않는다.
+    private void setChassisCode(ModelYear modelYear, String oldValue, String newCode) {
+        String current = modelYear.getChassisCode();
+        boolean matchesExpectedOld = (oldValue == null) ? (current == null) : oldValue.equals(current);
+        if (!matchesExpectedOld || newCode.equals(current)) {
+            return;
+        }
+        modelYear.setChassisCode(newCode);
+        modelYearRepository.save(modelYear);
+    }
+
+    private void modelImage(VehicleModel vehicleModel, String imageUrl) {
+        if (vehicleModel.getImageUrl() != null) {
+            return;
+        }
+        vehicleModel.setImageUrl(imageUrl);
+        vehicleModelRepository.save(vehicleModel);
+    }
+
     private Part part(String name, String category, int price) {
         return partRepository.findByName(name)
                 .orElseGet(() -> partRepository.save(Part.builder().name(name).category(category).price(price).build()));
@@ -346,6 +407,17 @@ public class DataSeeder implements CommandLineRunner {
         sellerListingRepository.save(SellerListing.builder()
                 .part(part).sellerName(sellerName).price(price).sourceUrl(sourceUrl)
                 .createdAt(LocalDateTime.now()).build());
+    }
+
+    // 이미 존재하는 회원의 role만 ADMIN으로 바꾼다. 없으면 아무 것도 하지 않는다(임의로 계정을 만들지 않음).
+    private void promoteToAdminIfExists(String email) {
+        memberRepository.findByEmail(email).ifPresent(existing -> {
+            if (existing.getRole() != Role.ADMIN) {
+                existing.setRole(Role.ADMIN);
+                memberRepository.save(existing);
+                log.info("{} 계정을 ADMIN으로 승격했습니다.", email);
+            }
+        });
     }
 
     private Member member(String email, String rawPassword, String name, Role role) {
