@@ -32,11 +32,16 @@ export default {
           '0%, 100%': { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 rgba(59,130,246,0))' },
           '50%': { transform: 'scale(1.02)', filter: 'drop-shadow(0 0 26px rgba(59,130,246,0.35))' },
         },
+        fadeIn: {
+          '0%': { opacity: 0 },
+          '100%': { opacity: 1 },
+        },
       },
       animation: {
         'label-cycle': 'label-cycle 8s ease-in-out infinite',
         'hotspot-glow': 'hotspot-glow 8s ease-in-out infinite',
         'vehicle-pulse': 'vehicle-pulse 4s ease-in-out infinite',
+        fadeIn: 'fadeIn 0.2s ease-out',
       },
     },
   },

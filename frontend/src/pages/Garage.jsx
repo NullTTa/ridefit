@@ -68,15 +68,22 @@ function Garage() {
               className="overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card shadow-lg transition hover:-translate-y-1"
             >
               <img
-                src={vehicle.photoUrl || VEHICLE_PLACEHOLDER_IMAGE}
+                src={vehicle.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE}
                 alt={vehicle.modelYearLabel}
-                className="h-40 w-full object-cover"
+                className="h-40 w-full object-contain bg-ridefit-bg p-2"
               />
               <div className="p-4">
                 <p className="text-xs font-medium text-ridefit-primary">{vehicle.manufacturerName}</p>
                 <p className="mt-1 text-lg font-semibold text-ridefit-text">{vehicle.modelYearLabel}</p>
 
-                <div className="mt-4 flex gap-2">
+                <Link
+                  to={`/garage/${vehicle.id}/fit`}
+                  className="mt-4 block rounded-lg bg-ridefit-primary px-3 py-2 text-center text-sm font-semibold text-white transition hover:brightness-110"
+                >
+                  🛠️ 부품 입혀보기
+                </Link>
+
+                <div className="mt-2 flex gap-2">
                   <Link
                     to={`/parts/import?vehicleId=${vehicle.id}`}
                     className="flex-1 rounded-lg bg-ridefit-primary/10 px-3 py-2 text-center text-sm font-semibold text-ridefit-primary transition hover:bg-ridefit-primary/20"
