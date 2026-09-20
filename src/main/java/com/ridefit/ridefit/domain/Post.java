@@ -54,4 +54,8 @@ public class Post {
 
     // 관련 영상(유튜브 링크). 게시글 작성자가 등록.
     private String videoUrl;
+
+    // 장착 부품에 대한 평점(1~5). installedPart가 있을 때만 선택적으로 입력. AI나 시드가
+    // 임의로 채우지 않고, 실제 작성자가 입력했을 때만 값이 들어간다.
+    private Integer rating;
 }

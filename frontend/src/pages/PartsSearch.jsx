@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import PartBadges from '../components/PartBadges'
 import SellerListings from '../components/SellerListings'
 import { api } from '../lib/api'
 
@@ -224,9 +225,29 @@ function PartsSearch() {
                     {part.imageUrl && (
                       <img src={part.imageUrl} alt={part.name} className="mb-3 h-28 w-full rounded-lg object-cover" />
                     )}
-                    <p className="font-semibold">{part.name}</p>
+                    {part.stats?.badges?.length > 0 && (
+                      <div className="mb-2">
+                        <PartBadges badges={part.stats.badges} />
+                      </div>
+                    )}
+                    <Link
+                      to={`/parts/${part.partId}?vehicleId=${vehicleId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold hover:underline"
+                    >
+                      {part.name}
+                    </Link>
                     <p className="mt-1 text-sm opacity-80">{part.category}</p>
+                    {part.stats?.reviewCount > 0 && (
+                      <p className="mt-1 text-xs opacity-80">
+                        {part.stats.avgRating != null && `★ ${part.stats.avgRating.toFixed(1)} · `}
+                        후기 {part.stats.reviewCount}개
+                      </p>
+                    )}
                     <p className="mt-2 text-sm font-medium">{part.price.toLocaleString()}원</p>
+                    {part.stats?.lowestPrice != null && part.stats.lowestPrice < part.price && (
+                      <p className="text-xs text-ridefit-primary">최저가 {part.stats.lowestPrice.toLocaleString()}원</p>
+                    )}
                     {part.note && <p className="mt-2 text-xs opacity-70">{part.note}</p>}
 
                     <div className="mt-2 flex items-center gap-3">

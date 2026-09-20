@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import YoutubeEmbed from '../components/YoutubeEmbed'
 import { useAuth } from '../context/AuthContext'
 import { API_BASE, api } from '../lib/api'
@@ -60,7 +60,10 @@ function PostDetail() {
       {post.installedPartName && (
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-ridefit-border bg-ridefit-card px-3 py-2 text-sm">
           <span className="text-ridefit-text-secondary">장착한 부품:</span>
-          <span className="font-medium text-ridefit-text">{post.installedPartName}</span>
+          <Link to={`/parts/${post.installedPartId}`} className="font-medium text-ridefit-primary hover:underline">
+            {post.installedPartName}
+          </Link>
+          {post.rating != null && <span className="text-yellow-400">{'★'.repeat(post.rating)}</span>}
           {post.compatibleFeedback && (
             <span className="ml-auto font-semibold">{FEEDBACK_LABEL[post.compatibleFeedback] ?? post.compatibleFeedback}</span>
           )}

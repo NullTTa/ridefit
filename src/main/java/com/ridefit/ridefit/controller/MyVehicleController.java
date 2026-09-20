@@ -1,15 +1,19 @@
 package com.ridefit.ridefit.controller;
 
+import com.ridefit.ridefit.domain.Compatibility;
 import com.ridefit.ridefit.domain.Member;
 import com.ridefit.ridefit.domain.ModelYear;
 import com.ridefit.ridefit.domain.MyVehicle;
+import com.ridefit.ridefit.domain.Part;
 import com.ridefit.ridefit.dto.MyVehicleResponse;
+import com.ridefit.ridefit.dto.PartPopularityStats;
 import com.ridefit.ridefit.exception.ApiException;
 import com.ridefit.ridefit.repository.CompatibilityRepository;
 import com.ridefit.ridefit.repository.MemberRepository;
 import com.ridefit.ridefit.repository.ModelYearRepository;
 import com.ridefit.ridefit.repository.MyVehicleRepository;
 import com.ridefit.ridefit.security.CurrentMember;
+import com.ridefit.ridefit.service.PartPopularityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +26,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 // 내 차고(garage): 로그인한 사용자의 차량 등록/조회/삭제 + "내 차량 기준 호환 부품 조회".
 @RestController
@@ -33,6 +39,7 @@ public class MyVehicleController {
     private final ModelYearRepository modelYearRepository;
     private final CompatibilityRepository compatibilityRepository;
     private final CurrentMember currentMember;
+    private final PartPopularityService partPopularityService;
 
     @GetMapping("/api/my-vehicles")
     public List<MyVehicleResponse> getMyVehicles() {
@@ -69,7 +76,19 @@ public class MyVehicleController {
         MyVehicle myVehicle = requireOwnedVehicle(myVehicleId);
 
         Long modelYearId = myVehicle.getModelYear().getId();
-        List<CompatiblePartResponse> result = compatibilityRepository.findByModelYearId(modelYearId).stream()
+        List<Compatibility> all = compatibilityRepository.findByModelYearId(modelYearId);
+
+        // 인기상품 배지는 "이 차종의 같은 카테고리" 안에서만 비교한다(카테고리 필터와 무관하게
+        // 항상 전체 카테고리 그룹 기준으로 계산 - 필터링은 그다음에 한다).
+        Map<String, List<Part>> partsByCategory = all.stream()
+                .map(Compatibility::getPart)
+                .distinct()
+                .collect(Collectors.groupingBy(Part::getCategory));
+        Map<Long, PartPopularityStats> statsByPartId = partsByCategory.values().stream()
+                .flatMap(group -> partPopularityService.statsForGroup(group).entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        List<CompatiblePartResponse> result = all.stream()
                 .filter(c -> category == null || category.equals(c.getPart().getCategory()))
                 .map(c -> new CompatiblePartResponse(
                         c.getPart().getId(),
@@ -79,7 +98,8 @@ public class MyVehicleController {
                         c.getPart().getImageUrl(),
                         c.getStatus(),
                         c.getNote(),
-                        c.getPart().getInstallVideoUrl()))
+                        c.getPart().getInstallVideoUrl(),
+                        statsByPartId.get(c.getPart().getId())))
                 .toList();
 
         return ResponseEntity.ok(result);
@@ -98,6 +118,7 @@ public class MyVehicleController {
     }
 
     public record CompatiblePartResponse(Long partId, String category, String name, Integer price, String imageUrl,
-                                          String status, String note, String installVideoUrl) {
+                                          String status, String note, String installVideoUrl,
+                                          PartPopularityStats stats) {
     }
 }

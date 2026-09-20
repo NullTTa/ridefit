@@ -1,13 +1,23 @@
 package com.ridefit.ridefit.controller;
 
+import com.ridefit.ridefit.domain.MyVehicle;
+import com.ridefit.ridefit.domain.Part;
 import com.ridefit.ridefit.dto.CompatibilityCheckResponse;
 import com.ridefit.ridefit.dto.CrawlResultResponse;
 import com.ridefit.ridefit.dto.CreatePartRequest;
+import com.ridefit.ridefit.dto.PartDetailResponse;
+import com.ridefit.ridefit.dto.PartPopularityStats;
 import com.ridefit.ridefit.dto.PartResponse;
+import com.ridefit.ridefit.dto.PartReviewResponse;
+import com.ridefit.ridefit.exception.ApiException;
+import com.ridefit.ridefit.repository.CompatibilityRepository;
+import com.ridefit.ridefit.repository.MyVehicleRepository;
 import com.ridefit.ridefit.repository.PartRepository;
+import com.ridefit.ridefit.repository.PostRepository;
 import com.ridefit.ridefit.security.CurrentMember;
 import com.ridefit.ridefit.service.CompatibilityCheckService;
 import com.ridefit.ridefit.service.PartCrawlService;
+import com.ridefit.ridefit.service.PartPopularityService;
 import com.ridefit.ridefit.service.PartService;
 import com.ridefit.ridefit.service.RateLimitService;
 import jakarta.validation.Valid;
@@ -33,13 +43,63 @@ public class PartController {
     private final CompatibilityCheckService compatibilityCheckService;
     private final RateLimitService rateLimitService;
     private final CurrentMember currentMember;
+    private final PartPopularityService partPopularityService;
+    private final CompatibilityRepository compatibilityRepository;
+    private final MyVehicleRepository myVehicleRepository;
+    private final PostRepository postRepository;
 
     @GetMapping("/api/parts")
     public List<PartResponse> getParts(@RequestParam(required = false) String category) {
-        List<com.ridefit.ridefit.domain.Part> parts = category != null
+        List<Part> parts = category != null
                 ? partRepository.findByCategory(category)
                 : partRepository.findAll();
         return parts.stream().map(PartResponse::from).toList();
+    }
+
+    // 부품 상세. myVehicleId가 있으면 "그 차량의 같은 카테고리" 안에서 경쟁 배지(인기상품 등)를 계산하고,
+    // 없으면 비교 맥락이 없다는 뜻이라 실측치만 보여주고 경쟁 배지는 붙이지 않는다.
+    @GetMapping("/api/parts/{id}")
+    public PartDetailResponse getPart(@PathVariable Long id, @RequestParam(required = false) Long myVehicleId) {
+        Part part = partRepository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "부품 정보를 찾을 수 없습니다."));
+
+        partPopularityService.recordView(id);
+        part.setViewCount(part.getViewCount() + 1); // 방금 기록한 조회수를 응답에도 바로 반영
+
+        PartPopularityStats stats;
+        if (myVehicleId != null) {
+            MyVehicle myVehicle = myVehicleRepository.findById(myVehicleId)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "차량 정보를 찾을 수 없습니다."));
+            if (!myVehicle.getMember().getId().equals(currentMember.id())) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "본인이 등록한 차량만 기준으로 확인할 수 있습니다.");
+            }
+            List<Part> peers = compatibilityRepository.findByModelYearId(myVehicle.getModelYear().getId()).stream()
+                    .map(c -> c.getPart())
+                    .filter(p -> p.getCategory().equals(part.getCategory()))
+                    .toList();
+            stats = partPopularityService.statsForGroup(peers).get(part.getId());
+        } else {
+            stats = partPopularityService.soloStats(part);
+        }
+
+        return PartDetailResponse.from(part, stats);
+    }
+
+    @GetMapping("/api/parts/{id}/reviews")
+    public List<PartReviewResponse> getPartReviews(@PathVariable Long id) {
+        return postRepository.findByInstalledPartIdOrderByCreatedAtDesc(id).stream()
+                .map(PartReviewResponse::from)
+                .toList();
+    }
+
+    // "부품 입혀보기"에서 이 부품을 켤 때마다 호출 - 실제 장착 시도 신호를 센다.
+    @PostMapping("/api/parts/{id}/fit-selections")
+    public ResponseEntity<Void> recordFitSelection(@PathVariable Long id) {
+        if (!partRepository.existsById(id)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "부품 정보를 찾을 수 없습니다.");
+        }
+        partPopularityService.recordFitSelection(id);
+        return ResponseEntity.noContent().build();
     }
 
     // 링크를 붙여넣으면 서버가 대신 크롤링해서 제목/가격/카테고리/모델 자동인식을 시도한다.

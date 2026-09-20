@@ -14,6 +14,7 @@ function PostWrite() {
   const [parts, setParts] = useState([])
   const [installedPartId, setInstalledPartId] = useState('')
   const [compatibleFeedback, setCompatibleFeedback] = useState('')
+  const [rating, setRating] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -28,6 +29,7 @@ function PostWrite() {
     setParts([])
     setInstalledPartId('')
     setCompatibleFeedback('')
+    setRating(0)
     if (!myVehicleId) return
     api.get(`/api/my-vehicles/${myVehicleId}/compatible-parts`).then(setParts).catch(() => setParts([]))
   }, [myVehicleId])
@@ -63,6 +65,7 @@ function PostWrite() {
         compatibleFeedback: installedPartId ? compatibleFeedback || null : null,
         imageUrl: imageUrl || null,
         videoUrl: videoUrl || null,
+        rating: installedPartId && rating > 0 ? rating : null,
       })
       navigate(`/community/${created.id}`)
     } catch (err) {
@@ -146,6 +149,25 @@ function PostWrite() {
             className={inputClass}
           />
         </label>
+
+        {installedPartId && (
+          <div className="flex flex-col gap-1 text-sm font-medium text-ridefit-text-secondary">
+            이 부품 평점 (선택)
+            <div className="flex gap-1 text-2xl">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setRating((prev) => (prev === n ? 0 : n))}
+                  aria-label={`${n}점`}
+                  className={n <= rating ? 'text-yellow-400' : 'text-ridefit-text-secondary/40'}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {installedPartId && (
           <div className="flex flex-col gap-1 text-sm font-medium text-ridefit-text-secondary">

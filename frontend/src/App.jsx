@@ -9,6 +9,7 @@ import Garage from './pages/Garage'
 import VehicleRegister from './pages/VehicleRegister'
 import PartImport from './pages/PartImport'
 import PartsSearch from './pages/PartsSearch'
+import PartDetail from './pages/PartDetail'
 import MyPage from './pages/MyPage'
 import Synth from './pages/Synth'
 import Community from './pages/Community'
@@ -38,6 +39,14 @@ function App() {
             element={
               <RequireAuth>
                 <PartsSearch />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/parts/:partId"
+            element={
+              <RequireAuth>
+                <PartDetail />
               </RequireAuth>
             }
           />

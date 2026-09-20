@@ -8,4 +8,6 @@ import java.util.List;
 public interface SellerListingRepository extends JpaRepository<SellerListing, Long> {
 
     List<SellerListing> findByPartIdOrderByPriceAsc(Long partId);
+
+    long countByPartId(Long partId);
 }

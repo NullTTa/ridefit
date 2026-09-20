@@ -37,4 +37,18 @@ public class Part {
 
     // 이 카테고리의 부품을 장착하는 방법을 보여주는 유튜브 영상 (관리자가 등록).
     private String installVideoUrl;
+
+    // ---- 인기상품 계산용 실측 데이터 (가짜로 채우지 않음) ----
+    // 부품 상세를 조회할 때마다 +1 (PartController.getPart).
+    @Builder.Default
+    private int viewCount = 0;
+
+    // "부품 입혀보기"에서 이 부품을 켤 때마다 +1 (실제 장착 시도 신호).
+    @Builder.Default
+    private int fitSelectionCount = 0;
+
+    // 외부 판매처의 실제 판매량. 지금은 이 수치를 안정적으로 확인할 수 있는 외부 데이터 소스가
+    // 없어서 항상 null이다 - 임의로 채우지 않는다. 나중에 실제 판매량을 확인할 수 있는 연동이
+    // 생기면 그때 값을 채우면 된다.
+    private Integer externalSalesCount;
 }

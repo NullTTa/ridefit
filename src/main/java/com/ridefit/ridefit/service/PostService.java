@@ -65,6 +65,8 @@ public class PostService {
                 .compatibleFeedback(request.compatibleFeedback())
                 .imageUrl(request.imageUrl())
                 .videoUrl(request.videoUrl())
+                // installedPart가 없는데 rating만 있는 건 의미가 없어서 무시한다.
+                .rating(installedPart == null ? null : request.rating())
                 .createdAt(LocalDateTime.now())
                 .build();
         Post saved = postRepository.save(post);

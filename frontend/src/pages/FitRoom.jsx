@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import PartBadges from '../components/PartBadges'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
 import { api } from '../lib/api'
 
@@ -80,8 +81,13 @@ function FitRoom() {
   const togglePart = (partId) => {
     setActivePartIds((prev) => {
       const next = new Set(prev)
-      next.has(partId) ? next.delete(partId) : next.add(partId)
+      const turningOn = !next.has(partId)
+      turningOn ? next.add(partId) : next.delete(partId)
       checkConflicts(next)
+      if (turningOn) {
+        // 실제 "장착 시도" 신호 - 인기상품 계산에 쓰인다.
+        api.post(`/api/parts/${partId}/fit-selections`).catch(() => {})
+      }
       return next
     })
   }
@@ -178,10 +184,21 @@ function FitRoom() {
                           className="h-4 w-4 accent-ridefit-primary"
                         />
                         <div>
-                          <p className="text-sm font-medium text-ridefit-text">{part.name}</p>
+                          <Link
+                            to={`/parts/${part.partId}?vehicleId=${myVehicleId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-sm font-medium text-ridefit-text hover:underline"
+                          >
+                            {part.name}
+                          </Link>
                           <p className="text-xs text-ridefit-text-secondary">
                             {part.price.toLocaleString()}원 · {part.status}
                           </p>
+                          {part.stats?.badges?.length > 0 && (
+                            <div className="mt-1">
+                              <PartBadges badges={part.stats.badges} />
+                            </div>
+                          )}
                         </div>
                       </div>
                       {isActive && (
