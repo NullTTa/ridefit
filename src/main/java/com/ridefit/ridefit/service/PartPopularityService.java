@@ -88,7 +88,8 @@ public class PartPopularityService {
                 + reviewCount * 5L
                 + (avgRating != null ? Math.round(avgRating * 4) : 0);
 
-        return new RawStats(part.getId(), part.getExternalSalesCount(), part.getViewCount(),
+        return new RawStats(part.getId(), part.getExternalSalesCount(), part.getExternalRating(),
+                part.getExternalRatingCount(), part.getExternalRatingSource(), part.getViewCount(),
                 part.getFitSelectionCount(), reviewCount, ratingCount, avgRating, positive, negative,
                 photoCount, sellerCount, lowestPrice, score);
     }
@@ -128,14 +129,16 @@ public class PartPopularityService {
     }
 
     private record RawStats(
-            Long partId, Integer externalSalesCount, long viewCount, long fitSelectionCount, long reviewCount,
+            Long partId, Integer externalSalesCount, Double externalRating, Integer externalRatingCount,
+            String externalRatingSource, long viewCount, long fitSelectionCount, long reviewCount,
             long ratingCount, Double avgRating, long positiveFeedbackCount, long negativeFeedbackCount,
             long photoReviewCount, long sellerCount, Integer lowestPrice, long score) {
 
         PartPopularityStats toStats(List<String> badges) {
-            return new PartPopularityStats(externalSalesCount, viewCount, fitSelectionCount, reviewCount,
-                    ratingCount, avgRating, positiveFeedbackCount, negativeFeedbackCount, photoReviewCount,
-                    sellerCount, lowestPrice, badges);
+            return new PartPopularityStats(externalSalesCount, externalRating, externalRatingCount,
+                    externalRatingSource, viewCount, fitSelectionCount, reviewCount, ratingCount, avgRating,
+                    positiveFeedbackCount, negativeFeedbackCount, photoReviewCount, sellerCount, lowestPrice,
+                    badges);
         }
     }
 }

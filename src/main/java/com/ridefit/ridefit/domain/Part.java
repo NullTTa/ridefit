@@ -51,4 +51,10 @@ public class Part {
     // 없어서 항상 null이다 - 임의로 채우지 않는다. 나중에 실제 판매량을 확인할 수 있는 연동이
     // 생기면 그때 값을 채우면 된다.
     private Integer externalSalesCount;
+
+    // ---- 외부 사이트 평점 (RIDEFIT 자체 평점과 절대 합치지 않는다) ----
+    // 자동으로 크롤링/추정하지 않는다 - 관리자가 실제 확인한 값을 직접 입력했을 때만 값이 있다.
+    private Double externalRating;
+    private Integer externalRatingCount;
+    private String externalRatingSource; // 예: "Webike"
 }

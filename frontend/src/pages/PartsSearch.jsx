@@ -222,8 +222,12 @@ function PartsSearch() {
                         <span className="rounded-full bg-black/20 px-2 py-1 text-xs font-bold">{part.status}</span>
                       </div>
                     </div>
-                    {part.imageUrl && (
+                    {part.imageUrl ? (
                       <img src={part.imageUrl} alt={part.name} className="mb-3 h-28 w-full rounded-lg object-cover" />
+                    ) : (
+                      <div className="mb-3 flex h-28 w-full items-center justify-center rounded-lg bg-black/10 text-xs opacity-60">
+                        이미지 준비중
+                      </div>
                     )}
                     {part.stats?.badges?.length > 0 && (
                       <div className="mb-2">
@@ -238,10 +242,16 @@ function PartsSearch() {
                       {part.name}
                     </Link>
                     <p className="mt-1 text-sm opacity-80">{part.category}</p>
+                    {part.stats?.externalRating != null && (
+                      <p className="mt-1 text-xs opacity-80">
+                        ★ {part.stats.externalRating.toFixed(1)} {part.stats.externalRatingSource ?? '외부'}
+                        {part.stats.externalRatingCount != null && ` · ${part.stats.externalRatingCount}개`}
+                      </p>
+                    )}
                     {part.stats?.reviewCount > 0 && (
                       <p className="mt-1 text-xs opacity-80">
-                        {part.stats.avgRating != null && `★ ${part.stats.avgRating.toFixed(1)} · `}
-                        후기 {part.stats.reviewCount}개
+                        {part.stats.avgRating != null && `★ ${part.stats.avgRating.toFixed(1)} `}
+                        RIDEFIT 후기 {part.stats.reviewCount}개
                       </p>
                     )}
                     <p className="mt-2 text-sm font-medium">{part.price.toLocaleString()}원</p>

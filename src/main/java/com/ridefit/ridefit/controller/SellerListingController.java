@@ -56,6 +56,13 @@ public class SellerListingController {
                 .build();
         SellerListing saved = sellerListingRepository.save(listing);
 
+        // 상품 대표 이미지가 아직 없다면, 방금 등록한 실제 판매처 링크에서 크롤링된 썸네일로 채워준다.
+        // 이미 대표 이미지가 있으면(관리자가 직접 넣었거나 이전에 채워졌으면) 덮어쓰지 않는다.
+        if (part.getImageUrl() == null && request.thumbnailUrl() != null && !request.thumbnailUrl().isBlank()) {
+            part.setImageUrl(request.thumbnailUrl());
+            partRepository.save(part);
+        }
+
         List<SellerListing> all = sellerListingRepository.findByPartIdOrderByPriceAsc(partId);
         boolean lowest = all.get(0).getId().equals(saved.getId());
 

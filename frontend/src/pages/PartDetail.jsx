@@ -68,12 +68,26 @@ function PartDetail() {
           <p className="text-xs font-medium text-ridefit-primary">{part.category}</p>
           <h1 className="text-xl font-bold text-ridefit-text">{part.name}</h1>
 
-          {stats.reviewCount > 0 && (
-            <p className="text-sm text-ridefit-text-secondary">
-              {stats.avgRating != null && <span className="font-semibold text-ridefit-text">★ {stats.avgRating.toFixed(1)}</span>}
-              {stats.avgRating != null && ' · '}
-              후기 {stats.reviewCount}개
-            </p>
+          {/* 외부 평점과 RIDEFIT 평점은 출처를 표시해 분리하고, 절대 하나의 점수로 합치지 않는다. */}
+          {(stats.externalRating != null || stats.reviewCount > 0) && (
+            <div className="flex flex-col gap-1 text-sm text-ridefit-text-secondary">
+              {stats.externalRating != null && (
+                <p>
+                  <span className="font-semibold text-ridefit-text">★ {stats.externalRating.toFixed(1)}</span>{' '}
+                  {stats.externalRatingSource ?? '외부'}
+                  {stats.externalRatingCount != null && ` · ${stats.externalRatingCount.toLocaleString()}개 리뷰`}
+                </p>
+              )}
+              {stats.reviewCount > 0 && (
+                <p>
+                  {stats.avgRating != null && (
+                    <span className="font-semibold text-ridefit-text">★ {stats.avgRating.toFixed(1)}</span>
+                  )}
+                  {stats.avgRating != null && ' '}
+                  RIDEFIT · 후기 {stats.reviewCount}개
+                </p>
+              )}
+            </div>
           )}
 
           <p className="text-2xl font-bold text-ridefit-text">{part.price.toLocaleString()}원</p>
@@ -138,7 +152,7 @@ function PartDetail() {
 
       <div className="mt-8">
         <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">
-          관련 후기 {stats.reviewCount > 0 && `(${stats.reviewCount})`}
+          RIDEFIT 관련 후기 {stats.reviewCount > 0 && `(${stats.reviewCount})`}
         </h2>
         {totalFeedback > 0 && (
           <p className="mb-3 text-xs text-ridefit-text-secondary">
