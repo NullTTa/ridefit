@@ -309,6 +309,11 @@ public class DataSeeder implements CommandLineRunner {
         // 실제로 등록된 데모 차고 3건이 전부 쓰는 "2025년식(JA71, model_year id=1)"의 호환 부품
         // (id 13/15/19)에 연결한다 - 그 부품들은 이 시더가 아니라 이전에 DB에 직접 만들어진
         // 것들이라(findByName만, 없으면 조용히 건너뜀) 아래에서 이름으로 찾아 연결한다.
+        // 위 이름의 부품이 없는 DB(시더가 만든 Cub 110 부품만 있는 경우)에서는 시더가 만든 부품에 직접 연결한다.
+        // partImage()는 이미 이미지가 있으면 덮어쓰지 않으므로 위/아래 어느 쪽이 먼저 걸려도 안전하다.
+        partImage(cubMuffler, "/assets/parts/cub110-stainless-exhaust.png");
+        partImage(cubMirror, "/assets/parts/cub110-mirror.png");
+        partImage(cubCarrier, "/assets/parts/cub110-rear-carrier.png");
         partRepository.findByName("OSAKA 슬립온 머플러 (Super Cub 110)").ifPresent(p -> partImage(p, "/assets/parts/cub110-stainless-exhaust.png"));
         partRepository.findByName("네이키드 라운드 미러 세트").ifPresent(p -> partImage(p, "/assets/parts/cub110-mirror.png"));
         partRepository.findByName("리어 캐리어 랙 (Super Cub)").ifPresent(p -> partImage(p, "/assets/parts/cub110-rear-carrier.png"));

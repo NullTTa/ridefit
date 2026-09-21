@@ -81,18 +81,17 @@ function PartsSearch() {
     if (!vehicleId) return
     setLoading(true)
     setError(null)
-    const query = category ? `?category=${encodeURIComponent(category)}` : ''
+    // 카테고리와 무관하게 호환 부품 전체를 받아두고 목록만 클라이언트에서 거른다.
+    // 서버에서 카테고리별로 다시 받으면 다른 카테고리에서 장착해둔 부품이 selectedParts에서 사라진다.
     api
-      .get(`/api/my-vehicles/${vehicleId}/compatible-parts${query}`)
+      .get(`/api/my-vehicles/${vehicleId}/compatible-parts`)
       .then((data) => {
         setParts(data)
-        if (!category) {
-          setCategories([...new Set(data.map((p) => p.category))])
-        }
+        setCategories([...new Set(data.map((p) => p.category))])
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [vehicleId, category])
+  }, [vehicleId])
 
   const vehicle = vehicles.find((v) => String(v.id) === String(vehicleId)) ?? null
 
@@ -126,6 +125,10 @@ function PartsSearch() {
   const selectedParts = useMemo(
     () => parts.filter((p) => selectedPartIds.includes(p.partId)),
     [parts, selectedPartIds],
+  )
+  const visibleParts = useMemo(
+    () => (category ? parts.filter((p) => p.category === category) : parts),
+    [parts, category],
   )
   const activeConflictPairs = (conflicts ?? []).filter(
     (c) => selectedPartIds.includes(c.partAId) && selectedPartIds.includes(c.partBId),
@@ -295,13 +298,13 @@ function PartsSearch() {
               {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
               {error && <p className="text-red-600">에러: {error}</p>}
 
-              {!loading && !error && parts.length === 0 && (
+              {!loading && !error && visibleParts.length === 0 && (
                 <p className="text-ridefit-text-secondary">아직 이 차량에 대해 호환이 확인된 부품이 없어요.</p>
               )}
 
-              {!loading && !error && parts.length > 0 && (
+              {!loading && !error && visibleParts.length > 0 && (
                 <div className="flex flex-col gap-3">
-                  {parts.map((part) => {
+                  {visibleParts.map((part) => {
                     const isActive = selectedPartIds.includes(part.partId)
                     return (
                       <div
