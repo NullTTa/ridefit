@@ -12,9 +12,9 @@ function PartBadges({ badges }) {
         return (
           <span
             key={key}
-            className="rounded-full bg-black/30 px-2 py-0.5 text-xs font-semibold backdrop-blur"
+            className="rounded-full border border-ridefit-primary/30 bg-ridefit-primary/10 px-2 py-0.5 text-xs font-semibold text-ridefit-primary"
           >
-            {meta.emoji} {meta.label}
+            {meta.label}
           </span>
         )
       })}

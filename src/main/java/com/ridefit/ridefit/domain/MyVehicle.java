@@ -29,4 +29,10 @@ public class MyVehicle {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private ModelYear modelYear;
+
+    // 사용자가 직접 붙인 별명("내 애마" 같은). 없으면 프론트가 모델명을 그대로 보여준다.
+    private String nickname;
+
+    // 사용자가 직접 올린 내 차량 실사진. 없으면 프론트가 모델의 대표 이미지를 보여준다.
+    private String photoUrl;
 }

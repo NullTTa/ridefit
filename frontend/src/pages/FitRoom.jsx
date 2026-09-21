@@ -2,26 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import PartBadges from '../components/PartBadges'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
+import { CATEGORY_POSITION, DEFAULT_POSITION } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 
-// 카테고리별 대략적인 장착 위치(오버레이 배지 좌표, % 기준). 실제 부품 컷아웃 이미지가 없어서
-// "AI 합성 mock 결과"는 별도 버튼으로 재사용하고, 여기서는 카테고리 위치에 배지로 표시한다.
-const CATEGORY_POSITION = {
-  머플러: { top: '80%', left: '14%' },
-  캐리어: { top: '24%', left: '10%' },
-  시트: { top: '46%', left: '44%' },
-  미러: { top: '4%', left: '76%' },
-  스크린: { top: '16%', left: '86%' },
-  핸들바: { top: '14%', left: '80%' },
-  램프: { top: '26%', left: '90%' },
-  레버: { top: '20%', left: '76%' },
-  휠: { top: '86%', left: '50%' },
-}
-const DEFAULT_POSITION = { top: '50%', left: '50%' }
-
 const STATUS_STYLE = {
-  호환가능: 'border-green-700 bg-green-950 text-green-300',
-  브라켓필요: 'border-yellow-700 bg-yellow-950 text-yellow-300',
+  호환가능: 'border-green-200 bg-green-50 text-green-700',
+  브라켓필요: 'border-yellow-200 bg-yellow-50 text-yellow-700',
 }
 
 function FitRoom() {
@@ -97,14 +83,14 @@ function FitRoom() {
   )
 
   if (loading) return <p className="mx-auto max-w-5xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-5xl px-4 py-16 text-red-400">에러: {error}</p>
-  if (!vehicle) return <p className="mx-auto max-w-5xl px-4 py-16 text-red-400">존재하지 않는 차량이에요.</p>
+  if (error) return <p className="mx-auto max-w-5xl px-4 py-16 text-red-600">에러: {error}</p>
+  if (!vehicle) return <p className="mx-auto max-w-5xl px-4 py-16 text-red-600">존재하지 않는 차량이에요.</p>
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
       <h1 className="mb-1 text-2xl font-bold text-ridefit-text">부품 입혀보기</h1>
       <p className="mb-8 text-sm text-ridefit-text-secondary">
-        {vehicle.modelYearLabel} — 호환되는 부품을 켜고 끄면서 조합을 비교해보세요.
+        {vehicle.nickname || vehicle.modelYearLabel} — 호환되는 부품을 켜고 끄면서 조합을 비교해보세요.
       </p>
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
@@ -112,7 +98,7 @@ function FitRoom() {
         <div className="relative overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6">
           <div className="relative mx-auto aspect-[4/3] w-full max-w-lg">
             <img
-              src={vehicle.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE}
+              src={vehicle.photoUrl || vehicle.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE}
               alt={vehicle.modelYearLabel}
               className="h-full w-full object-contain"
             />
@@ -131,12 +117,12 @@ function FitRoom() {
                   <span
                     className={`block rounded-full border px-2 py-1 text-xs font-semibold shadow-lg backdrop-blur ${
                       hasConflict
-                        ? 'border-red-600 bg-red-950/90 text-red-300'
+                        ? 'border-red-300 bg-red-50 text-red-700'
                         : 'border-ridefit-primary bg-ridefit-bg/90 text-ridefit-primary'
                     }`}
                   >
-                    {hasConflict ? '⚠️ ' : ''}
                     {part.category}
+                    {hasConflict ? ' · 충돌' : ''}
                   </span>
                 </div>
               )
@@ -220,11 +206,11 @@ function FitRoom() {
           {checkingConflicts && <p className="text-xs text-ridefit-text-secondary">충돌 확인 중...</p>}
 
           {activeConflictPairs.length > 0 && (
-            <div className="rounded-lg border border-red-800 bg-red-950 p-4">
-              <p className="mb-2 text-sm font-semibold text-red-300">⚠️ 동시 장착 시 충돌이 있어요</p>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+              <p className="mb-2 text-sm font-semibold text-red-700">동시 장착 시 충돌이 있어요</p>
               <ul className="flex flex-col gap-1">
                 {activeConflictPairs.map((c) => (
-                  <li key={c.id} className="text-xs text-red-300">
+                  <li key={c.id} className="text-xs text-red-700">
                     {c.partAName} + {c.partBName}: {c.reason}
                   </li>
                 ))}

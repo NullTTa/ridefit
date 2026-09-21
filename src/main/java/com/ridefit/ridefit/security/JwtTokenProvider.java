@@ -62,4 +62,29 @@ public class JwtTokenProvider {
     public Long getMemberId(String token) {
         return Long.valueOf(parseClaims(token).getSubject());
     }
+
+    private static final String PASSWORD_RESET_PURPOSE = "password_reset";
+    private static final long PASSWORD_RESET_EXPIRATION_MS = 10 * 60 * 1000; // 10분
+
+    // 로그인 토큰과 구분되도록 purpose 클레임을 넣는다 — 이 토큰으로는 로그인 API를 통과할 수 없다.
+    public String createPasswordResetToken(Long memberId) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + PASSWORD_RESET_EXPIRATION_MS);
+
+        return Jwts.builder()
+                .subject(String.valueOf(memberId))
+                .claim("purpose", PASSWORD_RESET_PURPOSE)
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(key)
+                .compact();
+    }
+
+    public boolean isPasswordResetToken(String token) {
+        try {
+            return PASSWORD_RESET_PURPOSE.equals(parseClaims(token).get("purpose", String.class));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
 }

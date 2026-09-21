@@ -35,7 +35,7 @@ function LoginForm({ redirectTo = '/garage', title = '로그인', description, a
       </div>
 
       {sessionExpired && (
-        <p className="rounded-lg border border-yellow-800 bg-yellow-950 px-4 py-3 text-sm text-yellow-300">
+        <p className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
           세션이 만료되었어요, 다시 로그인해주세요.
         </p>
       )}
@@ -65,6 +65,10 @@ function LoginForm({ redirectTo = '/garage', title = '로그인', description, a
           />
         </label>
 
+        <Link to="/find-password" className="-mt-2 self-end text-xs font-medium text-ridefit-primary hover:underline">
+          비밀번호를 잊으셨나요?
+        </Link>
+
         <button
           type="submit"
           disabled={submitting}
@@ -73,7 +77,7 @@ function LoginForm({ redirectTo = '/garage', title = '로그인', description, a
           {submitting ? '로그인 중...' : '로그인'}
         </button>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
 
       <p className="text-sm text-ridefit-text-secondary">

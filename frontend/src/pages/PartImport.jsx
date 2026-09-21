@@ -7,9 +7,9 @@ const inputClass =
   'rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary'
 
 const STATUS_BADGE = {
-  호환가능: 'border-green-700 bg-green-950 text-green-300',
-  브라켓필요: 'border-yellow-700 bg-yellow-950 text-yellow-300',
-  호환불가: 'border-red-700 bg-red-950 text-red-300',
+  호환가능: 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success',
+  브라켓필요: 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning',
+  호환불가: 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger',
   정보없음: 'border-ridefit-border bg-ridefit-bg text-ridefit-text-secondary',
 }
 
@@ -163,7 +163,7 @@ function PartImport() {
         </form>
       )}
 
-      {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
+      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       {crawlAttempted && !part && (
         <form
@@ -171,7 +171,7 @@ function PartImport() {
           className="flex flex-col gap-4 rounded-xl border border-ridefit-border bg-ridefit-card p-6 shadow-lg"
         >
           {crawlFailed && (
-            <p className="rounded-lg border border-yellow-800 bg-yellow-950 px-3 py-2 text-sm text-yellow-300">
+            <p className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-700">
               이 판매처는 자동으로 정보를 가져올 수 없었어요. 아래에 직접 입력해주세요.
             </p>
           )}
@@ -284,7 +284,7 @@ function PartImport() {
             <div className={`rounded-lg border px-4 py-3 text-sm font-medium ${STATUS_BADGE[checkResult.status] ?? STATUS_BADGE.정보없음}`}>
               {checkResult.proceedAllowed ? (
                 <>
-                  <p>✅ 호환됩니다 ({checkResult.status})</p>
+                  <p>호환됩니다 ({checkResult.status})</p>
                   {checkResult.note && <p className="mt-1 text-xs opacity-80">{checkResult.note}</p>}
                   <Link
                     to={`/synth?partId=${part.id}&vehicleId=${selectedVehicleId}`}
@@ -294,7 +294,7 @@ function PartImport() {
                   </Link>
                 </>
               ) : (
-                <p>❌ 호환되지 않음</p>
+                <p>호환되지 않음</p>
               )}
             </div>
           )}

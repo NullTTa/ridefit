@@ -4,7 +4,7 @@ import YoutubeEmbed from '../components/YoutubeEmbed'
 import { useAuth } from '../context/AuthContext'
 import { API_BASE, api } from '../lib/api'
 
-const FEEDBACK_LABEL = { MATCHED: '✅ 맞았어요', NOT_MATCHED: '❌ 안 맞았어요' }
+const FEEDBACK_LABEL = { MATCHED: '맞았어요', NOT_MATCHED: '안 맞았어요' }
 
 function formatDate(iso) {
   if (!iso) return ''
@@ -76,7 +76,7 @@ function PostDetail() {
   }
 
   if (loading) return <p className="mx-auto max-w-2xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-2xl px-4 py-16 text-red-400">에러: {error}</p>
+  if (error) return <p className="mx-auto max-w-2xl px-4 py-16 text-red-600">에러: {error}</p>
   if (!post) return null
 
   return (
@@ -103,7 +103,7 @@ function PostDetail() {
           <Link to={`/parts/${post.installedPartId}`} className="font-medium text-ridefit-primary hover:underline">
             {post.installedPartName}
           </Link>
-          {post.rating != null && <span className="text-yellow-400">{'★'.repeat(post.rating)}</span>}
+          {post.rating != null && <span className="text-yellow-700">{'★'.repeat(post.rating)}</span>}
           {post.compatibleFeedback && (
             <span className="ml-auto font-semibold">{FEEDBACK_LABEL[post.compatibleFeedback] ?? post.compatibleFeedback}</span>
           )}

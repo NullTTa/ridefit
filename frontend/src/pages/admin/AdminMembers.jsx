@@ -10,7 +10,7 @@ function AdminMembers() {
     api.get(`/api/admin/members?page=${page}&size=20`).then(setData).catch((err) => setError(err.message))
   }, [page])
 
-  if (error) return <p className="text-red-400">에러: {error}</p>
+  if (error) return <p className="text-red-600">에러: {error}</p>
 
   return (
     <div className="flex flex-col gap-6">

@@ -25,7 +25,7 @@ function GuideCard({ article }) {
             <span
               key={label}
               className={`rounded-full border px-2 py-0.5 text-xs ${
-                carOnly ? 'border-yellow-800 bg-yellow-950 text-yellow-300' : 'border-ridefit-border text-ridefit-text-secondary'
+                carOnly ? 'border-yellow-200 bg-yellow-50 text-yellow-700' : 'border-ridefit-border text-ridefit-text-secondary'
               }`}
             >
               {label}
@@ -41,7 +41,7 @@ function GuideCard({ article }) {
         <p className="mt-3 flex flex-wrap gap-2 text-xs text-ridefit-text-secondary">
           <span className="rounded bg-ridefit-bg px-2 py-0.5">난이도 {article.difficulty}</span>
           <span className="rounded bg-ridefit-bg px-2 py-0.5">약 {article.estimatedMinutes}분</span>
-          {article.professionalRecommended && <span className="rounded bg-yellow-950 px-2 py-0.5 text-yellow-300">전문가 점검 권장</span>}
+          {article.professionalRecommended && <span className="rounded bg-yellow-50 px-2 py-0.5 text-yellow-700">전문가 점검 권장</span>}
         </p>
       )}
     </Link>
@@ -101,13 +101,13 @@ function Guide() {
       <p className="mb-8 text-sm text-ridefit-text-secondary">{activeTab.description}</p>
 
       {tab === 'DIY' && (
-        <p className="mb-6 rounded-lg border border-yellow-800/70 bg-yellow-950/40 px-4 py-3 text-sm text-yellow-300">
+        <p className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
           ⚠️ 브레이크·조향·서스펜션처럼 안전과 직결된 작업은 전문가 점검이 필요해요. 자신이 없는 작업은 정비소에 맡기세요.
         </p>
       )}
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-red-400">에러: {error}</p>}
+      {error && <p className="text-red-600">에러: {error}</p>}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((article) => (

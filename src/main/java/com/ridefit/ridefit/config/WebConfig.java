@@ -8,7 +8,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 // React 개발 서버(http://localhost:5173)는 백엔드(http://localhost:8080)와 origin이 달라서,
 // 브라우저가 기본적으로 fetch/axios 요청을 CORS 정책으로 차단한다.
-// 개발 단계에서 프론트엔드가 /api/** 를 자유롭게 호출할 수 있도록 이 origin만 허용해준다.
+// 개발 단계에서 프론트엔드가 /api/** 를 자유롭게 호출할 수 있도록 이 origin들을 허용해준다.
+// 5173이 이미 다른 프로세스에 점유돼 있으면 Vite가 5174/5175로 자동으로 넘어가므로 몇 개 더 열어둔다.
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
@@ -18,7 +19,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:5173")
+                .allowedOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175")
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE")
                 .allowedHeaders("*");
     }

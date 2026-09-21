@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -62,6 +63,27 @@ public class MyVehicleController {
                 .build();
         MyVehicle saved = myVehicleRepository.save(myVehicle);
         return ResponseEntity.status(HttpStatus.CREATED).body(MyVehicleResponse.from(saved));
+    }
+
+    @PatchMapping("/api/my-vehicles/{myVehicleId}")
+    public ResponseEntity<?> updateMyVehicle(
+            @PathVariable Long myVehicleId, @RequestBody MyVehicleUpdateRequest request) {
+        MyVehicle myVehicle = requireOwnedVehicle(myVehicleId);
+
+        if (request.modelYearId() != null) {
+            ModelYear modelYear = modelYearRepository.findById(request.modelYearId())
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "선택한 연식 정보를 찾을 수 없습니다."));
+            myVehicle.setModelYear(modelYear);
+        }
+        if (request.nickname() != null) {
+            myVehicle.setNickname(request.nickname().isBlank() ? null : request.nickname());
+        }
+        if (request.photoUrl() != null) {
+            myVehicle.setPhotoUrl(request.photoUrl().isBlank() ? null : request.photoUrl());
+        }
+
+        MyVehicle saved = myVehicleRepository.save(myVehicle);
+        return ResponseEntity.ok(MyVehicleResponse.from(saved));
     }
 
     @DeleteMapping("/api/my-vehicles/{myVehicleId}")
@@ -119,6 +141,9 @@ public class MyVehicleController {
     }
 
     public record MyVehicleRequest(Long modelYearId) {
+    }
+
+    public record MyVehicleUpdateRequest(Long modelYearId, String nickname, String photoUrl) {
     }
 
     public record CompatiblePartResponse(Long partId, String category, String name, Integer price, String imageUrl,

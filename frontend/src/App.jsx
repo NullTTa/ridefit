@@ -5,8 +5,11 @@ import RequireAuth from './components/RequireAuth'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import FindPassword from './pages/FindPassword'
+import ResetPassword from './pages/ResetPassword'
 import Garage from './pages/Garage'
 import VehicleRegister from './pages/VehicleRegister'
+import VehicleEdit from './pages/VehicleEdit'
 import PartImport from './pages/PartImport'
 import PartsSearch from './pages/PartsSearch'
 import PartDetail from './pages/PartDetail'
@@ -42,6 +45,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/find-password" element={<FindPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/parts"
             element={
@@ -79,6 +84,14 @@ function App() {
             element={
               <RequireAuth>
                 <PartImport />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/garage/:myVehicleId/edit"
+            element={
+              <RequireAuth>
+                <VehicleEdit />
               </RequireAuth>
             }
           />

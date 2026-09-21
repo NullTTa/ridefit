@@ -3,10 +3,12 @@ package com.ridefit.ridefit.config;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ridefit.ridefit.domain.Comment;
+import com.ridefit.ridefit.domain.Compatibility;
 import com.ridefit.ridefit.domain.GuideArticle;
 import com.ridefit.ridefit.domain.Manufacturer;
 import com.ridefit.ridefit.domain.Member;
 import com.ridefit.ridefit.domain.ModelYear;
+import com.ridefit.ridefit.domain.Part;
 import com.ridefit.ridefit.domain.Post;
 import com.ridefit.ridefit.domain.PostCategory;
 import com.ridefit.ridefit.domain.PostLike;
@@ -16,10 +18,12 @@ import com.ridefit.ridefit.domain.VehicleInterest;
 import com.ridefit.ridefit.domain.VehicleModel;
 import com.ridefit.ridefit.domain.VehicleProfile;
 import com.ridefit.ridefit.repository.CommentRepository;
+import com.ridefit.ridefit.repository.CompatibilityRepository;
 import com.ridefit.ridefit.repository.GuideArticleRepository;
 import com.ridefit.ridefit.repository.ManufacturerRepository;
 import com.ridefit.ridefit.repository.MemberRepository;
 import com.ridefit.ridefit.repository.ModelYearRepository;
+import com.ridefit.ridefit.repository.PartRepository;
 import com.ridefit.ridefit.repository.PostLikeRepository;
 import com.ridefit.ridefit.repository.PostRepository;
 import com.ridefit.ridefit.repository.ServiceShopRepository;
@@ -71,6 +75,8 @@ public class ContentSeeder implements CommandLineRunner {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final PostLikeRepository postLikeRepository;
+    private final PartRepository partRepository;
+    private final CompatibilityRepository compatibilityRepository;
 
     @Override
     @Transactional
@@ -78,6 +84,7 @@ public class ContentSeeder implements CommandLineRunner {
         seedVehicleProfiles();
         seedGuideArticles();
         seedShops();
+        seedExpansionVehicleParts();
         backfillPostCategories();
         seedCommunityPosts();
         seedInterests();
@@ -182,8 +189,92 @@ public class ContentSeeder implements CommandLineRunner {
             shopRepository.save(ServiceShop.builder()
                     .name(name).type(s.path("type").asText()).region(s.path("region").asText())
                     .address(s.path("address").asText()).description(s.path("description").asText())
+                    .lat(s.hasNonNull("lat") ? s.get("lat").asDouble() : null)
+                    .lng(s.hasNonNull("lng") ? s.get("lng").asDouble() : null)
                     .menus(menus).sample(true).build());
         }
+    }
+
+    // ------------------------------------------------------------------ 2차 확장 차종(NMAX 125 / XMAX 300 / CB125R / Versys-X 300) 부품
+    //
+    // 이 4개 차종은 바로 위 seedVehicleProfiles()에서 만들어지므로(DataSeeder가 아니라 여기서), 부품/호환성도
+    // 여기서 함께 시딩한다. 2026-09-21 실제 스펙(휠 사이즈 등) 검증 결과를 반영해, 근거가 불확실한
+    // "제조사 범용" 재사용은 하지 않았다:
+    //  - 그립: 손잡이관 규격이 스쿠터 전반에서 공통이라 신뢰할 수 있는 범용 부품 -> 그대로 재사용.
+    //  - 미러: 마운트 나사 규격이 모델별로 다를 수 있어 "브라켓필요"+확인 필요 note로 낮춰서 재사용.
+    //  - 휠 커버/머플러/스프로킷: 휠 사이즈·형식(또는 차체 카테고리)이 달라 확정 근거가 없어 연결하지 않고,
+    //    대신 각 차종 전용 신규 부품만 만들었다.
+    private void seedExpansionVehicleParts() {
+        List<ModelYear> nmaxYears = modelYearsOf("Yamaha", "NMAX 125");
+        List<ModelYear> xmaxYears = modelYearsOf("Yamaha", "XMAX 300");
+        List<ModelYear> cb125rYears = modelYearsOf("Honda", "CB125R");
+        List<ModelYear> versysYears = modelYearsOf("Kawasaki", "Versys-X 300");
+        if (nmaxYears.isEmpty() || xmaxYears.isEmpty() || cb125rYears.isEmpty() || versysYears.isEmpty()) {
+            return; // 차량 프로필이 아직 안 만들어졌으면 건너뛴다 - 다음 재기동 때 다시 시도된다.
+        }
+
+        // 그립/미러는 DataSeeder가 Tricity/Vino용으로 이미 만들어둔 것을 그대로 재사용한다.
+        partRepository.findByName("야마하 범용 핸들바 그립 세트").ifPresent(grip -> {
+            for (ModelYear y : nmaxYears) compat(y, grip, "호환가능", null);
+            for (ModelYear y : xmaxYears) compat(y, grip, "호환가능", null);
+        });
+        partRepository.findByName("야마하 범용 사이드미러 세트").ifPresent(mirror -> {
+            String note = "미러 마운트 나사 규격이 모델별로 다를 수 있어 장착 전 확인이 필요합니다";
+            for (ModelYear y : nmaxYears) compat(y, mirror, "브라켓필요", note);
+            for (ModelYear y : xmaxYears) compat(y, mirror, "브라켓필요", note);
+        });
+        // "야마하 범용 알로이 휠 커버 세트"는 NMAX(13")/XMAX(전15"·후14")가 서로 휠 사이즈가 달라 연결하지 않는다.
+
+        Part cbMuffler = part("CB125R 숏 슬립온 머플러", "머플러", 259000);
+        Part cbLamp = part("CB125R LED 테일램프 세트", "램프", 42000);
+        Part cbHandlebar = part("CB125R 레이싱 클립온 핸들바", "핸들바", 89000);
+        partImage(cbMuffler, "/assets/parts/cb125r-slipon-exhaust.png");
+        for (ModelYear y : cb125rYears) {
+            compat(y, cbMuffler, "호환가능", null);
+            compat(y, cbLamp, "호환가능", null);
+            compat(y, cbHandlebar, "호환가능", null);
+        }
+
+        // "가와사키 범용 레이싱 머플러/휠 스프로킷"은 Ninja125·Z125(네이키드/스포츠, 17" 캐스트휠) 전용으로
+        // 만들어진 부품이라 차체 카테고리와 휠 사이즈·형식이 전혀 다른 Versys-X 300(어드벤처, 전19"·후17"
+        // 스포크휠)에는 연결하지 않고, 이 차종 전용 부품만 새로 만든다.
+        Part versysCarrier = part("베르시스-X 300 어드벤처 리어 캐리어", "캐리어", 115000);
+        Part versysScreen = part("베르시스-X 300 롱 윈드스크린", "스크린", 92000);
+        partImage(versysCarrier, "/assets/parts/versys-x300-rear-carrier.png");
+        for (ModelYear y : versysYears) {
+            compat(y, versysCarrier, "호환가능", null);
+            compat(y, versysScreen, "호환가능", null);
+        }
+    }
+
+    private List<ModelYear> modelYearsOf(String manufacturerName, String modelName) {
+        return manufacturerRepository.findByName(manufacturerName)
+                .flatMap(m -> vehicleModelRepository.findByManufacturerIdAndName(m.getId(), modelName))
+                .map(vm -> modelYearRepository.findByVehicleModelId(vm.getId()))
+                .orElse(List.of());
+    }
+
+    // DataSeeder와 동일한 find-or-create 패턴.
+    private Part part(String name, String category, int price) {
+        return partRepository.findByName(name)
+                .orElseGet(() -> partRepository.save(Part.builder().name(name).category(category).price(price).build()));
+    }
+
+    // DataSeeder.modelImage()/partImage()와 동일한 패턴 - 이미 이미지가 있으면 덮어쓰지 않는다.
+    private void partImage(Part part, String imageUrl) {
+        if (part.getImageUrl() != null) {
+            return;
+        }
+        part.setImageUrl(imageUrl);
+        partRepository.save(part);
+    }
+
+    private void compat(ModelYear modelYear, Part part, String status, String note) {
+        if (compatibilityRepository.findByPartIdAndModelYearId(part.getId(), modelYear.getId()).isPresent()) {
+            return;
+        }
+        compatibilityRepository.save(Compatibility.builder()
+                .modelYear(modelYear).part(part).status(status).note(note).build());
     }
 
     // ------------------------------------------------------------------ 커뮤니티
@@ -223,7 +314,7 @@ public class ContentSeeder implements CommandLineRunner {
                         + "- 500km 안팎마다: 체인 청소 + 루브\n"
                         + "- 오일: 매뉴얼 주기보다 조금 빠르게 (저는 단거리가 많아서요)\n"
                         + "- 6개월마다: 브레이크 패드 두께 눈으로 확인\n\n"
-                        + "결국 기록해 두는 게 제일 중요해요. 메모 앱에 날짜만 남겨도 다음 교환 시기 놓치지 않아요.");
+                        + "결국 기록해 두는 게 제일 중요해요. 메모 앱에 날짜만 남겨도 다음 교환 시기 놓치지 않아요.", 61);
         comment(p1, newbiePark, "기록 팁 감사합니다! 오늘부터 메모 앱에 적어볼게요.");
         comment(p1, riderMin, "체인은 비 온 다음 날 꼭 한 번 더 봐주세요. 저도 그렇게 하고 있어요.");
         like(p1, everyone.subList(1, 5));
@@ -232,15 +323,25 @@ public class ContentSeeder implements CommandLineRunner {
                 "머플러 소리만 믿고 샀다가 후회한 이야기",
                 "영상으로 소리 듣고 바로 주문했는데, 실제로 달아 보니 아이들링에서 너무 커서 아파트 단지에서 눈치가 보이더라고요. "
                         + "영상 소리는 마이크에 따라 완전히 다르게 들려요. 그리고 소음 기준도 미리 확인하고 사야 한다는 걸 이번에 배웠습니다. "
-                        + "다음에는 호환 여부와 소음 기준 둘 다 확인하고 살 생각이에요.");
+                        + "다음에는 호환 여부와 소음 기준 둘 다 확인하고 살 생각이에요.", 58);
         comment(p2, scooterFan, "저도 비슷한 경험이 있어요. 소리는 직접 들어보는 게 제일 정확해요.");
         like(p2, List.of(user, scooterFan, commuterKim));
+        // 글 내용이 "호환 여부 확인 안 하고 샀다가 후회"라, 카탈로그에서 그 상황과 정확히 맞는
+        // 유일한 머플러(구형 PCX 호환/신형 불가)와 연결한다.
+        if (p2 != SKIP) {
+            partRepository.findByName("구형 머플러 (2018 PCX 호환, 신형 불가)").ifPresent(part -> {
+                p2.setInstalledPart(part);
+                p2.setCompatibleFeedback("NOT_MATCHED");
+                p2.setRating(2);
+                postRepository.save(p2);
+            });
+        }
 
         Post p3 = post(scooterFan, PostCategory.VETERAN, "장거리 주행 후기", 4, 8,
                 "125cc급으로 당일 300km 투어 다녀온 후기와 준비물",
                 "생각보다 힘들지만 할 만했어요. 핵심은 '쉬는 간격'이었어요. 1시간마다 쉬고, 공기압/체인만 눈으로 점검했습니다.\n\n"
                         + "챙긴 것: 우비, 보조배터리, 타이어 펑크 응급 키트, 장갑 여분, 물.\n"
-                        + "아쉬웠던 점: 시트가 딱딱해서 3시간 지나니 엉덩이가 아팠어요. 다음엔 시트 쪽을 손볼 생각입니다.");
+                        + "아쉬웠던 점: 시트가 딱딱해서 3시간 지나니 엉덩이가 아팠어요. 다음엔 시트 쪽을 손볼 생각입니다.", 72);
         comment(p3, commuterKim, "시트 때문에 고민이었는데 참고할게요!");
         comment(p3, newbiePark, "쉬는 간격 팁 좋네요. 다음 주말에 따라 해볼게요.");
         like(p3, List.of(user, riderMin, commuterKim, newbiePark));
@@ -248,13 +349,13 @@ public class ContentSeeder implements CommandLineRunner {
         Post p4 = post(user, PostCategory.VETERAN, "초보자에게 팁", 3, 2,
                 "초보자에게 꼭 알려주고 싶은 장갑·헬멧 팁",
                 "처음에는 성능보다 안전 장비에 먼저 투자하세요. 헬멧은 꼭 써보고 사고, 사이즈가 조금이라도 헐거우면 다음 사이즈로 가지 마세요. "
-                        + "장갑은 여름용/겨울용 두 개를 두면 좋고, 손목 부분이 긴 걸 추천해요.");
+                        + "장갑은 여름용/겨울용 두 개를 두면 좋고, 손목 부분이 긴 걸 추천해요.", 45);
         like(p4, List.of(riderMin, scooterFan, newbiePark));
 
         // --- 뉴비 질문공간
         Post q1 = post(newbiePark, PostCategory.NEWBIE, "소모품·오일", 5, 1,
                 "엔진오일 10W-30이랑 10W-40이 뭐가 다른가요?",
-                "정비소에서 오일 뭐 쓸지 물어보는데 잘 모르겠어요. 숫자가 큰 게 더 좋은 건가요? 그리고 오토바이 전용이 따로 있다던데 맞나요?");
+                "정비소에서 오일 뭐 쓸지 물어보는데 잘 모르겠어요. 숫자가 큰 게 더 좋은 건가요? 그리고 오토바이 전용이 따로 있다던데 맞나요?", 39);
         comment(q1, commuterKim, "뒤 숫자는 엔진이 뜨거울 때의 끈적함이에요. 큰 게 더 좋은 게 아니라 매뉴얼에 적힌 걸 쓰는 게 맞아요. "
                 + "오토바이는 JASO MA/MB 같은 표기도 확인해보세요. 정보 메뉴의 엔진오일 글에 정리돼 있어요.");
         comment(q1, riderMin, "저도 처음엔 큰 게 좋은 줄 알았어요 ㅎㅎ 매뉴얼 기준이 정답입니다.");
@@ -262,44 +363,44 @@ public class ContentSeeder implements CommandLineRunner {
 
         Post q2 = post(newbiePark, PostCategory.NEWBIE, "구매·입문", 8, 6,
                 "처음 바이크 사면 제일 먼저 해야 할 것 알려주세요",
-                "다음 주에 첫 바이크를 받아요. 보험이랑 헬멧 말고 또 뭐부터 하면 좋을까요?");
+                "다음 주에 첫 바이크를 받아요. 보험이랑 헬멧 말고 또 뭐부터 하면 좋을까요?", 51);
         comment(q2, user, "1) 공기압/오일량 확인 2) 사이드스탠드·브레이크 작동 확인 3) 한적한 곳에서 제동 연습 순서로 해보세요.");
         comment(q2, scooterFan, "차고에 등록해두면 호환 부품 확인하기 좋아요. 사이트에서 차량 등록부터 해보세요!");
         like(q2, List.of(user, riderMin, scooterFan));
 
         Post q3 = post(commuterKim, PostCategory.NEWBIE, "이 증상 정상인가요?", 2, 10,
                 "출발할 때 뒤에서 '드르륵' 소리가 나는데 정상인가요?",
-                "스쿠터인데 출발할 때만 살짝 드르륵 소리가 나요. 몇 주 전부터 시작됐어요. 이런 소리 원래 나나요?");
+                "스쿠터인데 출발할 때만 살짝 드르륵 소리가 나요. 몇 주 전부터 시작됐어요. 이런 소리 원래 나나요?", 28);
         comment(q3, scooterFan, "정확한 진단은 직접 보고 해야 해서, 소리가 계속되면 정비소에서 확인해보시는 걸 추천해요.");
         like(q3, List.of(newbiePark));
 
         Post q4 = post(newbiePark, PostCategory.NEWBIE, "투어 준비", 1, 3,
                 "첫 1박 2일 투어, 준비물 뭐 챙기세요?",
-                "다음 달에 처음으로 1박 2일 투어를 가보려고 해요. 장비 말고 정비 쪽으로 미리 확인해야 할 게 있을까요?");
+                "다음 달에 처음으로 1박 2일 투어를 가보려고 해요. 장비 말고 정비 쪽으로 미리 확인해야 할 게 있을까요?", 33);
         comment(q4, riderMin, "출발 전에 타이어 공기압, 체인 상태, 오일량, 브레이크 정도는 꼭 보세요. 정보 메뉴의 DIY 가이드에 점검 방법이 있어요.");
         like(q4, List.of(user, scooterFan));
 
         // --- 자유게시판
         Post f1 = post(user, PostCategory.FREE, "사진", 7, 4,
                 "퇴근길 노을 사진 한 장",
-                "오늘 퇴근길에 잠깐 세워서 찍은 사진이에요. 이런 날이면 돌아가는 길도 즐거워요.");
+                "오늘 퇴근길에 잠깐 세워서 찍은 사진이에요. 이런 날이면 돌아가는 길도 즐거워요.", 47);
         like(f1, List.of(riderMin, scooterFan, commuterKim));
 
         Post f2 = post(scooterFan, PostCategory.FREE, "라이딩", 5, 6,
                 "주말 라이딩 코스 추천 받아요",
-                "왕복 100km 안쪽으로 다녀올 수 있는 한적한 코스 있으면 추천 부탁드려요. 국도 위주면 더 좋아요.");
+                "왕복 100km 안쪽으로 다녀올 수 있는 한적한 코스 있으면 추천 부탁드려요. 국도 위주면 더 좋아요.", 30);
         comment(f2, commuterKim, "강변 코스 좋아요. 평일 이른 아침이 제일 한적했어요.");
         comment(f2, riderMin, "저는 산 넘어가는 국도를 좋아하는데 커브길은 속도 조심하세요!");
         like(f2, List.of(user, riderMin));
 
         Post f3 = post(commuterKim, PostCategory.FREE, "차량 자랑", 3, 9,
                 "오늘 세차하고 나니 기분 최고",
-                "오랜만에 손세차하고 왁스까지 쳤더니 새 차 같아요. 바이크는 닦은 만큼 티가 나는 것 같아요.");
+                "오랜만에 손세차하고 왁스까지 쳤더니 새 차 같아요. 바이크는 닦은 만큼 티가 나는 것 같아요.", 25);
         like(f3, List.of(newbiePark, scooterFan));
 
         Post f4 = post(riderMin, PostCategory.FREE, "잡담", 1, 2,
                 "겨울에 다들 뭐 하세요?",
-                "날이 추워지니 라이딩을 쉬게 되네요. 여러분은 겨울에 바이크 어떻게 보관하고 어떻게 지내세요?");
+                "날이 추워지니 라이딩을 쉬게 되네요. 여러분은 겨울에 바이크 어떻게 보관하고 어떻게 지내세요?", 19);
         comment(f4, user, "배터리 충전기 물려두고 정비 공부하고 있어요 ㅎㅎ");
         like(f4, List.of(user));
 
@@ -328,13 +429,14 @@ public class ContentSeeder implements CommandLineRunner {
     // ------------------------------------------------------------------ helpers
 
     private Post post(Member author, PostCategory category, String topic, int daysAgo, int hoursAgo,
-                      String title, String content) {
+                      String title, String content, int viewCount) {
         // 같은 제목의 글이 이미 있으면(재기동) 새로 만들지 않고, 기존 글은 null을 돌려 후속 처리(댓글/추천)를 건너뛴다.
         if (postRepository.existsByTitle(title)) {
             return SKIP;
         }
         return postRepository.save(Post.builder()
                 .author(author).category(category.name()).topic(topic).title(title).content(content)
+                .viewCount(viewCount)
                 .createdAt(LocalDateTime.now().minusDays(daysAgo).minusHours(hoursAgo))
                 .build());
     }

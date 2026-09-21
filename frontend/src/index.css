@@ -10,27 +10,14 @@ body,
 
 body {
   margin: 0;
-  background-color: #0b0e14;
-  color-scheme: dark;
+  background-color: #f6f8f6;
+  color-scheme: light;
 }
 
 /* ---------- 히어로: 설계도(블루프린트) 애니메이션 ----------
-   순서: 선이 그려지고 -> 포인트가 나타나고 -> 이름표가 나타난다. 각 요소의 시작 시점은 --d 로 지정한다. */
-@keyframes bp-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes bp-pop {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.3);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
+   격자/모서리/사진/표제란처럼 한 번만 나타나 계속 보이는 요소는 bp-fade를 그대로 쓴다.
+   부품 지시선/포인트/이름표는 그룹 단위로 나타났다가 서서히 사라지고 다음 그룹으로 넘어간다
+   (VehicleHighlightAnimation.jsx가 JS로 활성 그룹을 순환시키며 isActive에 따라 opacity/transform을 토글). */
 @keyframes bp-ring {
   0% {
     opacity: 0.55;
@@ -49,42 +36,25 @@ body {
     opacity: 1;
   }
 }
-@keyframes bp-label {
-  from {
-    opacity: 0;
-    transform: translate(var(--tx, -50%), var(--ty, 0)) translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(var(--tx, -50%), var(--ty, 0));
-  }
-}
 
-.bp-line {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: bp-draw 0.7s ease-out forwards;
-  animation-delay: var(--d, 0s);
-}
-.bp-dot {
-  opacity: 0;
-  animation: bp-pop 0.35s ease-out forwards;
-  animation-delay: calc(var(--d, 0s) + 0.55s);
-}
 .bp-ring {
-  opacity: 0;
-  animation: bp-ring 2.8s ease-out infinite;
-  animation-delay: calc(var(--d, 0s) + 1.2s);
-}
-.bp-label {
-  opacity: 0;
-  animation: bp-label 0.45s ease-out forwards;
-  animation-delay: calc(var(--d, 0s) + 0.6s);
+  animation: bp-ring 2.2s ease-out infinite;
 }
 .bp-fade {
   opacity: 0;
   animation: bp-fade 0.9s ease-out forwards;
   animation-delay: var(--d, 0s);
+}
+
+/* 그룹이 나타나고(선이 그려지며 이름표가 뜨고) 사라질 때(서서히 페이드아웃) 쓰는 전환. */
+.bp-cycle-line {
+  stroke-dasharray: 1;
+  transition: stroke-dashoffset 0.6s ease-out, opacity 0.5s ease-out;
+  transition-delay: var(--cd, 0s);
+}
+.bp-cycle-fade {
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+  transition-delay: var(--cd, 0s);
 }
 
 /* ---------- 홈: 스크롤 등장 (과하지 않게 살짝 떠오르는 정도) ---------- */
@@ -101,19 +71,13 @@ body {
 
 /* 모션을 줄이도록 설정한 사용자에게는 애니메이션 없이 최종 상태만 보여준다. */
 @media (prefers-reduced-motion: reduce) {
-  .bp-line,
-  .bp-dot,
-  .bp-label,
   .bp-fade {
     animation: none;
     opacity: 1;
-    stroke-dashoffset: 0;
   }
-  .bp-dot {
-    transform: translate(-50%, -50%);
-  }
-  .bp-label {
-    transform: translate(var(--tx, -50%), var(--ty, 0));
+  .bp-cycle-line,
+  .bp-cycle-fade {
+    transition: none;
   }
   .bp-ring {
     animation: none;

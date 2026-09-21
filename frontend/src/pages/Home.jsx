@@ -262,7 +262,11 @@ function Home() {
               <Reveal key={part.id} delay={i * 0.06}>
                 <Link to={`/parts/${part.id}`} className="flex h-full flex-col rounded-xl border border-ridefit-border bg-ridefit-card p-4 transition hover:-translate-y-1 hover:border-ridefit-primary/60">
                   {part.imageUrl ? (
-                    <img src={part.imageUrl} alt={part.name} className="mb-3 h-28 w-full rounded-lg object-cover" />
+                    <img
+                      src={part.imageUrl}
+                      alt={part.name}
+                      className="mb-3 h-28 w-full rounded-lg bg-white object-contain p-2"
+                    />
                   ) : (
                     <div className="mb-3 flex h-28 w-full items-center justify-center rounded-lg bg-ridefit-bg text-xs text-ridefit-text-secondary">이미지 준비중</div>
                   )}

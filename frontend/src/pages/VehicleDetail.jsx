@@ -9,9 +9,9 @@ import { loadPartCategorySlugs } from '../lib/guide'
 import { addRecentVehicle } from '../lib/recentVehicles'
 
 const STATUS_STYLE = {
-  호환가능: 'text-green-300',
-  브라켓필요: 'text-yellow-300',
-  호환불가: 'text-red-300',
+  호환가능: 'text-ridefit-success',
+  브라켓필요: 'text-ridefit-warning',
+  호환불가: 'text-ridefit-danger',
 }
 
 // 차량 상세: 스펙/성향 -> 관심 차량·내 차고 추가 -> 호환 부품 -> 비슷한 차량으로 이어지는 허브 화면.
@@ -23,6 +23,7 @@ function VehicleDetail() {
   const [detail, setDetail] = useState(null)
   const [parts, setParts] = useState([])
   const [categorySlugs, setCategorySlugs] = useState({})
+  const [maintenanceSpecs, setMaintenanceSpecs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -40,11 +41,13 @@ function VehicleDetail() {
       api.get(`/api/vehicles/${vehicleId}`, { auth: false }),
       api.get(`/api/vehicles/${vehicleId}/parts`, { auth: false }),
       loadPartCategorySlugs(),
+      api.get(`/api/vehicle-models/${vehicleId}/maintenance-specs`, { auth: false }).catch(() => []),
     ])
-      .then(([detailData, partData, slugs]) => {
+      .then(([detailData, partData, slugs, specs]) => {
         setDetail(detailData)
         setParts(partData)
         setCategorySlugs(slugs)
+        setMaintenanceSpecs(specs ?? [])
         setYearId('')
         addRecentVehicle(detailData.vehicle.id)
       })
@@ -99,7 +102,7 @@ function VehicleDetail() {
   }
 
   if (loading) return <p className="mx-auto max-w-5xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-5xl px-4 py-16 text-red-400">에러: {error}</p>
+  if (error) return <p className="mx-auto max-w-5xl px-4 py-16 text-red-600">에러: {error}</p>
   if (!detail) return null
 
   const { vehicle, pros, cons, years } = detail
@@ -119,7 +122,7 @@ function VehicleDetail() {
       </nav>
 
       <section className="grid gap-8 md:grid-cols-2">
-        <div className="overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card">
+        <div className="overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card shadow-lg">
           <VehicleImage vehicle={vehicle} className="h-64 w-full bg-ridefit-bg" />
         </div>
 
@@ -133,7 +136,7 @@ function VehicleDetail() {
           </div>
           {vehicle.summary && <p className="text-ridefit-text-secondary">{vehicle.summary}</p>}
 
-          <div className="mt-2 flex flex-col gap-3 rounded-xl border border-ridefit-border bg-ridefit-card p-4">
+          <div className="mt-2 flex flex-col gap-3 rounded-xl border border-ridefit-border bg-ridefit-card p-4 shadow-lg">
             {isAuthenticated ? (
               <>
                 <button
@@ -182,7 +185,7 @@ function VehicleDetail() {
                 하면 관심 차량으로 등록하거나 내 차고에 추가할 수 있어요.
               </p>
             )}
-            {actionMessage && <p className="text-sm text-red-400">{actionMessage}</p>}
+            {actionMessage && <p className="text-sm text-red-600">{actionMessage}</p>}
           </div>
         </div>
       </section>
@@ -190,7 +193,7 @@ function VehicleDetail() {
       {vehicle.traitScores && (
         <section className="mt-12">
           <h2 className="mb-4 text-xl font-bold text-ridefit-text">라이딩 성향</h2>
-          <div className="rounded-xl border border-ridefit-border bg-ridefit-card p-5">
+          <div className="rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
             <TraitBars scores={vehicle.traitScores} />
           </div>
         </section>
@@ -198,12 +201,12 @@ function VehicleDetail() {
 
       {(pros.length > 0 || cons.length > 0) && (
         <section className="mt-10 grid gap-5 md:grid-cols-2">
-          <div className="rounded-xl border border-ridefit-border bg-ridefit-card p-5">
+          <div className="rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
             <h2 className="mb-3 font-bold text-ridefit-text">이런 점이 좋아요</h2>
             <ul className="flex flex-col gap-2 text-sm text-ridefit-text-secondary">
               {pros.map((p) => (
                 <li key={p} className="flex gap-2">
-                  <span className="text-green-400" aria-hidden="true">
+                  <span className="text-green-700" aria-hidden="true">
                     ✓
                   </span>
                   {p}
@@ -211,18 +214,79 @@ function VehicleDetail() {
               ))}
             </ul>
           </div>
-          <div className="rounded-xl border border-ridefit-border bg-ridefit-card p-5">
+          <div className="rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
             <h2 className="mb-3 font-bold text-ridefit-text">고려할 점</h2>
             <ul className="flex flex-col gap-2 text-sm text-ridefit-text-secondary">
               {cons.map((c) => (
                 <li key={c} className="flex gap-2">
-                  <span className="text-yellow-400" aria-hidden="true">
+                  <span className="text-yellow-700" aria-hidden="true">
                     !
                   </span>
                   {c}
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+      )}
+
+      {maintenanceSpecs.length > 0 && (
+        <section className="mt-10">
+          <h2 className="mb-1 text-xl font-bold text-ridefit-text">정비 · 소모품 정보</h2>
+          <p className="mb-4 text-sm text-ridefit-text-secondary">이 차량에 맞는 제조사 권장값만 모았어요.</p>
+          <div className="flex flex-col gap-4">
+            {maintenanceSpecs.map((spec) => (
+              <div key={spec.id} className="rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
+                <h3 className="font-semibold text-ridefit-text">{spec.itemName}</h3>
+                <p className="mt-1 text-sm text-ridefit-text">{spec.specSummary}</p>
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+                  {spec.changeVolumeL != null && (
+                    <div>
+                      <dt className="text-xs text-ridefit-text-secondary">교환유량</dt>
+                      <dd className="font-medium text-ridefit-text">{spec.changeVolumeL}L</dd>
+                    </div>
+                  )}
+                  {spec.changeVolumeWithFilterL != null && (
+                    <div>
+                      <dt className="text-xs text-ridefit-text-secondary">필터 교환 시</dt>
+                      <dd className="font-medium text-ridefit-text">{spec.changeVolumeWithFilterL}L</dd>
+                    </div>
+                  )}
+                  {spec.firstIntervalKm != null && (
+                    <div>
+                      <dt className="text-xs text-ridefit-text-secondary">최초 교환</dt>
+                      <dd className="font-medium text-ridefit-text">
+                        {spec.firstIntervalKm.toLocaleString()}km / {spec.firstIntervalMonths}개월
+                      </dd>
+                    </div>
+                  )}
+                  {spec.intervalKm != null && (
+                    <div>
+                      <dt className="text-xs text-ridefit-text-secondary">이후 교환 주기</dt>
+                      <dd className="font-medium text-ridefit-text">
+                        {spec.intervalKm.toLocaleString()}km / {spec.intervalMonths}개월
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+                {spec.note && (
+                  <p className="mt-3 rounded-lg border border-ridefit-warning-border bg-ridefit-warning-bg px-3 py-2 text-xs text-ridefit-warning">
+                    {spec.note}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-ridefit-text-secondary">
+                  출처: {spec.sourceLabel}
+                  {spec.sourceUrl && (
+                    <>
+                      {' · '}
+                      <a href={spec.sourceUrl} target="_blank" rel="noreferrer" className="text-ridefit-primary hover:underline">
+                        원문 보기
+                      </a>
+                    </>
+                  )}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
       )}

@@ -6,7 +6,7 @@ import { api } from '../lib/api'
 const SECTION_EMOJI = { VETERAN: '🏆', NEWBIE: '🌱', FREE: '💬' }
 const BADGE_STYLE = {
   VETERAN: 'border-amber-800 bg-amber-950 text-amber-300',
-  NEWBIE: 'border-green-800 bg-green-950 text-green-300',
+  NEWBIE: 'border-green-200 bg-green-50 text-green-700',
   FREE: 'border-ridefit-border bg-ridefit-bg text-ridefit-text-secondary',
 }
 const SORTS = [
@@ -176,7 +176,7 @@ function Community() {
       </div>
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-red-400">에러: {error}</p>}
+      {error && <p className="text-red-600">에러: {error}</p>}
 
       {!loading && !error && data && data.content.length === 0 && (
         <p className="rounded-xl border border-dashed border-ridefit-border bg-ridefit-card px-4 py-10 text-center text-ridefit-text-secondary">

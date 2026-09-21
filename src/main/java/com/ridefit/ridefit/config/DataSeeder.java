@@ -3,6 +3,7 @@ package com.ridefit.ridefit.config;
 import com.ridefit.ridefit.domain.Comment;
 import com.ridefit.ridefit.domain.Compatibility;
 import com.ridefit.ridefit.domain.Favorite;
+import com.ridefit.ridefit.domain.MaintenanceSpec;
 import com.ridefit.ridefit.domain.Manufacturer;
 import com.ridefit.ridefit.domain.Member;
 import com.ridefit.ridefit.domain.ModelYear;
@@ -18,6 +19,7 @@ import com.ridefit.ridefit.repository.CommentRepository;
 import com.ridefit.ridefit.repository.CompatibilityRepository;
 import com.ridefit.ridefit.repository.FavoriteRepository;
 import com.ridefit.ridefit.repository.ManufacturerRepository;
+import com.ridefit.ridefit.repository.MaintenanceSpecRepository;
 import com.ridefit.ridefit.repository.MemberRepository;
 import com.ridefit.ridefit.repository.ModelYearRepository;
 import com.ridefit.ridefit.repository.MyVehicleRepository;
@@ -52,6 +54,7 @@ public class DataSeeder implements CommandLineRunner {
 
     private final ManufacturerRepository manufacturerRepository;
     private final VehicleModelRepository vehicleModelRepository;
+    private final MaintenanceSpecRepository maintenanceSpecRepository;
     private final ModelYearRepository modelYearRepository;
     private final PartRepository partRepository;
     private final CompatibilityRepository compatibilityRepository;
@@ -84,6 +87,19 @@ public class DataSeeder implements CommandLineRunner {
 
         // 실제 차량 사진이 있는 모델만 등록해둔다. 나머지는 프론트에서 임시 아이콘을 그대로 보여준다.
         modelImage(superCub, "/assets/vehicles/super-cub-110.png");
+
+        // 슈퍼커브 110 엔진오일: 교환주기/오일량은 혼다 공식 고객지원 FAQ 기준(신뢰도 높음).
+        // 점도(SAE)/JASO/API 등급은 혼다 순정 오일 제품라인(Ultra G1 STANDARD) 표기를 참고한 값으로,
+        // 슈퍼커브110에 정확히 지정된 등급인지는 별도 확인이 필요해 note에 그대로 남겨둔다.
+        // 커뮤니티에서 흔한 "합성유면 3,000km 이상 더 타도 된다" 같은 주장은 제조사 근거가 없어 반영하지 않았다.
+        maintenanceSpec(superCub, "ENGINE_OIL", "엔진오일",
+                "SAE 5W-30 · JASO MA · API SL (혼다 순정 오일 제품라인 기준 — 슈퍼커브110 전용 지정 등급 재확인 필요)",
+                0.8, 0.85, 1000, 1, 3000, 12,
+                "Honda 공식 고객지원 FAQ (일본)",
+                "https://faq.honda.co.jp/",
+                "교환주기(초회 1,000km·1개월 / 이후 3,000km·1년)와 오일량(0.8L, 필터 교환 시 0.85L)은 혼다 공식 FAQ 기준입니다. "
+                        + "점도/JASO/API 등급은 혼다 순정 오일 제품라인 표기를 참고한 값이라 슈퍼커브110 전용 지정 등급인지 재확인이 필요합니다. "
+                        + "\"합성유는 3,000km 이상 타도 된다\"처럼 제조사 근거 없이 커뮤니티에서만 통용되는 주장은 반영하지 않았습니다.");
 
         // 연식/세대(프레임 코드)는 검색으로 확인한 실제 값만 사용한다(지어내지 않음). 코드가 붙어있으면
         // "같은 코드끼리는 부품이 호환된다"는 걸 사용자가 알아볼 수 있게 라벨에 그대로 노출된다(ModelYearLabel).
@@ -170,12 +186,15 @@ public class DataSeeder implements CommandLineRunner {
         Part tricityScreen = part("트리시티 스포츠 윈드스크린", "스크린", 95000);
         Part vinoSeat = part("비노 레트로 시트 커버", "시트", 42000);
         Part vinoMuffler = part("비노 크롬 슬립온 머플러", "머플러", 175000);
+        // "야마하 범용 알로이 휠 커버 세트"는 카탈로그(및 아래 부품 충돌 데이터)에는 남겨두되
+        // compatibility는 연결하지 않는다 — Tricity(전14"/후12")와 Vino(10")조차 서로 휠 사이즈가
+        // 달라, 하나의 휠 커버가 두 차종 모두에 확정 호환된다고 볼 근거가 없다(2026-09-21 검증).
+        // 이후 NMAX/XMAX에도 같은 이유로 연결하지 않았다 — ContentSeeder.seedExpansionVehicleParts() 참고.
         Part yamahaWheel = part("야마하 범용 알로이 휠 커버 세트", "휠", 36000);
 
         for (ModelYear y : List.of(tricity21, tricity23, vino05, vino08)) {
             compat(y, yamahaGrip, "호환가능", null);
             compat(y, yamahaMirror, "호환가능", null);
-            compat(y, yamahaWheel, "호환가능", null);
         }
         compat(tricity21, tricityCarrier, "호환가능", null);
         compat(tricity23, tricityCarrier, "호환가능", null);
@@ -264,6 +283,43 @@ public class DataSeeder implements CommandLineRunner {
         listing(z125Mirror, "가와사키파츠", 41000, "https://example-shop.test/kawasakiparts/z125-mirror");
         listing(z125Mirror, "네이키드샵", 38000, "https://example-shop.test/nakedshop/z125-mirror");
         listing(z125Mirror, "바이크팩토리", 43000, "https://example-shop.test/bikefactory/z125-mirror");
+        listing(cubMirror, "커브가족", 30000, "https://example-shop.test/cubfamily/basic-mirror");
+        listing(cubMirror, "바이크나라", 33000, "https://example-shop.test/bikenara/cub-mirror");
+        listing(cubSeat, "커브가족", 46000, "https://example-shop.test/cubfamily/punching-seat-cover");
+        listing(cubSeat, "바이크나라", 49500, "https://example-shop.test/bikenara/cub-seat-cover");
+        listing(pcxLever, "PCX전문샵", 52000, "https://example-shop.test/pcxshop/brake-lever");
+        listing(pcxLever, "라이더샵", 55500, "https://example-shop.test/ridershop/pcx-lever");
+        listing(pcxLamp, "스쿠터마켓", 36500, "https://example-shop.test/scootermarket/led-blinker");
+        listing(pcxLamp, "PCX전문샵", 39000, "https://example-shop.test/pcxshop/led-signal");
+        listing(tricityScreen, "야마하부품샵", 91000, "https://example-shop.test/yamahaparts/tricity-screen");
+        listing(tricityScreen, "트리시티클럽", 97000, "https://example-shop.test/tricityclub/screen");
+
+        // ---- 인기 부품 초기 지표 (실사용 기록이 쌓이기 전, 데모에서 "인기 부품" 섹션을 보여주기 위한 값) ----
+        // popularity()는 view/fitSelection이 아직 0/0일 때만 값을 채운다 - 실사용자가 실제로 조회/장착해본
+        // 뒤에는(0이 아니게 된 뒤에는) 재기동해도 이 초기값으로 덮어쓰지 않는다.
+        popularity(cubCarrier, 33, 8);
+        popularity(tricityCarrier, 21, 5);
+        popularity(addressCarrier, 18, 3);
+        popularity(kawasakiMuffler, 26, 7);
+        popularity(z125Mirror, 15, 2);
+        popularity(ninjaSeatCowl, 12, 4);
+
+        // ---- 실제 확보한 부품 사진 연결 (2026-09-21, 사용자가 직접 구한 이미지만 사용) ----
+        // Super Cub 110 이미지 3장은 이 시더가 만드는 cub10/15/21/23(JA07/JA10/JA44)이 아니라,
+        // 실제로 등록된 데모 차고 3건이 전부 쓰는 "2025년식(JA71, model_year id=1)"의 호환 부품
+        // (id 13/15/19)에 연결한다 - 그 부품들은 이 시더가 아니라 이전에 DB에 직접 만들어진
+        // 것들이라(findByName만, 없으면 조용히 건너뜀) 아래에서 이름으로 찾아 연결한다.
+        partRepository.findByName("OSAKA 슬립온 머플러 (Super Cub 110)").ifPresent(p -> partImage(p, "/assets/parts/cub110-stainless-exhaust.png"));
+        partRepository.findByName("네이키드 라운드 미러 세트").ifPresent(p -> partImage(p, "/assets/parts/cub110-mirror.png"));
+        partRepository.findByName("리어 캐리어 랙 (Super Cub)").ifPresent(p -> partImage(p, "/assets/parts/cub110-rear-carrier.png"));
+        // 실제 KITACO 공식 사이트(kitaco.co.jp)에서 확인한 Super Cub 50/110(JA44 포함) 리어 캐리어 제품 사진.
+        partRepository.findByName("KITACO 캐리어").ifPresent(p -> partImage(p, "/assets/parts/kitaco-rear-carrier.png"));
+        partImage(pcxCarrier, "/assets/parts/pcx-topbox-carrier.png");
+        partImage(pcxOldMuffler, "/assets/parts/pcx-old-exhaust.png");
+        partImage(yamahaGrip, "/assets/parts/yamaha-handlebar-grips.png");
+        partImage(tricityCarrier, "/assets/parts/tricity-front-carrier.png");
+        partImage(addressCarrier, "/assets/parts/address-underseat-carrier.png");
+        partImage(kawasakiMuffler, "/assets/parts/ninja125-racing-exhaust.png");
 
         // ---- 회원 ----
         Member testUser = member("user@ridefit.dev", "user1234!", "테스트유저", Role.USER);
@@ -274,6 +330,7 @@ public class DataSeeder implements CommandLineRunner {
         Member scooterFan = member("scooter_fan@ridefit.dev", "rider1234!", "스쿠터매니아", Role.USER);
         Member commuterKim = member("commuter_kim@ridefit.dev", "rider1234!", "출퇴근김씨", Role.USER);
         Member newbiePark = member("newbie_park@ridefit.dev", "rider1234!", "바이크초보", Role.USER);
+        Member cubJihoon = member("cub_jihoon@ridefit.dev", "rider1234!", "커브지훈", Role.USER);
 
         // ---- 테스트 계정 마이페이지가 비어 보이지 않도록 즐겨찾기/최근 확인 기록 보강 ----
         favorite(testUser, cubMuffler);
@@ -332,7 +389,24 @@ public class DataSeeder implements CommandLineRunner {
                     "스테인리스 머플러랑 리어 캐리어 같이 달았는데 소리도 적당히 경쾌해지고 짐 싣기도 편해졌어요. "
                             + "커브 입문하시는 분들께 추천하는 조합입니다.",
                     cubMuffler, "MATCHED", "https://www.youtube.com/watch?v=49VFFTYepdA");
+
+            Post mirrorReview = post(cubJihoon, "Super Cub 110 미러 후기",
+                    "커브 탄 지 얼마 안 됐는데 순정 미러가 너무 작아서 뒤가 잘 안 보이더라고요. "
+                            + "범용 백미러 세트로 바꾸니까 시야도 넓어지고 각도 조절도 편해졌어요. "
+                            + "볼트 규격도 그대로 맞아서 장착도 어렵지 않았습니다.",
+                    cubMirror, "MATCHED", null);
+            mirrorReview.setRating(5);
+            mirrorReview.setViewCount(34);
+            postRepository.save(mirrorReview);
         }
+
+        // vehicleClass 컬럼 추가 이전에 만들어진 모든 차종을 백필한다(현재는 전부 오토바이).
+        vehicleModelRepository.findAll().stream()
+                .filter(vm -> vm.getVehicleClass() == null)
+                .forEach(vm -> {
+                    vm.setVehicleClass("MOTORCYCLE");
+                    vehicleModelRepository.save(vm);
+                });
 
         log.info("시드 데이터 확인/생성 완료: 제조사 {}, 모델 {}, 부품 {}, 판매처 {}, 충돌 {}, 회원 {}, 게시글 {}",
                 manufacturerRepository.count(), vehicleModelRepository.count(), partRepository.count(),
@@ -346,9 +420,37 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private VehicleModel vehicleModel(Manufacturer manufacturer, String name, String type) {
-        return vehicleModelRepository.findByManufacturerIdAndName(manufacturer.getId(), name)
+        VehicleModel model = vehicleModelRepository.findByManufacturerIdAndName(manufacturer.getId(), name)
                 .orElseGet(() -> vehicleModelRepository.save(
                         VehicleModel.builder().manufacturer(manufacturer).name(name).type(type).build()));
+        // vehicleClass 컬럼이 없던 시절 생성된 기존 행은 백필한다 (지금은 전부 오토바이).
+        if (model.getVehicleClass() == null) {
+            model.setVehicleClass("MOTORCYCLE");
+            vehicleModelRepository.save(model);
+        }
+        return model;
+    }
+
+    private MaintenanceSpec maintenanceSpec(
+            VehicleModel vehicleModel, String category, String itemName, String specSummary,
+            Double changeVolumeL, Double changeVolumeWithFilterL, Integer firstIntervalKm, Integer firstIntervalMonths,
+            Integer intervalKm, Integer intervalMonths, String sourceLabel, String sourceUrl, String note) {
+        return maintenanceSpecRepository.findByVehicleModelIdAndCategory(vehicleModel.getId(), category)
+                .orElseGet(() -> maintenanceSpecRepository.save(MaintenanceSpec.builder()
+                        .vehicleModel(vehicleModel)
+                        .category(category)
+                        .itemName(itemName)
+                        .specSummary(specSummary)
+                        .changeVolumeL(changeVolumeL)
+                        .changeVolumeWithFilterL(changeVolumeWithFilterL)
+                        .firstIntervalKm(firstIntervalKm)
+                        .firstIntervalMonths(firstIntervalMonths)
+                        .intervalKm(intervalKm)
+                        .intervalMonths(intervalMonths)
+                        .sourceLabel(sourceLabel)
+                        .sourceUrl(sourceUrl)
+                        .note(note)
+                        .build()));
     }
 
     private ModelYear modelYear(VehicleModel vehicleModel, int year, String chassisCode) {
@@ -377,6 +479,15 @@ public class DataSeeder implements CommandLineRunner {
         vehicleModelRepository.save(vehicleModel);
     }
 
+    // modelImage()와 동일한 패턴 - 이미 이미지가 있으면(관리자가 직접 바꿨을 수도 있으니) 덮어쓰지 않는다.
+    private void partImage(Part part, String imageUrl) {
+        if (part.getImageUrl() != null) {
+            return;
+        }
+        part.setImageUrl(imageUrl);
+        partRepository.save(part);
+    }
+
     private Part part(String name, String category, int price) {
         return partRepository.findByName(name)
                 .orElseGet(() -> partRepository.save(Part.builder().name(name).category(category).price(price).build()));
@@ -398,6 +509,16 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
         partConflictRepository.save(PartConflict.builder().partA(partA).partB(partB).reason(reason).build());
+    }
+
+    // 데모용 초기 인기 지표. 이미 0이 아니게 됐다면(실사용 기록이 쌓였다면) 건드리지 않는다.
+    private void popularity(Part part, int viewCount, int fitSelectionCount) {
+        if (part.getViewCount() != 0 || part.getFitSelectionCount() != 0) {
+            return;
+        }
+        part.setViewCount(viewCount);
+        part.setFitSelectionCount(fitSelectionCount);
+        partRepository.save(part);
     }
 
     private void listing(Part part, String sellerName, int price, String sourceUrl) {

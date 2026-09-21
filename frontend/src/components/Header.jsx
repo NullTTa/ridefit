@@ -50,6 +50,11 @@ function Header() {
               내 차고
             </NavLink>
           )}
+          {isAuthenticated && (
+            <NavLink to="/reservations" className={navLinkClass}>
+              내 예약
+            </NavLink>
+          )}
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">

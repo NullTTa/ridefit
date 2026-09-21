@@ -109,7 +109,7 @@ function AdminCompatibilities() {
         </button>
       </form>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="overflow-x-auto rounded-xl border border-ridefit-border">
         <table className="w-full text-left text-sm">
@@ -145,7 +145,7 @@ function AdminCompatibilities() {
                   <button
                     type="button"
                     onClick={() => handleDelete(row.id)}
-                    className="text-xs text-red-400 hover:underline"
+                    className="text-xs text-red-600 hover:underline"
                   >
                     삭제
                   </button>

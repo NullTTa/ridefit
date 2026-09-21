@@ -3,7 +3,7 @@
 // 사진이 준비되면 관리자 화면에서 차종 이미지를 등록하기만 하면 이 자리에 자동으로 적용된다.
 function Silhouette({ bodyStyle }) {
   const sporty = bodyStyle && /네이키드|스포츠|어드벤처/.test(bodyStyle)
-  const stroke = 'rgba(96,165,250,0.85)'
+  const stroke = 'rgba(22,163,74,0.75)'
   return (
     <svg viewBox="0 0 240 120" className="h-full w-full" fill="none" stroke={stroke} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="52" cy="86" r="22" />

@@ -53,7 +53,7 @@ function VehicleRegister() {
           {submitting ? '등록 중...' : '차고에 등록하기'}
         </button>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
     </div>
   )

@@ -66,7 +66,7 @@ function Vehicles() {
       </div>
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-red-400">에러: {error}</p>}
+      {error && <p className="text-red-600">에러: {error}</p>}
       {!loading && !error && filtered.length === 0 && (
         <p className="text-ridefit-text-secondary">조건에 맞는 차량이 없어요.</p>
       )}

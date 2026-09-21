@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import KakaoServiceMap from '../components/KakaoServiceMap'
 import { api } from '../lib/api'
 
 const TYPE_EMOJI = {
@@ -12,16 +13,19 @@ const TYPE_EMOJI = {
   SPECIALTY: '🏍️',
 }
 
-// 주변 정비·세차 서비스 목록 (지도 연동 전 단계의 목록형). 매장은 개발용 샘플이며, 예약은 RIDEFIT 안에서만 동작하는 가상 예약이다.
+// 주변 정비·세차 서비스: Kakao Map으로 8개 매장을 역 기준 위치에 표시 + 기존 목록/필터. 매장은 개발용 샘플이며, 예약은 RIDEFIT 안에서만 동작하는 가상 예약이다.
 function Services() {
   const [types, setTypes] = useState([])
   const [type, setType] = useState('')
   const [shops, setShops] = useState([])
+  const [allShops, setAllShops] = useState([]) // 지도는 필터와 무관하게 8개 매장을 전부 보여준다.
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedShopId, setSelectedShopId] = useState(null)
 
   useEffect(() => {
     api.get('/api/services/types', { auth: false }).then(setTypes).catch(() => setTypes([]))
+    api.get('/api/services/shops', { auth: false }).then(setAllShops).catch(() => setAllShops([]))
   }, [])
 
   useEffect(() => {
@@ -33,6 +37,8 @@ function Services() {
       .finally(() => setLoading(false))
   }, [type])
 
+  const selectedShop = useMemo(() => allShops.find((s) => s.id === selectedShopId) ?? null, [allShops, selectedShopId])
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-14">
       <div className="mb-6">
@@ -43,10 +49,57 @@ function Services() {
         </p>
       </div>
 
-      <p className="mb-6 rounded-lg border border-yellow-800/70 bg-yellow-950/40 px-4 py-3 text-sm text-yellow-300">
+      <p className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
         ⚠️ 지금 보이는 매장은 개발용 <strong>샘플 데이터</strong>이고, 예약은 RIDEFIT 안에서만 동작하는 <strong>가상 예약</strong>이에요.
         실제 업체에 전달되거나 결제가 발생하지 않아요.
       </p>
+
+      <div className="mb-10">
+        <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">RIDEFIT 서비스 지도</h2>
+        <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+          <KakaoServiceMap shops={allShops} selectedShopId={selectedShopId} onSelectShop={(shop) => setSelectedShopId(shop.id)} />
+
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2 rounded-xl border border-ridefit-border bg-ridefit-card p-3">
+              {allShops.map((shop) => (
+                <button
+                  key={shop.id}
+                  type="button"
+                  onClick={() => setSelectedShopId(shop.id)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                    selectedShopId === shop.id
+                      ? 'bg-ridefit-primary text-white'
+                      : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
+                  }`}
+                >
+                  📍 {shop.address?.replace(/^.*\s(\S+역)\s인근$/, '$1') ?? shop.region}
+                </button>
+              ))}
+            </div>
+
+            {selectedShop ? (
+              <div className="flex flex-1 flex-col rounded-xl border border-ridefit-primary/40 bg-ridefit-card p-4">
+                <span className="text-xs text-ridefit-text-secondary">
+                  {TYPE_EMOJI[selectedShop.type]} {selectedShop.typeLabel}
+                </span>
+                <h3 className="mt-1 text-lg font-bold text-ridefit-text">{selectedShop.name}</h3>
+                <p className="mt-1 text-sm text-ridefit-text-secondary">📍 {selectedShop.address}</p>
+                <p className="mt-2 flex-1 text-xs text-ridefit-text-secondary">{selectedShop.menus.slice(0, 3).join(' · ')}</p>
+                <Link
+                  to={`/services/${selectedShop.id}`}
+                  className="mt-3 self-start rounded-lg bg-ridefit-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                >
+                  상세보기 · 가상 예약
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-ridefit-border bg-ridefit-card p-4 text-center text-sm text-ridefit-text-secondary">
+                지도의 핀이나 역 이름을 눌러 매장 정보를 확인하세요.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="mb-8 flex flex-wrap gap-2" role="group" aria-label="서비스 종류 필터">
         <button
@@ -73,7 +126,7 @@ function Services() {
       </div>
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-red-400">에러: {error}</p>}
+      {error && <p className="text-red-600">에러: {error}</p>}
       {!loading && shops.length === 0 && <p className="text-ridefit-text-secondary">등록된 매장이 없어요.</p>}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -87,7 +140,7 @@ function Services() {
               <span className="rounded-full border border-ridefit-border px-2.5 py-0.5 text-xs text-ridefit-text-secondary">
                 {TYPE_EMOJI[shop.type]} {shop.typeLabel}
               </span>
-              {shop.sample && <span className="rounded-full bg-yellow-950 px-2 py-0.5 text-xs text-yellow-300">샘플</span>}
+              {shop.sample && <span className="rounded-full bg-yellow-50 px-2 py-0.5 text-xs text-yellow-700">샘플</span>}
             </div>
             <h2 className="mt-3 text-lg font-bold text-ridefit-text">{shop.name}</h2>
             <p className="mt-1 text-xs text-ridefit-text-secondary">{shop.region}</p>
@@ -102,10 +155,6 @@ function Services() {
             </div>
           </Link>
         ))}
-      </div>
-
-      <div className="mt-10 rounded-xl border border-dashed border-ridefit-border bg-ridefit-card p-5 text-sm text-ridefit-text-secondary">
-        🗺️ 지도에서 내 주변 매장을 찾는 기능은 이후 단계에서 연동할 예정이에요. (매장 데이터에 위도/경도 필드가 이미 준비되어 있어요.)
       </div>
     </div>
   )

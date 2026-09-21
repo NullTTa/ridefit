@@ -67,7 +67,7 @@ function AdminPartVideos() {
         실제로 확인한 값만 입력하고, 확인되지 않으면 비워두세요 — RIDEFIT 자체 평점과 자동으로 합산되지 않습니다.
       </p>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="overflow-x-auto rounded-xl border border-ridefit-border">
         <table className="w-full text-left text-sm">

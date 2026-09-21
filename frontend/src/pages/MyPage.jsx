@@ -98,7 +98,7 @@ function MyPage() {
       <h1 className="mb-1 text-2xl font-bold text-ridefit-text">마이페이지</h1>
       <p className="mb-8 text-sm text-ridefit-text-secondary">{user?.email}</p>
 
-      {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
+      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-semibold text-ridefit-text">계정 설정</h2>
@@ -151,8 +151,8 @@ function MyPage() {
             >
               비밀번호 변경
             </button>
-            {passwordMessage && <p className="text-xs text-green-400">{passwordMessage}</p>}
-            {passwordError && <p className="text-xs text-red-400">{passwordError}</p>}
+            {passwordMessage && <p className="text-xs text-green-700">{passwordMessage}</p>}
+            {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
           </form>
 
           <hr className="border-ridefit-border" />
@@ -162,7 +162,7 @@ function MyPage() {
               type="button"
               onClick={handleWithdraw}
               disabled={withdrawing}
-              className="text-sm text-red-400 hover:underline disabled:opacity-50"
+              className="text-sm text-red-600 hover:underline disabled:opacity-50"
             >
               {withdrawing ? '탈퇴 처리 중...' : '회원 탈퇴'}
             </button>
@@ -253,7 +253,7 @@ function MyPage() {
                 <button
                   type="button"
                   onClick={() => handleRemoveFavorite(f.partId)}
-                  className="text-xs text-ridefit-text-secondary hover:text-red-400"
+                  className="text-xs text-ridefit-text-secondary hover:text-red-600"
                 >
                   해제
                 </button>

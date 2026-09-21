@@ -46,6 +46,7 @@ application-local.properties
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+frontend/.env
 node_modules/
 dist/
 dist-ssr/

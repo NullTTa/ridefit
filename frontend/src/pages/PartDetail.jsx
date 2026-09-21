@@ -6,7 +6,7 @@ import YoutubeEmbed from '../components/YoutubeEmbed'
 import { api } from '../lib/api'
 import { loadPartCategorySlugs } from '../lib/guide'
 
-const FEEDBACK_LABEL = { MATCHED: '✅ 맞았어요', NOT_MATCHED: '❌ 안 맞았어요' }
+const FEEDBACK_LABEL = { MATCHED: '맞았어요', NOT_MATCHED: '안 맞았어요' }
 
 function formatDate(iso) {
   if (!iso) return ''
@@ -50,7 +50,7 @@ function PartDetail() {
   }, [partId, vehicleId])
 
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-3xl px-4 py-16 text-red-400">에러: {error}</p>
+  if (error) return <p className="mx-auto max-w-3xl px-4 py-16 text-red-600">에러: {error}</p>
   if (!part) return null
 
   const stats = part.stats
@@ -61,7 +61,11 @@ function PartDetail() {
       <div className="grid gap-6 sm:grid-cols-2">
         <div>
           {part.imageUrl ? (
-            <img src={part.imageUrl} alt={part.name} className="w-full rounded-xl border border-ridefit-border object-cover" />
+            <img
+              src={part.imageUrl}
+              alt={part.name}
+              className="aspect-square w-full rounded-xl border border-ridefit-border bg-white object-contain p-4"
+            />
           ) : (
             <div className="flex h-48 w-full items-center justify-center rounded-xl border border-ridefit-border bg-ridefit-card text-sm text-ridefit-text-secondary">
               이미지 없음
@@ -120,13 +124,13 @@ function PartDetail() {
 
           {checkResult && (
             <div
-              className={`mt-2 rounded-lg border px-3 py-2 text-sm ${
+              className={`mt-2 rounded-lg border px-3 py-2 text-sm font-medium ${
                 checkResult.proceedAllowed
-                  ? 'border-green-800 bg-green-950 text-green-300'
-                  : 'border-red-800 bg-red-950 text-red-300'
+                  ? 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success'
+                  : 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger'
               }`}
             >
-              {checkResult.proceedAllowed ? `✅ 내 차량과 호환됩니다 (${checkResult.status})` : '❌ 내 차량과 호환되지 않음'}
+              {checkResult.proceedAllowed ? `내 차량과 호환됩니다 (${checkResult.status})` : '내 차량과 호환되지 않음'}
             </div>
           )}
 
@@ -136,7 +140,7 @@ function PartDetail() {
                 to={`/garage/${vehicleId}/fit`}
                 className="rounded-lg bg-ridefit-primary px-3 py-2 text-sm font-semibold text-white transition hover:brightness-110"
               >
-                🛠️ 장착해보기
+                장착해보기
               </Link>
             )}
             {!vehicleId && (
@@ -151,19 +155,19 @@ function PartDetail() {
         </div>
       </div>
 
-      <div className="mt-8">
-        <h2 className="mb-2 text-sm font-semibold text-ridefit-text-secondary">판매처 비교</h2>
+      <div className="mt-8 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
+        <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">판매처 비교</h2>
         <SellerListings partId={part.id} />
       </div>
 
       {part.installVideoUrl && (
-        <div className="mt-8">
-          <h2 className="mb-2 text-sm font-semibold text-ridefit-text-secondary">설치 방법 영상</h2>
+        <div className="mt-6 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
+          <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">설치 방법 영상</h2>
           <YoutubeEmbed url={part.installVideoUrl} title="설치 방법 영상" />
         </div>
       )}
 
-      <div className="mt-8">
+      <div className="mt-6 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
         <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">
           RIDEFIT 관련 후기 {stats.reviewCount > 0 && `(${stats.reviewCount})`}
         </h2>
@@ -179,7 +183,7 @@ function PartDetail() {
 
         <ul className="flex flex-col gap-2">
           {reviews.map((r) => (
-            <li key={r.postId} className="rounded-lg border border-ridefit-border bg-ridefit-card px-4 py-3">
+            <li key={r.postId} className="rounded-lg border border-ridefit-border bg-ridefit-bg px-4 py-3">
               <Link to={`/community/${r.postId}`} className="font-medium text-ridefit-text hover:underline">
                 {r.title}
               </Link>

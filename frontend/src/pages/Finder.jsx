@@ -95,7 +95,7 @@ function Finder() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-14">
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="mb-4 text-red-400">에러: {error}</p>}
+      {error && <p className="mb-4 text-red-600">에러: {error}</p>}
 
       {/* 소개 */}
       {!loading && step === -1 && total > 0 && (
@@ -202,7 +202,7 @@ function Finder() {
             <p className="mt-1 text-sm text-ridefit-text-secondary">
               RIDEFIT에 등록된 {result.candidateCount}개 차량과 내 성향을 비교한 결과예요.
             </p>
-            {interestMessage && <p className="mt-2 text-sm text-red-400">{interestMessage}</p>}
+            {interestMessage && <p className="mt-2 text-sm text-red-600">{interestMessage}</p>}
 
             <div className="mt-5 flex flex-col gap-5">
               {result.recommendations.map((rec, index) => (
@@ -318,7 +318,7 @@ function Finder() {
             </div>
 
             <p className="mt-4 text-xs text-ridefit-text-secondary">
-              차량 성향 점수는 RIDEFIT이 정한 상대 비교 값(개발용 초기 데이터)이에요. 실제 구매 전에는 시승과 제조사 정보를 꼭 확인하세요.
+              차량 성향 점수는 RIDEFIT이 정한 상대 비교 기준이에요. 실제 구매 전에는 시승과 제조사 정보를 꼭 확인하세요.
             </p>
           </div>
 

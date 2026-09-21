@@ -47,7 +47,7 @@ function Garage() {
       </div>
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-red-400">에러: {error}</p>}
+      {error && <p className="text-red-600">에러: {error}</p>}
 
       {!loading && !error && vehicles.length === 0 && (
         <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-ridefit-border bg-ridefit-card px-6 py-16 text-center">
@@ -69,13 +69,14 @@ function Garage() {
               className="overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card shadow-lg transition hover:-translate-y-1"
             >
               <img
-                src={vehicle.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE}
-                alt={vehicle.modelYearLabel}
-                className="h-40 w-full object-contain bg-ridefit-bg p-2"
+                src={vehicle.photoUrl || vehicle.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE}
+                alt={vehicle.nickname || vehicle.modelYearLabel}
+                className="h-40 w-full object-contain bg-ridefit-bg-alt p-2"
               />
               <div className="p-4">
                 <p className="text-xs font-medium text-ridefit-primary">{vehicle.manufacturerName}</p>
-                <p className="mt-1 text-lg font-semibold text-ridefit-text">{vehicle.modelYearLabel}</p>
+                <p className="mt-1 text-lg font-semibold text-ridefit-text">{vehicle.nickname || vehicle.modelYearLabel}</p>
+                {vehicle.nickname && <p className="text-xs text-ridefit-text-secondary">{vehicle.modelYearLabel}</p>}
                 <Link to={`/vehicles/${vehicle.vehicleModelId}`} className="mt-1 inline-block text-xs font-medium text-ridefit-primary hover:underline">
                   차량 정보 · 비슷한 차량 보기 →
                 </Link>
@@ -84,7 +85,7 @@ function Garage() {
                   to={`/garage/${vehicle.id}/fit`}
                   className="mt-4 block rounded-lg bg-ridefit-primary px-3 py-2 text-center text-sm font-semibold text-white transition hover:brightness-110"
                 >
-                  🛠️ 부품 입혀보기
+                  부품 입혀보기
                 </Link>
 
                 <div className="mt-2 flex gap-2">
@@ -102,14 +103,22 @@ function Garage() {
                   </Link>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleDelete(vehicle.id)}
-                  disabled={deletingId === vehicle.id}
-                  className="mt-3 w-full text-center text-xs text-ridefit-text-secondary hover:text-red-400 disabled:opacity-50"
-                >
-                  {deletingId === vehicle.id ? '삭제 중...' : '차고에서 삭제'}
-                </button>
+                <div className="mt-2 flex items-center justify-between">
+                  <Link
+                    to={`/garage/${vehicle.id}/edit`}
+                    className="text-xs font-medium text-ridefit-text-secondary hover:text-ridefit-primary"
+                  >
+                    차량 수정
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(vehicle.id)}
+                    disabled={deletingId === vehicle.id}
+                    className="text-xs text-ridefit-text-secondary hover:text-red-600 disabled:opacity-50"
+                  >
+                    {deletingId === vehicle.id ? '삭제 중...' : '차고에서 삭제'}
+                  </button>
+                </div>
               </div>
             </div>
           ))}
