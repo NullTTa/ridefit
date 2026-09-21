@@ -177,7 +177,7 @@ function PostWrite() {
         {imageUrl && (
           <div className="flex items-center gap-3">
             <img src={`${API_BASE}${imageUrl}`} alt="첨부 미리보기" className="h-20 w-20 rounded-lg object-cover" />
-            <button type="button" onClick={() => setImageUrl('')} className="text-xs text-red-600 hover:underline">
+            <button type="button" onClick={() => setImageUrl('')} className="text-xs text-ridefit-danger hover:underline">
               제거
             </button>
           </div>
@@ -204,7 +204,7 @@ function PostWrite() {
                   type="button"
                   onClick={() => setRating((prev) => (prev === n ? 0 : n))}
                   aria-label={`${n}점`}
-                  className={n <= rating ? 'text-yellow-700' : 'text-ridefit-text-secondary/40'}
+                  className={n <= rating ? 'text-ridefit-warning' : 'text-ridefit-text-secondary/40'}
                 >
                   ★
                 </button>
@@ -247,7 +247,7 @@ function PostWrite() {
           {submitting ? '등록 중...' : '등록하기'}
         </button>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-ridefit-danger">{error}</p>}
       </form>
     </div>
   )

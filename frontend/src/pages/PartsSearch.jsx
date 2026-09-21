@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import PartBadges from '../components/PartBadges'
 import SellerListings from '../components/SellerListings'
-import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
-import { CATEGORY_POSITION, DEFAULT_POSITION } from '../constants/vehicleFitPositions'
+import VehicleFitStage from '../components/VehicleFitStage'
 import { api } from '../lib/api'
 import { loadPartCategorySlugs } from '../lib/guide'
 
@@ -133,6 +132,7 @@ function PartsSearch() {
   const activeConflictPairs = (conflicts ?? []).filter(
     (c) => selectedPartIds.includes(c.partAId) && selectedPartIds.includes(c.partBId),
   )
+  const conflictPartIds = new Set(activeConflictPairs.flatMap((c) => [c.partAId, c.partBId]))
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16">
@@ -173,7 +173,7 @@ function PartsSearch() {
             <select
               value={vehicleId ?? ''}
               onChange={(e) => handleVehicleChange(e.target.value)}
-              className="rounded-lg border border-ridefit-border bg-white px-3 py-2 text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary"
+              className="rounded-lg border border-ridefit-border bg-ridefit-card px-3 py-2 text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary"
             >
               {vehicles.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -190,44 +190,13 @@ function PartsSearch() {
             {/* 현재 차량 + 선택한 부품 위치 미리보기 */}
             <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
               <div className="relative overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6">
-                <div className="relative mx-auto aspect-[4/3] w-full max-w-lg">
-                  <img
-                    src={vehicle?.photoUrl || vehicle?.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE}
-                    alt={vehicle?.modelYearLabel ?? '차량'}
-                    className="h-full w-full object-contain"
-                  />
-                  {selectedParts.map((part) => {
-                    const pos = CATEGORY_POSITION[part.category] ?? DEFAULT_POSITION
-                    const hasConflict = activeConflictPairs.some(
-                      (c) => c.partAId === part.partId || c.partBId === part.partId,
-                    )
-                    return (
-                      <div
-                        key={part.partId}
-                        className="absolute -translate-x-1/2 -translate-y-1/2 animate-fadeIn"
-                        style={{ top: pos.top, left: pos.left }}
-                        title={part.name}
-                      >
-                        <span
-                          className={`block rounded-full border px-2 py-1 text-xs font-semibold shadow-lg backdrop-blur ${
-                            hasConflict
-                              ? 'border-red-300 bg-red-50 text-red-700'
-                              : 'border-ridefit-primary bg-white/90 text-ridefit-primary'
-                          }`}
-                        >
-                          {part.category}
-                          {hasConflict ? ' · 충돌' : ''}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
+                <VehicleFitStage vehicle={vehicle} parts={selectedParts} conflictPartIds={conflictPartIds} />
                 <p className="mt-4 text-center text-sm font-medium text-ridefit-text">
                   {vehicle ? vehicle.nickname || vehicle.modelYearLabel : '차량 선택'}
                 </p>
                 {selectedParts.length === 0 && (
                   <p className="mt-1 text-center text-xs text-ridefit-text-secondary">
-                    오른쪽에서 부품을 장착하면 이 위치에 표시돼요.
+                    오른쪽에서 부품을 장착하면 차량 위에 표시돼요.
                   </p>
                 )}
               </div>
@@ -255,7 +224,7 @@ function PartsSearch() {
                   {activeConflictPairs.length > 0 && (
                     <ul className="mt-2 flex flex-col gap-1">
                       {activeConflictPairs.map((c) => (
-                        <li key={c.id} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        <li key={c.id} className="rounded-lg border border-ridefit-danger-border bg-ridefit-danger-bg px-3 py-2 text-xs text-ridefit-danger">
                           {c.partAName} + {c.partBName}: {c.reason}
                         </li>
                       ))}
@@ -296,7 +265,7 @@ function PartsSearch() {
               </div>
 
               {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-              {error && <p className="text-red-600">에러: {error}</p>}
+              {error && <p className="text-ridefit-danger">에러: {error}</p>}
 
               {!loading && !error && visibleParts.length === 0 && (
                 <p className="text-ridefit-text-secondary">아직 이 차량에 대해 호환이 확인된 부품이 없어요.</p>
@@ -368,7 +337,7 @@ function PartsSearch() {
                             onClick={() => togglePartSelection(part.partId)}
                             className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition ${
                               isActive
-                                ? 'bg-ridefit-text text-white hover:brightness-125'
+                                ? 'border border-ridefit-border bg-ridefit-bg-alt text-ridefit-text hover:border-ridefit-primary'
                                 : 'bg-ridefit-primary text-white hover:brightness-110'
                             }`}
                           >

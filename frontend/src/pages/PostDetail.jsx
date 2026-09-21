@@ -76,7 +76,7 @@ function PostDetail() {
   }
 
   if (loading) return <p className="mx-auto max-w-2xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-2xl px-4 py-16 text-red-600">에러: {error}</p>
+  if (error) return <p className="mx-auto max-w-2xl px-4 py-16 text-ridefit-danger">에러: {error}</p>
   if (!post) return null
 
   return (
@@ -103,7 +103,7 @@ function PostDetail() {
           <Link to={`/parts/${post.installedPartId}`} className="font-medium text-ridefit-primary hover:underline">
             {post.installedPartName}
           </Link>
-          {post.rating != null && <span className="text-yellow-700">{'★'.repeat(post.rating)}</span>}
+          {post.rating != null && <span className="text-ridefit-warning">{'★'.repeat(post.rating)}</span>}
           {post.compatibleFeedback && (
             <span className="ml-auto font-semibold">{FEEDBACK_LABEL[post.compatibleFeedback] ?? post.compatibleFeedback}</span>
           )}

@@ -85,7 +85,7 @@ function Signup() {
               {submitting ? '가입 중...' : '회원가입'}
             </button>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-ridefit-danger">{error}</p>}
           </form>
 
           <p className="text-sm text-ridefit-text-secondary">

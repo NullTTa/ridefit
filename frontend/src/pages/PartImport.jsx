@@ -163,7 +163,7 @@ function PartImport() {
         </form>
       )}
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-ridefit-danger">{error}</p>}
 
       {crawlAttempted && !part && (
         <form
@@ -171,7 +171,7 @@ function PartImport() {
           className="flex flex-col gap-4 rounded-xl border border-ridefit-border bg-ridefit-card p-6 shadow-lg"
         >
           {crawlFailed && (
-            <p className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-700">
+            <p className="rounded-lg border border-ridefit-warning-border bg-ridefit-warning-bg px-3 py-2 text-sm text-ridefit-warning">
               이 판매처는 자동으로 정보를 가져올 수 없었어요. 아래에 직접 입력해주세요.
             </p>
           )}

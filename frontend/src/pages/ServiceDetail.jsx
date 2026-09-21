@@ -82,19 +82,19 @@ function ServiceDetail() {
   }
 
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-3xl px-4 py-16 text-red-600">에러: {error}</p>
+  if (error) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-danger">에러: {error}</p>
   if (!shop) return null
 
   // 예약 완료 화면
   if (reservation) {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
-        <div className="rounded-2xl border border-green-200 bg-green-50 px-6 py-10">
+        <div className="rounded-2xl border border-ridefit-success-border bg-ridefit-success-bg px-6 py-10">
           <p className="text-4xl" aria-hidden="true">
             ✅
           </p>
           <h1 className="mt-3 text-2xl font-bold text-ridefit-text">예약 신청이 완료됐어요</h1>
-          <p className="mt-1 text-sm text-green-700">RIDEFIT 안에서만 동작하는 가상 예약이에요.</p>
+          <p className="mt-1 text-sm text-ridefit-success">RIDEFIT 안에서만 동작하는 가상 예약이에요.</p>
 
           <dl className="mt-6 grid grid-cols-[6rem_1fr] gap-y-2 text-left text-sm">
             <dt className="text-ridefit-text-secondary">매장</dt>
@@ -148,7 +148,7 @@ function ServiceDetail() {
       <header className="mb-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-ridefit-border px-2.5 py-0.5 text-xs text-ridefit-text-secondary">{shop.typeLabel}</span>
-          {shop.sample && <span className="rounded-full bg-yellow-50 px-2 py-0.5 text-xs text-yellow-700">샘플 데이터</span>}
+          {shop.sample && <span className="rounded-full bg-ridefit-warning-bg px-2 py-0.5 text-xs text-ridefit-warning">샘플 데이터</span>}
         </div>
         <h1 className="mt-2 text-2xl font-bold text-ridefit-text">{shop.name}</h1>
         <p className="mt-1 text-sm text-ridefit-text-secondary">
@@ -230,7 +230,7 @@ function ServiceDetail() {
             >
               {submitting ? '신청 중...' : '예약 신청'}
             </button>
-            {formError && <p className="text-sm text-red-600">{formError}</p>}
+            {formError && <p className="text-sm text-ridefit-danger">{formError}</p>}
           </form>
         )}
       </section>

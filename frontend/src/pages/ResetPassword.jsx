@@ -113,7 +113,7 @@ function ResetPassword() {
             {submitting ? '변경 중...' : '비밀번호 변경'}
           </button>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-ridefit-danger">{error}</p>}
         </form>
       </div>
     </div>

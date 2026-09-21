@@ -333,7 +333,7 @@ function Home() {
               toLabel="커뮤니티 가기"
             />
           </Reveal>
-          <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr]">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.4fr]">
             <div className="grid gap-3">
               {sections.map((s, i) => (
                 <Reveal key={s.code} delay={i * 0.06}>
@@ -341,7 +341,7 @@ function Home() {
                     <span className="text-2xl" aria-hidden="true">
                       {SECTION_EMOJI[s.code]}
                     </span>
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-ridefit-text">{s.label}</p>
                       <p className="text-xs text-ridefit-text-secondary">{s.description}</p>
                     </div>

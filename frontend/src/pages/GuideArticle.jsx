@@ -24,7 +24,7 @@ function GuideArticle() {
   }, [slug])
 
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-3xl px-4 py-16 text-red-600">에러: {error}</p>
+  if (error) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-danger">에러: {error}</p>
   if (!data) return null
 
   const { article, body, compatibleVehicles, catalogParts, related } = data
@@ -56,7 +56,7 @@ function GuideArticle() {
             <span
               key={label}
               className={`rounded-full border px-2.5 py-1 ${
-                carOnly ? 'border-yellow-200 bg-yellow-50 text-yellow-700' : 'border-ridefit-border text-ridefit-text-secondary'
+                carOnly ? 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning' : 'border-ridefit-border text-ridefit-text-secondary'
               }`}
             >
               {label}
@@ -74,7 +74,7 @@ function GuideArticle() {
         {article.applicabilityNote && (
           <p
             className={`mt-4 rounded-lg border px-4 py-3 text-sm ${
-              carOnly ? 'border-yellow-200 bg-yellow-50 text-yellow-800' : 'border-ridefit-primary/30 bg-ridefit-primary/10 text-ridefit-text-secondary'
+              carOnly ? 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning' : 'border-ridefit-primary/30 bg-ridefit-primary/10 text-ridefit-text-secondary'
             }`}
           >
             {carOnly ? '🚗 ' : 'ℹ️ '}
@@ -82,7 +82,7 @@ function GuideArticle() {
           </p>
         )}
         {article.professionalRecommended && (
-          <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <p className="mt-3 rounded-lg border border-ridefit-danger-border bg-ridefit-danger-bg px-4 py-3 text-sm text-ridefit-danger">
             🛑 안전과 직결된 작업이에요. 이 가이드는 점검까지만 안내하며, 교체·분해는 전문가 점검을 권장해요.
           </p>
         )}

@@ -4,26 +4,26 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 라이트 + 그린 브랜드 테마. 로고 오렌지 포인트는 유지, 나머지는 전부 이 토큰만 사용한다.
+        // RIDEFIT 로고만 오렌지 포인트를 유지하고, 나머지는 전부 블루블랙 톤으로 통일한다.
         'ridefit-logo': '#FF6B35',
-        'ridefit-primary': '#16A34A',
-        'ridefit-accent': '#16A34A',
-        'ridefit-bg': '#F6F8F6',
-        'ridefit-bg-alt': '#EEF3EE',
-        'ridefit-card': '#FFFFFF',
-        'ridefit-border': '#DEE5DE',
-        'ridefit-text': '#1C2620',
-        'ridefit-text-secondary': '#68746C',
-        // 상태 색상: 호환가능(초록) / 주의(주황) / 불가능(빨강) — 카드형·텍스트형 어디서나 이 토큰만 쓴다.
-        'ridefit-success': '#16A34A',
-        'ridefit-success-bg': '#EAF6EC',
-        'ridefit-success-border': '#BFE3C6',
-        'ridefit-warning': '#B45309',
-        'ridefit-warning-bg': '#FDF3E3',
-        'ridefit-warning-border': '#F0D9A8',
-        'ridefit-danger': '#DC2626',
-        'ridefit-danger-bg': '#FCEBEB',
-        'ridefit-danger-border': '#F3C6C6',
+        'ridefit-primary': '#3B82F6',
+        'ridefit-accent': '#3B82F6',
+        'ridefit-bg': '#0B0E14',
+        'ridefit-bg-alt': '#070A0F',
+        'ridefit-card': '#131824',
+        'ridefit-border': '#232B3A',
+        'ridefit-text': '#E7ECF3',
+        'ridefit-text-secondary': '#8B95A8',
+        // 상태 색상: 호환가능(초록) / 주의(노랑) / 불가능(빨강) - 다크 배경에서 읽히는 밝은 글자색 + 어두운 배경 — 카드형·텍스트형 어디서나 이 토큰만 쓴다.
+        'ridefit-success': '#4ADE80',
+        'ridefit-success-bg': '#0F2A1B',
+        'ridefit-success-border': '#1E5233',
+        'ridefit-warning': '#FBBF24',
+        'ridefit-warning-bg': '#2A2010',
+        'ridefit-warning-border': '#5C4514',
+        'ridefit-danger': '#F87171',
+        'ridefit-danger-bg': '#2C1416',
+        'ridefit-danger-border': '#6B2226',
       },
       keyframes: {
         'label-cycle': {
@@ -33,14 +33,14 @@ export default {
           '22%': { opacity: 0, transform: 'translateY(4px)' },
         },
         'hotspot-glow': {
-          '0%, 100%': { opacity: 0, boxShadow: '0 0 0 rgba(22,163,74,0)' },
-          '5%': { opacity: 1, boxShadow: '0 0 16px 4px rgba(22,163,74,0.55)' },
-          '15%': { opacity: 1, boxShadow: '0 0 16px 4px rgba(22,163,74,0.55)' },
-          '22%': { opacity: 0, boxShadow: '0 0 0 rgba(22,163,74,0)' },
+          '0%, 100%': { opacity: 0, boxShadow: '0 0 0 rgba(59,130,246,0)' },
+          '5%': { opacity: 1, boxShadow: '0 0 16px 4px rgba(59,130,246,0.7)' },
+          '15%': { opacity: 1, boxShadow: '0 0 16px 4px rgba(59,130,246,0.7)' },
+          '22%': { opacity: 0, boxShadow: '0 0 0 rgba(59,130,246,0)' },
         },
         'vehicle-pulse': {
-          '0%, 100%': { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 rgba(22,163,74,0))' },
-          '50%': { transform: 'scale(1.02)', filter: 'drop-shadow(0 0 22px rgba(22,163,74,0.3))' },
+          '0%, 100%': { transform: 'scale(1)', filter: 'drop-shadow(0 0 0 rgba(59,130,246,0))' },
+          '50%': { transform: 'scale(1.02)', filter: 'drop-shadow(0 0 26px rgba(59,130,246,0.35))' },
         },
         fadeIn: {
           '0%': { opacity: 0 },

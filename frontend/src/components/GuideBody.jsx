@@ -5,11 +5,11 @@ function Section({ section }) {
   return (
     <section
       className={`rounded-xl border p-5 ${
-        warn ? 'border-yellow-200 bg-yellow-50' : 'border-ridefit-border bg-ridefit-card'
+        warn ? 'border-ridefit-warning-border bg-ridefit-warning-bg' : 'border-ridefit-border bg-ridefit-card'
       }`}
     >
       {section.title && (
-        <h2 className={`mb-3 text-lg font-bold ${warn ? 'text-yellow-700' : 'text-ridefit-text'}`}>
+        <h2 className={`mb-3 text-lg font-bold ${warn ? 'text-ridefit-warning' : 'text-ridefit-text'}`}>
           {warn && <span aria-hidden="true">⚠️ </span>}
           {section.title}
         </h2>
@@ -21,7 +21,7 @@ function Section({ section }) {
         <ul className={`flex flex-col gap-2 text-ridefit-text-secondary ${section.body ? 'mt-3' : ''}`}>
           {section.items.map((item) => (
             <li key={item} className="flex gap-2">
-              <span className={warn ? 'text-yellow-700' : 'text-ridefit-primary'} aria-hidden="true">
+              <span className={warn ? 'text-ridefit-warning' : 'text-ridefit-primary'} aria-hidden="true">
                 •
               </span>
               <span>{item}</span>

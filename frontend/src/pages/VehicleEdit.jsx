@@ -75,7 +75,7 @@ function VehicleEdit() {
   }
 
   if (loading) return <p className="mx-auto max-w-lg px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error && !vehicle) return <p className="mx-auto max-w-lg px-4 py-16 text-red-600">{error}</p>
+  if (error && !vehicle) return <p className="mx-auto max-w-lg px-4 py-16 text-ridefit-danger">{error}</p>
 
   return (
     <div className="mx-auto max-w-lg px-4 py-16">
@@ -104,7 +104,7 @@ function VehicleEdit() {
             <button
               type="button"
               onClick={() => setPhotoUrl('')}
-              className="text-xs text-ridefit-text-secondary hover:text-red-600"
+              className="text-xs text-ridefit-text-secondary hover:text-ridefit-danger"
             >
               올린 사진 지우고 기본 이미지로
             </button>
@@ -141,7 +141,7 @@ function VehicleEdit() {
           {submitting ? '저장 중...' : '저장하기'}
         </button>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-ridefit-danger">{error}</p>}
       </form>
     </div>
   )

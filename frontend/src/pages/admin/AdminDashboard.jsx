@@ -16,7 +16,7 @@ function AdminDashboard() {
     api.get('/api/admin/stats').then(setStats).catch((err) => setError(err.message))
   }, [])
 
-  if (error) return <p className="text-red-600">에러: {error}</p>
+  if (error) return <p className="text-ridefit-danger">에러: {error}</p>
   if (!stats) return <p className="text-ridefit-text-secondary">불러오는 중...</p>
 
   return (

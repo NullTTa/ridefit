@@ -67,7 +67,7 @@ function FindPassword() {
             {submitting ? '확인 중...' : '본인 확인'}
           </button>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-ridefit-danger">{error}</p>}
         </form>
 
         <p className="text-sm text-ridefit-text-secondary">

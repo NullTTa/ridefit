@@ -50,7 +50,7 @@ function PartDetail() {
   }, [partId, vehicleId])
 
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-3xl px-4 py-16 text-red-600">에러: {error}</p>
+  if (error) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-danger">에러: {error}</p>
   if (!part) return null
 
   const stats = part.stats

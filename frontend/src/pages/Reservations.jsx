@@ -43,7 +43,7 @@ function Reservations() {
       <p className="mt-1 mb-6 text-sm text-ridefit-text-secondary">RIDEFIT 안에서만 동작하는 가상 예약 기록이에요. 실제 업체와 연결되지 않아요.</p>
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-red-600">에러: {error}</p>}
+      {error && <p className="text-ridefit-danger">에러: {error}</p>}
 
       {!loading && items.length === 0 && (
         <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-ridefit-border bg-ridefit-card px-6 py-14 text-center">
@@ -61,7 +61,7 @@ function Reservations() {
               <p className="font-semibold text-ridefit-text">{r.shopName}</p>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  r.status === 'CANCELED' ? 'bg-ridefit-bg text-ridefit-text-secondary' : 'bg-green-50 text-green-700'
+                  r.status === 'CANCELED' ? 'bg-ridefit-bg text-ridefit-text-secondary' : 'bg-ridefit-success-bg text-ridefit-success'
                 }`}
               >
                 {STATUS_LABEL[r.status] ?? r.status}
@@ -79,7 +79,7 @@ function Reservations() {
                   type="button"
                   onClick={() => cancel(r.id)}
                   disabled={busyId === r.id}
-                  className="text-xs text-ridefit-text-secondary hover:text-red-600 disabled:opacity-50"
+                  className="text-xs text-ridefit-text-secondary hover:text-ridefit-danger disabled:opacity-50"
                 >
                   {busyId === r.id ? '취소 중...' : '예약 취소'}
                 </button>

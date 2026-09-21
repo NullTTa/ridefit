@@ -49,7 +49,7 @@ function Services() {
         </p>
       </div>
 
-      <p className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
+      <p className="mb-6 rounded-lg border border-ridefit-warning-border bg-ridefit-warning-bg px-4 py-3 text-sm text-ridefit-warning">
         ⚠️ 지금 보이는 매장은 개발용 <strong>샘플 데이터</strong>이고, 예약은 RIDEFIT 안에서만 동작하는 <strong>가상 예약</strong>이에요.
         실제 업체에 전달되거나 결제가 발생하지 않아요.
       </p>
@@ -126,7 +126,7 @@ function Services() {
       </div>
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-red-600">에러: {error}</p>}
+      {error && <p className="text-ridefit-danger">에러: {error}</p>}
       {!loading && shops.length === 0 && <p className="text-ridefit-text-secondary">등록된 매장이 없어요.</p>}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -140,7 +140,7 @@ function Services() {
               <span className="rounded-full border border-ridefit-border px-2.5 py-0.5 text-xs text-ridefit-text-secondary">
                 {TYPE_EMOJI[shop.type]} {shop.typeLabel}
               </span>
-              {shop.sample && <span className="rounded-full bg-yellow-50 px-2 py-0.5 text-xs text-yellow-700">샘플</span>}
+              {shop.sample && <span className="rounded-full bg-ridefit-warning-bg px-2 py-0.5 text-xs text-ridefit-warning">샘플</span>}
             </div>
             <h2 className="mt-3 text-lg font-bold text-ridefit-text">{shop.name}</h2>
             <p className="mt-1 text-xs text-ridefit-text-secondary">{shop.region}</p>

@@ -75,7 +75,7 @@ function SellerListings({ partId }) {
       <p className="mb-2 font-semibold text-ridefit-text-secondary">등록된 판매처 중 최저가</p>
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-ridefit-danger">{error}</p>}
 
       {!loading && listings.length === 0 && <p className="text-ridefit-text-secondary">등록된 판매처가 없어요.</p>}
 

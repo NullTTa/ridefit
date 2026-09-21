@@ -47,7 +47,7 @@ function Garage() {
       </div>
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-red-600">에러: {error}</p>}
+      {error && <p className="text-ridefit-danger">에러: {error}</p>}
 
       {!loading && !error && vehicles.length === 0 && (
         <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-ridefit-border bg-ridefit-card px-6 py-16 text-center">
@@ -114,7 +114,7 @@ function Garage() {
                     type="button"
                     onClick={() => handleDelete(vehicle.id)}
                     disabled={deletingId === vehicle.id}
-                    className="text-xs text-ridefit-text-secondary hover:text-red-600 disabled:opacity-50"
+                    className="text-xs text-ridefit-text-secondary hover:text-ridefit-danger disabled:opacity-50"
                   >
                     {deletingId === vehicle.id ? '삭제 중...' : '차고에서 삭제'}
                   </button>

@@ -44,8 +44,8 @@ function Synth() {
       )}
 
       {!loading && error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-8">
-          <p className="text-red-700">{error}</p>
+        <div className="rounded-xl border border-ridefit-danger-border bg-ridefit-danger-bg p-8">
+          <p className="text-ridefit-danger">{error}</p>
           <Link to="/parts" className="mt-4 inline-block text-sm font-medium text-ridefit-primary hover:underline">
             부품 찾아보기로 돌아가기
           </Link>

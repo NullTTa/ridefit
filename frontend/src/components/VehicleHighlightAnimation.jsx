@@ -138,9 +138,9 @@ function VehicleHighlightAnimation() {
           style={{
             '--d': '0s',
             backgroundImage:
-              'radial-gradient(ellipse at 50% 55%, rgba(22,163,74,0.10), transparent 65%),' +
-              'linear-gradient(rgba(22,163,74,0.08) 1px, transparent 1px),' +
-              'linear-gradient(90deg, rgba(22,163,74,0.08) 1px, transparent 1px)',
+              'radial-gradient(ellipse at 50% 55%, rgba(59,130,246,0.12), transparent 65%),' +
+              'linear-gradient(rgba(59,130,246,0.09) 1px, transparent 1px),' +
+              'linear-gradient(90deg, rgba(59,130,246,0.09) 1px, transparent 1px)',
             backgroundSize: '100% 100%, 5% 9.5%, 3.4% 5.6%',
           }}
           aria-hidden="true"
@@ -177,7 +177,7 @@ function VehicleHighlightAnimation() {
             width: pct(IMG.w, STAGE.w),
             height: pct(IMG.h, STAGE.h),
             filter:
-              'brightness(1.35) contrast(1.05) drop-shadow(1px 0 0 rgba(22,163,74,0.75)) drop-shadow(-1px 0 0 rgba(22,163,74,0.75)) drop-shadow(0 1px 0 rgba(22,163,74,0.75)) drop-shadow(0 -1px 0 rgba(22,163,74,0.75))',
+              'brightness(1.35) contrast(1.05) drop-shadow(1px 0 0 rgba(96,165,250,0.85)) drop-shadow(-1px 0 0 rgba(96,165,250,0.85)) drop-shadow(0 1px 0 rgba(96,165,250,0.85)) drop-shadow(0 -1px 0 rgba(96,165,250,0.85))',
           }}
         />
 
@@ -244,7 +244,7 @@ function VehicleHighlightAnimation() {
 
               {/* 부품 실사진 카드 - 지목한 자리 바로 위에 크게 뜬다("부품이 바뀐다"는 인상의 핵심) */}
               <span
-                className="bp-cycle-fade pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border-2 border-ridefit-primary bg-white shadow-[0_0_24px_rgba(22,163,74,0.45)]"
+                className="bp-cycle-fade pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border-2 border-ridefit-primary bg-white shadow-[0_0_24px_rgba(59,130,246,0.45)]"
                 style={{
                   left: pct(c.x, STAGE.w),
                   top: pct(c.y, STAGE.h),

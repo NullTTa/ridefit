@@ -46,7 +46,7 @@ function AdminVehicleModels() {
         입혀보기 화면에 자동으로 적용됩니다. 비워두면 임시 아이콘이 대신 표시됩니다.
       </p>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-ridefit-danger">{error}</p>}
 
       <div className="overflow-x-auto rounded-xl border border-ridefit-border">
         <table className="w-full text-left text-sm">

@@ -102,7 +102,7 @@ function VehicleDetail() {
   }
 
   if (loading) return <p className="mx-auto max-w-5xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-5xl px-4 py-16 text-red-600">에러: {error}</p>
+  if (error) return <p className="mx-auto max-w-5xl px-4 py-16 text-ridefit-danger">에러: {error}</p>
   if (!detail) return null
 
   const { vehicle, pros, cons, years } = detail
@@ -185,7 +185,7 @@ function VehicleDetail() {
                 하면 관심 차량으로 등록하거나 내 차고에 추가할 수 있어요.
               </p>
             )}
-            {actionMessage && <p className="text-sm text-red-600">{actionMessage}</p>}
+            {actionMessage && <p className="text-sm text-ridefit-danger">{actionMessage}</p>}
           </div>
         </div>
       </section>
@@ -206,7 +206,7 @@ function VehicleDetail() {
             <ul className="flex flex-col gap-2 text-sm text-ridefit-text-secondary">
               {pros.map((p) => (
                 <li key={p} className="flex gap-2">
-                  <span className="text-green-700" aria-hidden="true">
+                  <span className="text-ridefit-success" aria-hidden="true">
                     ✓
                   </span>
                   {p}
@@ -219,7 +219,7 @@ function VehicleDetail() {
             <ul className="flex flex-col gap-2 text-sm text-ridefit-text-secondary">
               {cons.map((c) => (
                 <li key={c} className="flex gap-2">
-                  <span className="text-yellow-700" aria-hidden="true">
+                  <span className="text-ridefit-warning" aria-hidden="true">
                     !
                   </span>
                   {c}
