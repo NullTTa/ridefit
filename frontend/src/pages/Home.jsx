@@ -92,7 +92,8 @@ function Home() {
     <div>
       {/* 1. Hero: 설계도 애니메이션 + 로그인/환영 */}
       <section className="flex min-h-[calc(100vh-4rem)] flex-col md:flex-row">
-        <div className="flex min-h-[40vh] flex-[1.25] items-center justify-center bg-ridefit-card md:min-h-0">
+        <div className="relative flex min-h-[40vh] flex-[1.25] items-center justify-center overflow-hidden bg-ridefit-card md:min-h-0">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.16),transparent_55%),radial-gradient(circle_at_80%_85%,rgba(255,107,53,0.12),transparent_50%)]" />
           <VehicleHighlightAnimation />
         </div>
 
