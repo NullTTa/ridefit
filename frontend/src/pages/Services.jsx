@@ -50,7 +50,7 @@ function Services() {
       </div>
 
       <p className="mb-6 rounded-lg border border-ridefit-warning-border bg-ridefit-warning-bg px-4 py-3 text-sm text-ridefit-warning">
-        ⚠️ 지금 보이는 매장은 개발용 <strong>샘플 데이터</strong>이고, 예약은 RIDEFIT 안에서만 동작하는 <strong>가상 예약</strong>이에요.
+        ⚠️ 지금 보이는 매장은 개발용 <strong>샘플 데이터</strong>예요. 실제 방문 전에는 매장에 미리 확인해주세요.
         실제 업체에 전달되거나 결제가 발생하지 않아요.
       </p>
 
@@ -89,7 +89,7 @@ function Services() {
                   to={`/services/${selectedShop.id}`}
                   className="mt-3 self-start rounded-lg bg-ridefit-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
                 >
-                  상세보기 · 가상 예약
+                  상세보기 · 예약하기
                 </Link>
               </div>
             ) : (

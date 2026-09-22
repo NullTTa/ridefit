@@ -29,7 +29,7 @@ const JOURNEY = [
   { label: '부품·소모품 정보', to: '/guide' },
   { label: 'DIY 가이드', to: '/guide?tab=DIY' },
   { label: '커뮤니티', to: '/community' },
-  { label: '정비·가상 예약', to: '/services' },
+  { label: '정비·예약', to: '/services' },
 ]
 
 const SECTION_EMOJI = { VETERAN: '🏆', NEWBIE: '🌱', FREE: '💬' }

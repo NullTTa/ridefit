@@ -202,7 +202,7 @@ function MyPage() {
 
       <section className="mb-10">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ridefit-text">내 가상 예약</h2>
+          <h2 className="text-lg font-semibold text-ridefit-text">내 예약</h2>
           <Link to="/reservations" className="text-sm text-ridefit-primary hover:underline">
             전체 보기
           </Link>
@@ -222,7 +222,7 @@ function MyPage() {
                 <span className="font-medium text-ridefit-text">{r.shopName}</span>
                 <span className="text-ridefit-text-secondary">
                   {' '}
-                  · {r.serviceName} · {r.preferredAt?.slice(0, 16).replace('T', ' ')}
+                  · {r.items.map((item) => item.serviceName).join(', ')} · {r.preferredAt?.slice(0, 16).replace('T', ' ')}
                   {r.status === 'CANCELED' && ' · 취소됨'}
                 </span>
               </li>

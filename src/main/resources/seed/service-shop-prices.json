@@ -1,0 +1,92 @@
+{
+  "_comment": "service-shops.json의 매장별 menus 문자열과 이름으로 매칭되는 서비스 카탈로그 + 매장별 고정 가격입니다. 실제 업체 가격이 아니라 RIDEFIT 발표용 가상 매장(seed/service-shops.json 참고)의 예시 고정 가격이며, 요청마다 랜덤으로 바뀌지 않습니다.",
+  "services": [
+    { "name": "기본 점검", "description": "타이어 공기압, 오일량, 등화류 등을 육안·기기로 점검해요.", "durationMinutes": 20 },
+    { "name": "엔진오일 교환", "description": "엔진오일과 필요 시 오일 필터를 교환해요.", "durationMinutes": 30 },
+    { "name": "브레이크 점검", "description": "브레이크 패드 마모도와 유압 라인을 점검해요.", "durationMinutes": 20 },
+    { "name": "타이어 교체", "description": "타이어를 새 제품으로 교체하고 휠 밸런스를 확인해요.", "durationMinutes": 40 },
+    { "name": "오일 필터 교환", "description": "엔진오일 필터만 별도로 교환해요.", "durationMinutes": 15 },
+    { "name": "체인 청소·윤활", "description": "구동 체인을 세척하고 전용 윤활유를 도포해요.", "durationMinutes": 20 },
+    { "name": "공기압·밸런스 점검", "description": "타이어 공기압과 휠 밸런스를 점검·조정해요.", "durationMinutes": 15 },
+    { "name": "펑크 점검", "description": "타이어 펑크 여부를 확인하고 간단히 수리해요.", "durationMinutes": 20 },
+    { "name": "손세차", "description": "차체를 손으로 꼼꼼하게 세차해요.", "durationMinutes": 40 },
+    { "name": "광택·코팅", "description": "세차 후 광택 작업과 코팅제를 도포해요.", "durationMinutes": 90 },
+    { "name": "엔진룸 세척", "description": "엔진 주변부를 전문 세척해요.", "durationMinutes": 30 },
+    { "name": "셀프 세차 부스 1시간", "description": "셀프 세차 부스를 1시간 동안 대여해요.", "durationMinutes": 60 },
+    { "name": "셀프 세차 부스 2시간", "description": "셀프 세차 부스를 2시간 동안 대여해요.", "durationMinutes": 120 },
+    { "name": "셀프 정비 리프트 1시간", "description": "리프트와 공구를 1시간 동안 대여해요.", "durationMinutes": 60 },
+    { "name": "셀프 정비 리프트 2시간", "description": "리프트와 공구를 2시간 동안 대여해요.", "durationMinutes": 120 },
+    { "name": "정비 상담(현장)", "description": "정비 전문가와 현장에서 상담해요.", "durationMinutes": 15 },
+    { "name": "차량·부품 상담", "description": "차량/부품 궁합에 대해 전문가와 상담해요.", "durationMinutes": 20 },
+    { "name": "부품 장착", "description": "구매한 부품을 매장에서 장착해요.", "durationMinutes": 40 },
+    { "name": "브레이크 패드 교체", "description": "마모된 브레이크 패드를 새 제품으로 교체해요.", "durationMinutes": 30 },
+    { "name": "서스펜션 점검", "description": "서스펜션 상태와 오일 누유 여부를 점검해요.", "durationMinutes": 20 }
+  ],
+  "shopPrices": [
+    {
+      "shopName": "RIDEFIT 부평 라이더 케어",
+      "prices": [
+        { "service": "기본 점검", "price": 20000 },
+        { "service": "엔진오일 교환", "price": 35000 },
+        { "service": "브레이크 점검", "price": 25000 },
+        { "service": "타이어 교체", "price": 80000 }
+      ]
+    },
+    {
+      "shopName": "RIDEFIT 동암 퀵오일",
+      "prices": [
+        { "service": "엔진오일 교환", "price": 32000 },
+        { "service": "오일 필터 교환", "price": 15000 },
+        { "service": "체인 청소·윤활", "price": 18000 }
+      ]
+    },
+    {
+      "shopName": "RIDEFIT 주안 타이어 센터",
+      "prices": [
+        { "service": "타이어 교체", "price": 75000 },
+        { "service": "공기압·밸런스 점검", "price": 10000 },
+        { "service": "펑크 점검", "price": 15000 }
+      ]
+    },
+    {
+      "shopName": "RIDEFIT 부천 핸드워시",
+      "prices": [
+        { "service": "손세차", "price": 20000 },
+        { "service": "광택·코팅", "price": 90000 },
+        { "service": "엔진룸 세척", "price": 25000 }
+      ]
+    },
+    {
+      "shopName": "RIDEFIT 송내 셀프워시 라운지",
+      "prices": [
+        { "service": "셀프 세차 부스 1시간", "price": 12000 },
+        { "service": "셀프 세차 부스 2시간", "price": 20000 }
+      ]
+    },
+    {
+      "shopName": "RIDEFIT 부천시청 셀프 개러지",
+      "prices": [
+        { "service": "셀프 정비 리프트 1시간", "price": 15000 },
+        { "service": "셀프 정비 리프트 2시간", "price": 25000 },
+        { "service": "정비 상담(현장)", "price": 5000 }
+      ]
+    },
+    {
+      "shopName": "RIDEFIT 간석오거리 바이크 스튜디오",
+      "prices": [
+        { "service": "차량·부품 상담", "price": 10000 },
+        { "service": "부품 장착", "price": 30000 },
+        { "service": "기본 점검", "price": 15000 }
+      ]
+    },
+    {
+      "shopName": "RIDEFIT 인천시청 종합정비센터",
+      "prices": [
+        { "service": "기본 점검", "price": 25000 },
+        { "service": "브레이크 패드 교체", "price": 45000 },
+        { "service": "서스펜션 점검", "price": 20000 },
+        { "service": "엔진오일 교환", "price": 38000 }
+      ]
+    }
+  ]
+}

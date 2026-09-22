@@ -9,7 +9,7 @@ function formatDateTime(iso) {
   return iso.slice(0, 16).replace('T', ' ')
 }
 
-// 내 가상 예약 목록. (RIDEFIT 내부 기록이며 실제 업체와 연결되지 않는다.)
+// 내 예약 목록.
 function Reservations() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -40,7 +40,7 @@ function Reservations() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-14">
       <h1 className="text-2xl font-bold text-ridefit-text">내 예약</h1>
-      <p className="mt-1 mb-6 text-sm text-ridefit-text-secondary">RIDEFIT 안에서만 동작하는 가상 예약 기록이에요. 실제 업체와 연결되지 않아요.</p>
+      <p className="mt-1 mb-6 text-sm text-ridefit-text-secondary">신청한 정비·세차 예약을 확인하고 관리할 수 있어요.</p>
 
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
       {error && <p className="text-ridefit-danger">에러: {error}</p>}
@@ -68,7 +68,8 @@ function Reservations() {
               </span>
             </div>
             <p className="mt-1 text-sm text-ridefit-text-secondary">
-              {r.serviceName} · {formatDateTime(r.preferredAt)}
+              {r.items.map((item) => item.serviceName + (item.oilTypeLabel ? `(${item.oilTypeLabel})` : '')).join(', ')}
+              {r.totalPrice != null && ` · ${r.totalPrice.toLocaleString()}원`} · {formatDateTime(r.preferredAt)}
               {r.vehicleLabel && ` · ${r.vehicleLabel}`}
             </p>
             {r.memo && <p className="mt-1 text-xs text-ridefit-text-secondary">요청: {r.memo}</p>}

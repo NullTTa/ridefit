@@ -117,7 +117,7 @@ function Guide() {
 
       {tab === 'DIY' && (
         <div className="mt-10 flex flex-wrap items-center gap-3 rounded-xl border border-ridefit-border bg-ridefit-card p-5">
-          <p className="flex-1 text-sm text-ridefit-text-secondary">직접 하기 어렵다면 주변 정비소를 둘러보고 가상 예약을 체험해볼 수 있어요.</p>
+          <p className="flex-1 text-sm text-ridefit-text-secondary">직접 하기 어렵다면 주변 정비소를 둘러보고 예약할 수 있어요.</p>
           <Link to="/services" className="rounded-lg bg-ridefit-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110">
             정비 · 세차 서비스 보기
           </Link>
