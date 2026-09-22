@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ridefit.ridefit.domain.Comment;
 import com.ridefit.ridefit.domain.Compatibility;
 import com.ridefit.ridefit.domain.GuideArticle;
+import com.ridefit.ridefit.domain.MaintenanceService;
 import com.ridefit.ridefit.domain.Manufacturer;
 import com.ridefit.ridefit.domain.Member;
 import com.ridefit.ridefit.domain.ModelYear;
@@ -13,6 +14,7 @@ import com.ridefit.ridefit.domain.Post;
 import com.ridefit.ridefit.domain.PostCategory;
 import com.ridefit.ridefit.domain.PostLike;
 import com.ridefit.ridefit.domain.ServiceShop;
+import com.ridefit.ridefit.domain.ShopMaintenancePrice;
 import com.ridefit.ridefit.domain.Trait;
 import com.ridefit.ridefit.domain.VehicleInterest;
 import com.ridefit.ridefit.domain.VehicleModel;
@@ -26,7 +28,9 @@ import com.ridefit.ridefit.repository.ModelYearRepository;
 import com.ridefit.ridefit.repository.PartRepository;
 import com.ridefit.ridefit.repository.PostLikeRepository;
 import com.ridefit.ridefit.repository.PostRepository;
+import com.ridefit.ridefit.repository.MaintenanceServiceRepository;
 import com.ridefit.ridefit.repository.ServiceShopRepository;
+import com.ridefit.ridefit.repository.ShopMaintenancePriceRepository;
 import com.ridefit.ridefit.repository.VehicleInterestRepository;
 import com.ridefit.ridefit.repository.VehicleModelRepository;
 import com.ridefit.ridefit.repository.VehicleProfileRepository;
@@ -45,6 +49,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 // 2차 확장 기능(성향 추천/정보 페이지/커뮤니티 섹션/정비 서비스)이 쓰는 초기 데이터를 채운다.
 // 기존 DataSeeder 이후에 실행되며, 전부 "없으면 추가"하는 방식이라 몇 번을 재시작해도 중복되지 않는다.
@@ -71,6 +76,8 @@ public class ContentSeeder implements CommandLineRunner {
     private final VehicleInterestRepository interestRepository;
     private final GuideArticleRepository guideRepository;
     private final ServiceShopRepository shopRepository;
+    private final MaintenanceServiceRepository maintenanceServiceRepository;
+    private final ShopMaintenancePriceRepository shopMaintenancePriceRepository;
     private final MemberRepository memberRepository;
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
@@ -84,12 +91,15 @@ public class ContentSeeder implements CommandLineRunner {
         seedVehicleProfiles();
         seedGuideArticles();
         seedShops();
+        seedShopMaintenancePrices();
         seedExpansionVehicleParts();
+        seedRiderAccessoryParts();
         backfillPostCategories();
         seedCommunityPosts();
         seedInterests();
-        log.info("2차 콘텐츠 시드 확인/생성 완료: 프로필 {}, 정보글 {}, 매장 {}, 게시글 {}",
-                profileRepository.count(), guideRepository.count(), shopRepository.count(), postRepository.count());
+        log.info("2차 콘텐츠 시드 확인/생성 완료: 프로필 {}, 정보글 {}, 매장 {}, 정비서비스가격 {}, 게시글 {}",
+                profileRepository.count(), guideRepository.count(), shopRepository.count(),
+                shopMaintenancePriceRepository.count(), postRepository.count());
     }
 
     // ------------------------------------------------------------------ 차량 프로필
@@ -117,6 +127,12 @@ public class ContentSeeder implements CommandLineRunner {
             if (model == null) {
                 log.warn("프로필 시드 건너뜀 - 차종을 찾을 수 없음: {} {}", manufacturer.getName(), modelName);
                 continue;
+            }
+
+            // DataSeeder.modelImage()와 동일한 패턴 - 이미 이미지가 있으면(관리자가 직접 등록했을 수도 있으니) 덮어쓰지 않는다.
+            if (model.getImageUrl() == null && v.hasNonNull("imageUrl")) {
+                model.setImageUrl(v.path("imageUrl").asText());
+                vehicleModelRepository.save(model);
             }
 
             VehicleProfile profile = profileRepository.findByVehicleModelId(model.getId()).orElse(null);
@@ -195,6 +211,41 @@ public class ContentSeeder implements CommandLineRunner {
         }
     }
 
+    // 매장별 서비스 고정 가격. "버튼 누를 때마다 랜덤 가격" 금지 -> DB에 저장된 값만 쓴다(ReservationController 참고).
+    private void seedShopMaintenancePrices() throws IOException {
+        JsonNode root = read("seed/service-shop-prices.json");
+
+        for (JsonNode s : root.path("services")) {
+            String name = s.path("name").asText();
+            if (maintenanceServiceRepository.findByName(name).isPresent()) {
+                continue;
+            }
+            maintenanceServiceRepository.save(MaintenanceService.builder()
+                    .name(name)
+                    .description(textOrNull(s, "description"))
+                    .durationMinutes(s.hasNonNull("durationMinutes") ? s.get("durationMinutes").asInt() : null)
+                    .build());
+        }
+
+        for (JsonNode shopNode : root.path("shopPrices")) {
+            String shopName = shopNode.path("shopName").asText();
+            ServiceShop shop = shopRepository.findByName(shopName).orElse(null);
+            if (shop == null) {
+                continue;
+            }
+            for (JsonNode priceNode : shopNode.path("prices")) {
+                String serviceName = priceNode.path("service").asText();
+                MaintenanceService service = maintenanceServiceRepository.findByName(serviceName).orElse(null);
+                if (service == null || shopMaintenancePriceRepository.findByShop_IdAndService_Name(shop.getId(), serviceName).isPresent()) {
+                    continue;
+                }
+                shopMaintenancePriceRepository.save(ShopMaintenancePrice.builder()
+                        .shop(shop).service(service).price(priceNode.path("price").asInt())
+                        .build());
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ 2차 확장 차종(NMAX 125 / XMAX 300 / CB125R / Versys-X 300) 부품
     //
     // 이 4개 차종은 바로 위 seedVehicleProfiles()에서 만들어지므로(DataSeeder가 아니라 여기서), 부품/호환성도
@@ -252,6 +303,127 @@ public class ContentSeeder implements CommandLineRunner {
                 .flatMap(m -> vehicleModelRepository.findByManufacturerIdAndName(m.getId(), modelName))
                 .map(vm -> modelYearRepository.findByVehicleModelId(vm.getId()))
                 .orElse(List.of());
+    }
+
+    // modelYearsOf()와 같지만 특정 연식만 골라 가져온다(신형 플랫폼에만 붙는 부품 등, 특정 세대만 연결할 때 사용).
+    private List<ModelYear> modelYearsOf(String manufacturerName, String modelName, int... years) {
+        Optional<VehicleModel> vm = manufacturerRepository.findByName(manufacturerName)
+                .flatMap(m -> vehicleModelRepository.findByManufacturerIdAndName(m.getId(), modelName));
+        if (vm.isEmpty()) {
+            return List.of();
+        }
+        List<ModelYear> result = new ArrayList<>();
+        for (int year : years) {
+            modelYearRepository.findByVehicleModelIdAndYear(vm.get().getId(), year).ifPresent(result::add);
+        }
+        return result;
+    }
+
+    // 한국 배달/출퇴근 라이더가 실제로 많이 쓰는 보호·수납·편의 품목을 확충한다(2026-09-22).
+    // 그립처럼 손잡이관 규격이 공통인 항목은 범용으로 넓게 연결하고, 배달통/리어백처럼 리어 캐리어가
+    // 있어야 고정할 수 있는 품목은 이미 리어 캐리어가 연결된 차종에만 연결한다. 실제 존재하지 않는
+    // 브랜드명을 지어내지 않고 전부 "범용/스탠다드" 표기로 남긴다.
+    private void seedRiderAccessoryParts() {
+        List<ModelYear> cubRecent = modelYearsOf("Honda", "Super Cub 110", 2021, 2023);
+        List<ModelYear> pcxRecent = modelYearsOf("Honda", "PCX", 2021, 2023);
+        List<ModelYear> tricityRecent = modelYearsOf("Yamaha", "Tricity 125", 2021, 2023);
+        List<ModelYear> vinoAll = modelYearsOf("Yamaha", "Vino 125", 2005, 2008);
+        List<ModelYear> addressRecent = modelYearsOf("Suzuki", "Address 125", 2021, 2023);
+        List<ModelYear> burgmanAll = modelYearsOf("Suzuki", "Burgman Street 125", 2023, 2025);
+        List<ModelYear> ninjaAll = modelYearsOf("Kawasaki", "Ninja 125", 2019, 2023);
+        List<ModelYear> z125All = modelYearsOf("Kawasaki", "Z125", 2021, 2023);
+        List<ModelYear> nmaxAll = modelYearsOf("Yamaha", "NMAX 125");
+        List<ModelYear> xmaxAll = modelYearsOf("Yamaha", "XMAX 300");
+        List<ModelYear> cbAll = modelYearsOf("Honda", "CB125R");
+        List<ModelYear> versysAll = modelYearsOf("Kawasaki", "Versys-X 300");
+
+        List<ModelYear> allExisting = new ArrayList<>();
+        for (List<ModelYear> l : List.of(cubRecent, pcxRecent, tricityRecent, vinoAll, addressRecent, burgmanAll,
+                ninjaAll, z125All, nmaxAll, xmaxAll, cbAll, versysAll)) {
+            allExisting.addAll(l);
+        }
+        if (allExisting.isEmpty()) {
+            return; // 아직 차량 데이터가 안 만들어졌으면 건너뛴다 - 다음 재기동 때 다시 시도된다.
+        }
+
+        // 언더본/스쿠터(스텝스루) 차체 - 방수커버는 차체 형상이 비슷한 이 그룹에만 연결한다.
+        List<ModelYear> stepThrough = new ArrayList<>();
+        for (List<ModelYear> l : List.of(cubRecent, pcxRecent, tricityRecent, vinoAll, addressRecent, burgmanAll, nmaxAll, xmaxAll)) {
+            stepThrough.addAll(l);
+        }
+        // 네이키드/스포츠(노출 핸들바) 차체 - 핸드가드/너클가드는 이 그룹에만 연결한다.
+        List<ModelYear> exposedHandlebar = new ArrayList<>();
+        for (List<ModelYear> l : List.of(cubRecent, ninjaAll, z125All, cbAll, versysAll)) {
+            exposedHandlebar.addAll(l);
+        }
+        // 이미 리어 캐리어가 연결돼 있는 차종만 - 배달통/리어백은 캐리어 위에 고정하는 구조라서.
+        List<ModelYear> hasCarrier = new ArrayList<>();
+        for (List<ModelYear> l : List.of(cubRecent, pcxRecent, tricityRecent, addressRecent)) {
+            hasCarrier.addAll(l);
+        }
+
+        // ---- 배달/실용 ----
+        Part phoneMount = part("범용 방수 스마트폰 거치대", "스마트폰거치대", 22000);
+        Part usbSocket = part("핸들바 USB 충전 소켓 세트", "USB충전기", 18000);
+        Part deliveryBoxSquare = part("스탠다드 배달통 (사각)", "배달통", 45000);
+        Part deliveryBoxRound = part("대형 배달통 (원형)", "배달통", 68000);
+        Part rearBag = part("방수 리어백 (캐리어 거치형)", "리어백", 39000);
+        Part handlebarPouch = part("핸들바 파우치 (방수)", "핸들바가방", 19000);
+
+        for (ModelYear y : allExisting) {
+            compat(y, phoneMount, "호환가능", "핸들바 클램프 방식(22~32mm 대응), 공구 없이 장착 가능");
+            compat(y, usbSocket, "브라켓필요", "배터리 상시전원 배선 연결 필요");
+            compat(y, handlebarPouch, "호환가능", "핸들바 스트랩 고정 방식, 범용");
+        }
+        for (ModelYear y : hasCarrier) {
+            compat(y, deliveryBoxSquare, "브라켓필요", "리어 캐리어 장착 차량에 한해 고정 가능");
+            compat(y, deliveryBoxRound, "브라켓필요", "리어 캐리어 장착 차량에 한해 고정 가능");
+            compat(y, rearBag, "브라켓필요", "리어 캐리어 위에 스트랩으로 고정");
+        }
+
+        // ---- 보호/외장 ----
+        Part waterproofCoverScooter = part("차체 방수 커버 (스쿠터/맥시스쿠터용)", "보호대", 32000);
+        Part waterproofCoverNaked = part("차체 방수 커버 (네이키드/스포츠용)", "보호대", 29000);
+        Part handguard = part("범용 핸드가드 세트", "핸드가드", 39000);
+        Part knuckleGuard = part("너클가드 (동계 방한용)", "너클가드", 25000);
+        Part frontBasket = part("프론트 유틸리티 바스켓", "프론트바구니", 34000);
+        Part ledFogLight = part("LED 보조 안개등 세트", "램프", 47000);
+        Part leverGuard = part("범용 브레이크 레버 프로텍터", "레버", 21000);
+        Part heatedGrip = part("열선 그립 세트", "핸들바", 55000);
+
+        for (ModelYear y : stepThrough) {
+            compat(y, waterproofCoverScooter, "호환가능", "차체 사이즈 기준 프리사이즈");
+        }
+        for (ModelYear y : exposedHandlebar) {
+            compat(y, waterproofCoverNaked, "호환가능", "차체 사이즈 기준 프리사이즈");
+            compat(y, handguard, "호환가능", "핸들바 외경 22mm 기준 클램프");
+            compat(y, knuckleGuard, "호환가능", "핸들바 외경 22mm 기준 클램프");
+        }
+        for (ModelYear y : cubRecent) {
+            compat(y, frontBasket, "브라켓필요", "헤드라이트 스테이 교체형 브라켓 필요");
+        }
+        for (ModelYear y : addressRecent) {
+            compat(y, frontBasket, "브라켓필요", "핸들바 클램프형 브라켓 필요");
+        }
+        for (ModelYear y : vinoAll) {
+            compat(y, frontBasket, "브라켓필요", "핸들바 클램프형 브라켓 필요");
+        }
+        for (ModelYear y : allExisting) {
+            compat(y, ledFogLight, "호환가능", "핸들바 또는 포크 클램프 마운트, 배터리 배선 연결 필요");
+            compat(y, leverGuard, "호환가능", "레버 볼트에 함께 고정하는 범용 클램프형");
+            // 그립은 손잡이관 규격이 공통이라(2026-09-21 검증 기준) 전 차종 범용으로 연결한다.
+            compat(y, heatedGrip, "브라켓필요", "배터리 상시전원 배선 연결 필요");
+        }
+
+        // ---- 엔진별 전용 부품(에어필터는 흡기 규격이 엔진마다 달라 범용 연결하지 않는다) ----
+        Part cubAirFilter = part("슈퍼커브 110 고성능 에어필터 (교환식)", "에어필터", 26000);
+        Part pcxAirFilter = part("PCX 고성능 에어필터 (교환식)", "에어필터", 29000);
+        for (ModelYear y : cubRecent) {
+            compat(y, cubAirFilter, "호환가능", "순정 에어박스 그대로 사용");
+        }
+        for (ModelYear y : pcxRecent) {
+            compat(y, pcxAirFilter, "호환가능", "순정 에어박스 그대로 사용");
+        }
     }
 
     // DataSeeder와 동일한 find-or-create 패턴.
