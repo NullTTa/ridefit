@@ -158,7 +158,7 @@ function Home() {
 
           <div className="grid gap-5 lg:grid-cols-[1fr_2fr]">
             <Reveal>
-              <div className="flex h-full flex-col justify-between gap-6 rounded-xl border border-ridefit-primary/40 bg-ridefit-card p-6">
+              <div className="flex h-full flex-col justify-between gap-6 rounded-xl border border-ridefit-primary/40 bg-ridefit-card p-6 shadow-lg transition hover:-translate-y-1 hover:border-ridefit-primary">
                 <div>
                   <p className="text-3xl" aria-hidden="true">
                     🧭
