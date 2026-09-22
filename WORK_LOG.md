@@ -4,6 +4,59 @@
 
 ---
 
+## 최신 세션: 전체 UX/UI 완성도 개선 (2026-09-22, main에 직접 커밋+push 완료)
+
+"실제 사용자 관점에서 점검 후 개선" 지시(25개 항목)에 따라 진행. `main` 브랜치에 커밋 7개로
+나눠서 작업하고 **push까지 완료**함(`a298f4e..cc67921`). 이후 이어서 작업할 때는 이 목록에서
+"남은 것"부터 확인하면 됨.
+
+### 이번 세션에서 완료한 것
+1. **정비 예약 다중 선택 + 엔진오일 종류 + 총액 계산** — `Reservation`을 `ReservationItem`
+   1:N 구조로 리팩터링(기존엔 서비스 1개만 담을 수 있었음). 체크박스로 여러 서비스 동시 선택,
+   "엔진오일 교환" 선택 시 광유/반합성유/합성유(기본가 대비 +0/+5,000/+15,000원, RIDEFIT
+   자체 정책값) 선택 가능. 서버가 `ShopMaintenancePrice` 조회해 최종 금액 확정(클라이언트
+   값 불신). 로컬 MySQL에 실제로 curl 테스트해서 계산 정확성 + 검증 실패 케이스(다른 서비스에
+   오일종류 지정/중복선택/빈선택 전부 400) 확인 완료.
+   - 새 파일: `domain/EngineOilType.java`, `domain/ReservationItem.java`
+   - 수정: `domain/Reservation.java`, `controller/ReservationController.java`,
+     `controller/ServiceShopController.java`(엔진오일 옵션 카탈로그 API 추가),
+     `frontend/src/pages/ServiceDetail.jsx`(전면 재작성)
+2. **"가상 예약" 표현 제거** — ServiceDetail/Reservations/MyPage/Home/Guide/Services 7곳
+   사용자 노출 문구 정리(개발자 주석은 안 건드림).
+3. **360도/FitRoom 크기 기준 통일** — 실측(PowerShell로 PNG 픽셀 해상도 확인) 결과 대표사진과
+   360프레임 비율이 거의 동일한데도, "부품 장착" 화면과 "360도 보기" 화면이 서로 다른 고정
+   비율(4:3 vs 16:10)을 써서 전환 시 차량 크기가 달라 보이던 버그를 찾아 공유 함수
+   `getVehicleStageAspectRatio()`(`constants/vehicleFitPositions.js`)로 통일. FitRoom에도
+   360도 보기 토글 신규 연동.
+4. **부품 카탈로그 확충** — 배달 라이더 중심 신규 카테고리 14종(스마트폰거치대/USB충전기/
+   배달통 2종/리어백/핸들바가방/보호대 2종/핸드가드/너클가드/프론트바구니/LED보조등/
+   레버프로텍터/열선그립/차종별 에어필터) 추가, `ContentSeeder.seedRiderAccessoryParts()`.
+   실제 장착 가능성 기준으로 호환성 연결(캐리어 있는 차종에만 배달통 등).
+5. **Header/Footer/Home 톤 보강** — 실제 로고 이미지 적용(CSS "RF" 배지 대체), 활성 메뉴
+   포인트, 히어로 그라디언트, 카드 hover 통일. 큰 폭 리디자인은 안 함(아래 "남은 것" 참고).
+6. **예전 빈 360 플레이스홀더 폴더 삭제** — `vehicles/360/super-cub-110/`(README만 있던
+   빈 폴더, 실제 사진은 `vehicles/super-cub-110/360/`에 있음 — 경로 순서가 뒤바뀐 예전 흔적).
+
+### 남은 것 (다음 세션에서 이어할 것)
+- **MORIWAKI XXX 삭제** — 코드/시드 JSON엔 없지만 **로컬 MySQL DB `/parts/1`에 레거시로
+  남아있음**(현재 시더가 만든 게 아니라 과거에 DB에 직접 넣은 데이터). 참조 확인 결과
+  Compatibility 1건 + RecentPartCheck 2건만 걸려있어 삭제해도 안전함을 확인했으나,
+  Claude Code 자동 모드의 "되돌릴 수 없는 삭제" 안전장치가 DB DELETE 실행을 막아서
+  사용자가 직접 실행해야 함:
+  ```sql
+  DELETE FROM recent_part_check WHERE part_id=1;
+  DELETE FROM compatibility WHERE part_id=1;
+  DELETE FROM part WHERE id=1;
+  ```
+- **Home 섹션 큰 폭 비주얼 리디자인** — 이번 세션엔 시간 제약으로 hover/그라디언트 등
+  안전한 수준의 보강만 함. Hero/카드 레이아웃 자체를 더 과감하게 바꾸는 건 안 건드림.
+- **브라우저 실기기/모바일 클릭 테스트** — API curl + `npm run build` + 백엔드 유닛테스트로만
+  검증했고, Playwright 등으로 실제 화면을 띄워 확인하지는 못함.
+- **신규 부품 14종 실물 이미지** — 아직 없어서 FitRoom에서 "이미지 준비중" 텍스트 배지로만
+  표시됨.
+
+---
+
 ## 추가 세션: 데이터/UX 완성도 보강 (6개 항목, 자율 진행)
 
 `main` 브랜치에서 그대로 진행(별도 브랜치 없음, **push 안 함**). 커밋 4개로 나눠서 진행:
