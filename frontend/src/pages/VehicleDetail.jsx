@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import SimilarVehicles from '../components/SimilarVehicles'
 import TraitBars from '../components/TraitBars'
+import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleImage from '../components/VehicleImage'
 import { useAuth } from '../context/AuthContext'
+import { VEHICLE_360_FRAMES } from '../constants/vehicle360'
 import { api } from '../lib/api'
 import { loadPartCategorySlugs } from '../lib/guide'
 import { addRecentVehicle } from '../lib/recentVehicles'
@@ -92,8 +94,10 @@ function VehicleDetail() {
     setAdding(true)
     setActionMessage(null)
     try {
-      await api.post('/api/my-vehicles', { modelYearId: Number(yearId) })
-      navigate('/garage')
+      // 차고에 추가하자마자 바로 부품 입혀보기(FitRoom)로 연결한다 - "차량 선택 -> 꾸며보기"가
+      // 끊기지 않고 이어지도록.
+      const created = await api.post('/api/my-vehicles', { modelYearId: Number(yearId) })
+      navigate(`/garage/${created.id}/fit`)
     } catch (err) {
       setActionMessage(err.message)
     } finally {
@@ -123,7 +127,15 @@ function VehicleDetail() {
 
       <section className="grid gap-8 md:grid-cols-2">
         <div className="overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card shadow-lg">
-          <VehicleImage vehicle={vehicle} className="h-64 w-full bg-ridefit-bg" />
+          {VEHICLE_360_FRAMES[vehicle.imageUrl] ? (
+            <Vehicle360Viewer
+              frames={VEHICLE_360_FRAMES[vehicle.imageUrl]}
+              alt={vehicle.name}
+              className="h-72 w-full sm:h-96"
+            />
+          ) : (
+            <VehicleImage vehicle={vehicle} className="h-72 w-full bg-ridefit-bg sm:h-96" />
+          )}
         </div>
 
         <div className="flex flex-col gap-3">
@@ -173,7 +185,7 @@ function VehicleDetail() {
                     disabled={adding}
                     className="rounded-lg bg-ridefit-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
                   >
-                    {adding ? '추가 중...' : '내 차고에 추가'}
+                    {adding ? '추가 중...' : '내 차고에 추가하고 꾸며보기'}
                   </button>
                 </div>
               </>

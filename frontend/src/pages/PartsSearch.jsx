@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import PartBadges from '../components/PartBadges'
 import SellerListings from '../components/SellerListings'
+import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
+import { getVehicle360Frames } from '../constants/vehicle360'
+import { getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 import { loadPartCategorySlugs } from '../lib/guide'
 
@@ -11,6 +14,8 @@ const STATUS_STYLE = {
   브라켓필요: 'text-ridefit-warning',
   호환불가: 'text-ridefit-danger',
 }
+
+const PAGE_SIZE = 8
 
 // "부품 찾아보기": 내 차량 이미지를 중심에 두고, 부품을 켜고 끄면서 조합을 맞춰보는 커스터마이징 화면.
 // 상품을 나열해서 파는 화면이 아니라 FitRoom과 같은 "장착 시뮬레이션" 언어를 그대로 쓴다.
@@ -24,6 +29,8 @@ function PartsSearch() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  const [viewMode, setViewMode] = useState('fit') // 'fit' | '360' - 차량 전체 보기(360)와 부품 장착(2D)은 서로 다른 화면이다.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [selectedPartIds, setSelectedPartIds] = useState([])
   const [conflicts, setConflicts] = useState(null)
   const [checkingConflicts, setCheckingConflicts] = useState(false)
@@ -93,12 +100,20 @@ function PartsSearch() {
   }, [vehicleId])
 
   const vehicle = vehicles.find((v) => String(v.id) === String(vehicleId)) ?? null
+  const vehicle360Frames = getVehicle360Frames(vehicle)
 
   const handleVehicleChange = (id) => {
     setCategory(null)
     setSelectedPartIds([])
     setConflicts(null)
+    setVisibleCount(PAGE_SIZE)
+    setViewMode('fit')
     setSearchParams({ vehicleId: id })
+  }
+
+  const handleCategoryChange = (cat) => {
+    setCategory(cat)
+    setVisibleCount(PAGE_SIZE)
   }
 
   const togglePartSelection = (partId) => {
@@ -125,10 +140,12 @@ function PartsSearch() {
     () => parts.filter((p) => selectedPartIds.includes(p.partId)),
     [parts, selectedPartIds],
   )
-  const visibleParts = useMemo(
+  const filteredParts = useMemo(
     () => (category ? parts.filter((p) => p.category === category) : parts),
     [parts, category],
   )
+  const visibleParts = filteredParts.slice(0, visibleCount)
+  const hasMoreParts = filteredParts.length > visibleParts.length
   const activeConflictPairs = (conflicts ?? []).filter(
     (c) => selectedPartIds.includes(c.partAId) && selectedPartIds.includes(c.partBId),
   )
@@ -190,11 +207,46 @@ function PartsSearch() {
             {/* 현재 차량 + 선택한 부품 위치 미리보기 */}
             <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
               <div className="relative overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6">
-                <VehicleFitStage vehicle={vehicle} parts={selectedParts} conflictPartIds={conflictPartIds} />
+                {vehicle360Frames && (
+                  <div className="mb-4 flex justify-center gap-2" role="group" aria-label="차량 보기 방식">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('fit')}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                        viewMode === 'fit' ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-bg-alt'
+                      }`}
+                    >
+                      부품 장착
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('360')}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                        viewMode === '360' ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-bg-alt'
+                      }`}
+                    >
+                      360° 보기
+                    </button>
+                  </div>
+                )}
+
+                {viewMode === '360' && vehicle360Frames ? (
+                  // "부품 장착" 무대(VehicleFitStage)와 같은 종횡비를 써서, 두 보기 모드를 오갈 때
+                  // 차량이 갑자기 커지거나 작아 보이지 않게 한다(둘 다 실제 사진 비율 기준).
+                  <Vehicle360Viewer
+                    frames={vehicle360Frames}
+                    alt={vehicle?.nickname || vehicle?.modelYearLabel}
+                    className="mx-auto w-full max-w-2xl"
+                    style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
+                  />
+                ) : (
+                  <VehicleFitStage vehicle={vehicle} parts={selectedParts} conflictPartIds={conflictPartIds} />
+                )}
+
                 <p className="mt-4 text-center text-sm font-medium text-ridefit-text">
                   {vehicle ? vehicle.nickname || vehicle.modelYearLabel : '차량 선택'}
                 </p>
-                {selectedParts.length === 0 && (
+                {viewMode === 'fit' && selectedParts.length === 0 && (
                   <p className="mt-1 text-center text-xs text-ridefit-text-secondary">
                     오른쪽에서 부품을 장착하면 차량 위에 표시돼요.
                   </p>
@@ -239,7 +291,7 @@ function PartsSearch() {
               <div className="mb-4 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setCategory(null)}
+                  onClick={() => handleCategoryChange(null)}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                     category === null
                       ? 'bg-ridefit-primary text-white'
@@ -252,7 +304,7 @@ function PartsSearch() {
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => setCategory(cat)}
+                    onClick={() => handleCategoryChange(cat)}
                     className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                       category === cat
                         ? 'bg-ridefit-primary text-white'
@@ -317,6 +369,12 @@ function PartsSearch() {
                             <p className={`text-xs font-medium ${STATUS_STYLE[part.status] ?? 'text-ridefit-text-secondary'}`}>
                               {part.category} · {part.status}
                             </p>
+                            {part.stats?.ratingCount > 0 && (
+                              <p className="mt-0.5 text-xs text-ridefit-text-secondary">
+                                <span className="text-ridefit-warning">★</span> {part.stats.avgRating.toFixed(1)}{' '}
+                                <span className="text-ridefit-text-secondary/70">({part.stats.ratingCount}개 후기)</span>
+                              </p>
+                            )}
                             {part.stats?.badges?.length > 0 && (
                               <div className="mt-1">
                                 <PartBadges badges={part.stats.badges} />
@@ -372,6 +430,15 @@ function PartsSearch() {
                       </div>
                     )
                   })}
+                  {hasMoreParts && (
+                    <button
+                      type="button"
+                      onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                      className="rounded-lg border border-ridefit-border py-2 text-sm font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary"
+                    >
+                      더보기 ({filteredParts.length - visibleParts.length}개 더 있음)
+                    </button>
+                  )}
                 </div>
               )}
             </div>

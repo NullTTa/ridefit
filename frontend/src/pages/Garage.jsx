@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import SimilarVehicles from '../components/SimilarVehicles'
+import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
+import { getVehicle360Frames } from '../constants/vehicle360'
 import { api } from '../lib/api'
 
 function Garage() {
@@ -68,10 +70,11 @@ function Garage() {
               key={vehicle.id}
               className="overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card shadow-lg transition hover:-translate-y-1"
             >
-              <img
-                src={vehicle.photoUrl || vehicle.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE}
+              <Vehicle360Viewer
+                frames={getVehicle360Frames(vehicle) ?? [vehicle.photoUrl || vehicle.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE]}
                 alt={vehicle.nickname || vehicle.modelYearLabel}
-                className="h-40 w-full object-contain bg-ridefit-bg-alt p-2"
+                className="h-40 w-full p-2"
+                showControls={false}
               />
               <div className="p-4">
                 <p className="text-xs font-medium text-ridefit-primary">{vehicle.manufacturerName}</p>

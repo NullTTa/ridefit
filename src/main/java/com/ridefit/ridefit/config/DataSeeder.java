@@ -87,6 +87,7 @@ public class DataSeeder implements CommandLineRunner {
 
         // 실제 차량 사진이 있는 모델만 등록해둔다. 나머지는 프론트에서 임시 아이콘을 그대로 보여준다.
         modelImage(superCub, "/assets/vehicles/super-cub-110.png");
+        modelImage(pcx, "/assets/vehicles/pcx/main.png");
 
         // 슈퍼커브 110 엔진오일: 교환주기/오일량은 혼다 공식 고객지원 FAQ 기준(신뢰도 높음).
         // 점도(SAE)/JASO/API 등급은 혼다 순정 오일 제품라인(Ultra G1 STANDARD) 표기를 참고한 값으로,
@@ -148,6 +149,18 @@ public class DataSeeder implements CommandLineRunner {
         Part cubCarrier = part("리어 확장 캐리어 (Cub 110)", "캐리어", 65000);
         Part cubMirror = part("범용 백미러 세트 (Cub 110)", "미러", 32000);
         Part cubSeat = part("펀칭 가죽 시트 커버 (Cub 110)", "시트", 48000);
+        // Cub 110 커스텀에서 실제로 많이 쓰는 카테고리를 넓혀 카탈로그를 보강한다(2026-09-22).
+        // 전부 실제 구매 링크를 찾지 못해 sourceUrl/imageUrl은 비워두고(=화면에서 "이미지 준비중" fallback),
+        // 이름/카테고리/가격/호환성만 정상적으로 구성한다 - 존재하지 않는 판매처 상품인 것처럼 꾸미지 않는다.
+        Part cubHeadlight = part("LED 헤드라이트 키트 (Cub 110)", "램프", 68000);
+        Part cubScreen = part("스포츠 윈드스크린 (Cub 110)", "스크린", 55000);
+        Part cubGrip = part("논슬립 그립 세트 (Cub 110)", "핸들바", 15000);
+        Part cubLever = part("쇼트 브레이크 레버 세트 (Cub 110)", "레버", 28000);
+        Part cubFootpeg = part("확장 풋페그 세트 (Cub 110)", "풋페그", 32000);
+        Part cubEngineGuard = part("엔진 프로텍터 가드 (Cub 110)", "엔진가드", 75000);
+        Part cubRearShock = part("리어 쇼크업소버 (Cub 110)", "리어쇼크", 120000);
+        Part cubFrontCarrier = part("프론트 유틸리티 캐리어 (Cub 110)", "프론트캐리어", 58000);
+        Part cubTopBoxBracket = part("탑박스 브라켓 세트 (Cub 110)", "탑박스", 45000);
         Part pcxScreen = part("스포츠 윈드스크린 (PCX)", "스크린", 79000);
         Part pcxCarrier = part("탑박스 캐리어 (PCX)", "캐리어", 95000);
         Part pcxLever = part("알루미늄 브레이크 레버 세트 (PCX)", "레버", 54000);
@@ -163,6 +176,19 @@ public class DataSeeder implements CommandLineRunner {
         // 범용 클램프온 미러는 핸들바 규격이 같아서 세대를 넘어 두루 호환된다 — 세대별로 다른 부품과 대비됨.
         for (ModelYear y : List.of(cub10, cub15, cub21, cub23)) {
             compat(y, cubMirror, "호환가능", null);
+        }
+        // 아래 8종은 JA44 세대(2018~, cub21/cub23) 바디/프레임 기준. 볼트온 성격이 강한 항목은 호환가능,
+        // 프레임/서브프레임에 직접 물리는 항목(엔진가드/프론트캐리어)은 브라켓필요로 구분했다.
+        for (ModelYear y : List.of(cub21, cub23)) {
+            compat(y, cubHeadlight, "호환가능", null);
+            compat(y, cubScreen, "호환가능", "핸들바 클램프 방식, 공구 없이 장착 가능");
+            compat(y, cubGrip, "호환가능", null);
+            compat(y, cubLever, "호환가능", null);
+            compat(y, cubFootpeg, "호환가능", null);
+            compat(y, cubEngineGuard, "브라켓필요", "서브프레임 마운트 브라켓 별도 필요");
+            compat(y, cubRearShock, "호환가능", "순정 쇼크와 동일 아이볼트 규격");
+            compat(y, cubFrontCarrier, "브라켓필요", "헤드라이트 스테이 교체형 브라켓 필요");
+            compat(y, cubTopBoxBracket, "호환가능", "리어 캐리어 위에 추가 장착");
         }
 
         // JF81 세대(2018~) 전용 부품. JF28/JF56은 프레임 자체가 언더본->더블크래들로 바뀌어서 대부분 안 맞는다.

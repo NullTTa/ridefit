@@ -30,7 +30,7 @@
       "cons": ["국내 단종 모델이라 신품 부품 수급이 제한될 수 있음", "장거리·고속 주행에는 맞지 않음"]
     },
     {
-      "manufacturer": "Yamaha", "model": "NMAX 125", "newModel": { "type": "맥시스쿠터", "years": [2021, 2023] }, "displacementCc": 125, "bodyStyle": "맥시스쿠터", "priceTier": 3,
+      "manufacturer": "Yamaha", "model": "NMAX 125", "newModel": { "type": "맥시스쿠터", "years": [2021, 2023] }, "displacementCc": 125, "bodyStyle": "맥시스쿠터", "priceTier": 3, "imageUrl": "/assets/vehicles/n-max-125/main.png",
       "traits": { "COMMUTE": 5, "TOURING": 3, "DESIGN": 4, "PERFORMANCE": 3, "COMFORT": 4, "ECONOMY": 4, "TUNING": 3, "CITY": 5 },
       "summary": "스포티한 디자인과 실용성을 함께 갖춘 125cc 맥시스쿠터. 출퇴근용으로 많이 선택되는 모델이에요.",
       "pros": ["스포티한 외관과 편리한 수납의 균형", "125cc급에서 무난한 출력과 연비", "도심 출퇴근에 잘 맞는 크기"],

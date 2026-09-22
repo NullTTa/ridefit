@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import PartBadges from '../components/PartBadges'
+import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
+import { getVehicle360Frames } from '../constants/vehicle360'
+import { getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 
 const STATUS_STYLE = {
@@ -20,6 +23,7 @@ function FitRoom() {
   const [activePartIds, setActivePartIds] = useState(new Set())
   const [conflicts, setConflicts] = useState([])
   const [checkingConflicts, setCheckingConflicts] = useState(false)
+  const [viewMode, setViewMode] = useState('fit')
 
   useEffect(() => {
     setLoading(true)
@@ -46,6 +50,7 @@ function FitRoom() {
   }, [parts])
 
   const activeParts = useMemo(() => parts.filter((p) => activePartIds.has(p.partId)), [parts, activePartIds])
+  const vehicle360Frames = getVehicle360Frames(vehicle)
 
   const checkConflicts = async (nextIds) => {
     if (nextIds.size < 2) {
@@ -96,9 +101,42 @@ function FitRoom() {
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
         {/* 차량 이미지 + 장착된 부품 이미지 오버레이(오버레이 이미지가 없는 부품은 배지) */}
         <div className="relative self-start overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6 lg:sticky lg:top-6">
-          <VehicleFitStage vehicle={vehicle} parts={activeParts} conflictPartIds={conflictPartIds} />
+          {vehicle360Frames && (
+            <div className="mb-4 flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewMode('fit')}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  viewMode === 'fit' ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
+                }`}
+              >
+                부품 장착
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('360')}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  viewMode === '360' ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
+                }`}
+              >
+                360° 보기
+              </button>
+            </div>
+          )}
 
-          {activeParts.length === 0 && (
+          {viewMode === '360' && vehicle360Frames ? (
+            // "부품 장착" 무대와 같은 종횡비를 써서 두 보기 모드를 오갈 때 차량 크기가 달라 보이지 않게 한다.
+            <Vehicle360Viewer
+              frames={vehicle360Frames}
+              alt={vehicle.nickname || vehicle.modelYearLabel}
+              className="mx-auto w-full max-w-lg"
+              style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
+            />
+          ) : (
+            <VehicleFitStage vehicle={vehicle} parts={activeParts} conflictPartIds={conflictPartIds} />
+          )}
+
+          {viewMode === 'fit' && activeParts.length === 0 && (
             <p className="mt-4 text-center text-sm text-ridefit-text-secondary">
               오른쪽 목록에서 부품을 켜면 차량 위에 표시돼요.
             </p>
@@ -160,6 +198,12 @@ function FitRoom() {
                           <p className="text-xs text-ridefit-text-secondary">
                             {part.price.toLocaleString()}원 · {part.status}
                           </p>
+                          {part.stats?.ratingCount > 0 && (
+                            <p className="text-xs text-ridefit-text-secondary">
+                              <span className="text-ridefit-warning">★</span> {part.stats.avgRating.toFixed(1)}{' '}
+                              <span className="text-ridefit-text-secondary/70">({part.stats.ratingCount}개 후기)</span>
+                            </p>
+                          )}
                           {part.stats?.badges?.length > 0 && (
                             <div className="mt-1">
                               <PartBadges badges={part.stats.badges} />
