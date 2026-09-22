@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { RIDEFIT_LOGO_IMAGE } from '../constants/images'
 
 const NAV_ITEMS = [
   { to: '/', label: '홈' },
@@ -13,9 +14,32 @@ const NAV_ITEMS = [
 ]
 
 function navLinkClass({ isActive }) {
-  return `text-sm font-medium transition-colors ${
-    isActive ? 'text-ridefit-primary' : 'text-ridefit-text-secondary hover:text-ridefit-primary'
+  return `relative py-1 text-sm font-medium transition-colors after:absolute after:-bottom-[21px] after:left-0 after:h-0.5 after:rounded-full after:transition-all ${
+    isActive
+      ? 'text-ridefit-primary after:w-full after:bg-ridefit-primary'
+      : 'text-ridefit-text-secondary after:w-0 hover:text-ridefit-primary hover:after:w-full hover:after:bg-ridefit-primary/40'
   }`
+}
+
+function GarageIcon({ className = '' }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="6" cy="17" r="2.5" />
+      <circle cx="17" cy="17" r="2.5" />
+      <path d="M6 17 L9 10 L13 10 L16 17" />
+      <path d="M9 10 L8 7 L11 7" />
+      <path d="M13 10 L15.5 6.5 L18 8" />
+    </svg>
+  )
 }
 
 function Header() {
@@ -30,13 +54,10 @@ function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-ridefit-border bg-ridefit-bg/80 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-ridefit-border bg-ridefit-bg/80 shadow-[0_1px_0_0_rgba(255,107,53,0.15)] backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-ridefit-accent text-sm font-bold text-white">
-            RF
-          </span>
-          <span className="text-lg font-bold text-ridefit-text">RIDEFIT</span>
+        <Link to="/" className="flex shrink-0 items-center transition-transform hover:scale-[1.03]">
+          <img src={RIDEFIT_LOGO_IMAGE} alt="RIDEFIT" className="h-11 w-auto sm:h-12" />
         </Link>
 
         <nav className="hidden items-center gap-4 lg:flex">
@@ -45,11 +66,6 @@ function Header() {
               {item.label}
             </NavLink>
           ))}
-          {isAuthenticated && (
-            <NavLink to="/garage" end className={navLinkClass}>
-              내 차고
-            </NavLink>
-          )}
           {isAuthenticated && (
             <NavLink to="/reservations" className={navLinkClass}>
               내 예약
@@ -60,8 +76,19 @@ function Header() {
         <div className="hidden items-center gap-3 lg:flex">
           {isAuthenticated ? (
             <>
-              <Link to="/mypage" className="text-sm text-ridefit-text-secondary hover:text-ridefit-primary">
-                {user?.name}님
+              <span className="text-sm text-ridefit-text-secondary">{user?.name}님</span>
+              <Link
+                to="/mypage"
+                className="text-sm font-medium text-ridefit-text-secondary transition-colors hover:text-ridefit-primary focus-visible:text-ridefit-primary focus-visible:outline-none"
+              >
+                마이페이지
+              </Link>
+              <Link
+                to="/garage"
+                className="flex items-center gap-1.5 rounded-full border border-ridefit-border px-3 py-1.5 text-sm font-medium text-ridefit-text-secondary transition-colors hover:border-ridefit-primary hover:text-ridefit-primary focus-visible:border-ridefit-primary focus-visible:text-ridefit-primary focus-visible:outline-none"
+              >
+                <GarageIcon className="h-4 w-4" />
+                내 차고
               </Link>
               {isAdmin && (
                 <Link
@@ -118,13 +145,25 @@ function Header() {
             </NavLink>
           ))}
           {isAuthenticated && (
-            <NavLink to="/garage" end onClick={() => setMenuOpen(false)} className={navLinkClass}>
-              내 차고
+            <NavLink to="/mypage" onClick={() => setMenuOpen(false)} className={navLinkClass}>
+              마이페이지
             </NavLink>
           )}
           {isAuthenticated && (
-            <NavLink to="/mypage" onClick={() => setMenuOpen(false)} className={navLinkClass}>
-              마이페이지
+            <NavLink
+              to="/garage"
+              end
+              onClick={() => setMenuOpen(false)}
+              className={({ isActive }) =>
+                `flex w-fit items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'border-ridefit-primary text-ridefit-primary'
+                    : 'border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-primary hover:text-ridefit-primary'
+                }`
+              }
+            >
+              <GarageIcon className="h-4 w-4" />
+              내 차고
             </NavLink>
           )}
           {isAuthenticated && (
