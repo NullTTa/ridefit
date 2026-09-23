@@ -342,12 +342,16 @@ function VehicleDetail() {
                     <li key={part.partId}>
                       <Link
                         to={`/parts/${part.partId}`}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-ridefit-border bg-ridefit-card px-4 py-3 transition hover:border-ridefit-primary"
+                        className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-ridefit-border bg-ridefit-card px-4 py-3 transition hover:border-ridefit-primary"
                       >
                         <span className="text-sm text-ridefit-text">{part.name}</span>
-                        <span className="shrink-0 text-xs">
-                          {part.years.map((y) => (
-                            <span key={y.year} className={`ml-2 ${STATUS_STYLE[y.status] ?? 'text-ridefit-text-secondary'}`}>
+                        {/* 연식이 많은 차량(6개)은 한 줄에 다 안 들어가 가로 스크롤을 유발했음 - 배지가
+                            자체적으로 줄바꿈되도록 flex-wrap으로 바꿈(375px 모바일에서 실제 확인). */}
+                        <span className="flex flex-wrap justify-end gap-x-2 gap-y-1 text-xs">
+                          {part.years.map((y, i) => (
+                            // 연식(year)이 비어있는 레거시 ModelYear 로우가 같은 부품에 여러 번 걸려 있으면
+                            // year만으로는 key가 중복(둘 다 null)될 수 있어 배열 인덱스를 함께 섞는다.
+                            <span key={`${y.year ?? 'na'}-${y.status}-${i}`} className={STATUS_STYLE[y.status] ?? 'text-ridefit-text-secondary'}>
                               {y.year} {y.status}
                             </span>
                           ))}
