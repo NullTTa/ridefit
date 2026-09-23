@@ -21,7 +21,9 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -56,11 +58,20 @@ public class MeController {
         return ResponseEntity.noContent().build();
     }
 
+    // 같은 부품을 여러 번 확인하면 로그가 그만큼 쌓이는데(로그 자체는 지우지 않음), 화면엔 부품당
+    // 가장 최근 기록 1건만 보여준다 - 최근 순으로 넉넉히 가져온 뒤 partId 기준으로 처음 나온 것만
+    // 남기면(LinkedHashMap이 순서를 보존) 자연히 "가장 최근 것"이 남는다.
     @GetMapping("/api/me/recent-checks")
     public List<RecentPartCheckResponse> getRecentChecks() {
-        return recentPartCheckRepository
-                .findByMemberIdOrderByCheckedAtDesc(currentMember.id(), PageRequest.of(0, 10)).stream()
+        List<RecentPartCheckResponse> recent = recentPartCheckRepository
+                .findByMemberIdOrderByCheckedAtDesc(currentMember.id(), PageRequest.of(0, 30)).stream()
                 .map(RecentPartCheckResponse::from)
                 .toList();
+
+        Map<Long, RecentPartCheckResponse> latestByPart = new LinkedHashMap<>();
+        for (RecentPartCheckResponse check : recent) {
+            latestByPart.putIfAbsent(check.partId(), check);
+        }
+        return latestByPart.values().stream().limit(10).toList();
     }
 }

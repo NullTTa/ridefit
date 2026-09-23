@@ -222,7 +222,9 @@ function MyPage() {
                 <span className="font-medium text-ridefit-text">{r.shopName}</span>
                 <span className="text-ridefit-text-secondary">
                   {' '}
-                  · {r.items.map((item) => item.serviceName).join(', ')} · {r.preferredAt?.slice(0, 16).replace('T', ' ')}
+                  {/* 리팩터링 이전 예약은 items가 비어있을 수 있어, 빈칸 대신 안내 문구로 대신한다. */}
+                  · {r.items.length > 0 ? `${r.items.map((item) => item.serviceName).join(', ')} · ` : '서비스 정보 없음 · '}
+                  {r.preferredAt?.slice(0, 16).replace('T', ' ')}
                   {r.status === 'CANCELED' && ' · 취소됨'}
                 </span>
               </li>

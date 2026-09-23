@@ -68,8 +68,17 @@ function Reservations() {
               </span>
             </div>
             <p className="mt-1 text-sm text-ridefit-text-secondary">
-              {r.items.map((item) => item.serviceName + (item.oilTypeLabel ? `(${item.oilTypeLabel})` : '')).join(', ')}
-              {r.totalPrice != null && ` · ${r.totalPrice.toLocaleString()}원`} · {formatDateTime(r.preferredAt)}
+              {/* 리팩터링 이전(서비스 1개만 담던 시절)에 만들어진 예약은 items가 비어있을 수 있다 -
+                  빈칸으로 보이지 않게 안내 문구로 대신하고, 가격/서비스명은 지어내지 않는다. */}
+              {r.items.length > 0 ? (
+                <>
+                  {r.items.map((item) => item.serviceName + (item.oilTypeLabel ? `(${item.oilTypeLabel})` : '')).join(', ')}
+                  {r.totalPrice != null && ` · ${r.totalPrice.toLocaleString()}원`} ·{' '}
+                </>
+              ) : (
+                '서비스 정보 없음 · '
+              )}
+              {formatDateTime(r.preferredAt)}
               {r.vehicleLabel && ` · ${r.vehicleLabel}`}
             </p>
             {r.memo && <p className="mt-1 text-xs text-ridefit-text-secondary">요청: {r.memo}</p>}
