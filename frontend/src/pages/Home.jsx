@@ -291,6 +291,70 @@ function Home() {
         </div>
       </section>
 
+      {/* 4.5 FitRoom */}
+      <section>
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
+          <Reveal>
+            <SectionHead
+              eyebrow="FITROOM"
+              title="내 바이크에 달면 어떤 모습일까?"
+              description="마음에 드는 부품을 고르고, 내 차량에 장착한 모습을 미리 확인해보세요."
+            />
+          </Reveal>
+
+          <Reveal>
+            <div className="grid items-center gap-6 rounded-2xl border border-ridefit-primary/40 bg-ridefit-card p-6 shadow-lg sm:p-8 lg:grid-cols-[1.1fr_1fr]">
+              <div>
+                <p className="text-3xl" aria-hidden="true">
+                  🎨
+                </p>
+                <h3 className="mt-3 text-xl font-bold text-ridefit-text">부품을 여러 개 올려보고 비교하세요</h3>
+                <p className="mt-2 text-sm text-ridefit-text-secondary">
+                  호환되는 부품들을 카테고리별로 켜고 꺼보면서 동시에 비교할 수 있어요. 함께 장착하면
+                  간섭이 생기는 조합은 미리 경고해드려요.
+                </p>
+                <div className="mt-5">
+                  {isAuthenticated && showMyVehicles ? (
+                    <Link
+                      to={`/garage/${myVehicles[0].id}/fit`}
+                      className="inline-block rounded-lg bg-ridefit-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+                    >
+                      내 차량에 장착해보기 →
+                    </Link>
+                  ) : isAuthenticated ? (
+                    <Link
+                      to="/garage/new"
+                      className="inline-block rounded-lg bg-ridefit-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+                    >
+                      차량 등록하고 장착해보기 →
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="inline-block rounded-lg bg-ridefit-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+                    >
+                      로그인하고 장착해보기 →
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2">
+                {partsForShowcase.slice(0, 3).map((part) => (
+                  <div key={part.id} className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-xl border border-ridefit-border bg-white p-2 shadow sm:h-28 sm:w-28">
+                    {part.imageUrl ? (
+                      <img src={part.imageUrl} alt={part.name} className="h-full w-full object-contain" />
+                    ) : (
+                      <span className="text-xs text-ridefit-text-secondary">이미지 준비중</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* 5. 차량/부품 정보 */}
       <section>
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
@@ -319,6 +383,46 @@ function Home() {
               </Reveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* 5.5 정비 예약 */}
+      <section className="bg-ridefit-bg-alt">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
+          <Reveal>
+            <SectionHead
+              eyebrow="MAINTENANCE"
+              title="정비가 필요할 때, 예약까지 한 번에"
+              description="차량을 고르고, 필요한 서비스를 한 번에 골라서, 예약까지 이어가세요."
+              to="/services"
+              toLabel="정비·세차 서비스 보기"
+            />
+          </Reveal>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { step: '01', title: '차량 선택', desc: '정비 받을 내 차량을 골라요.' },
+              { step: '02', title: '서비스 선택', desc: '오일교환, 타이어 등 필요한 서비스를 여러 개 골라요.' },
+              { step: '03', title: '예약 신청', desc: '날짜·시간을 정하면 선택 내역과 총 금액이 함께 확정돼요.' },
+            ].map((s, i) => (
+              <Reveal key={s.step} delay={i * 0.08}>
+                <div className="h-full rounded-xl border border-ridefit-border bg-ridefit-card p-5 transition hover:-translate-y-1 hover:border-ridefit-primary/60">
+                  <span className="font-mono text-xs text-ridefit-primary">{s.step}</span>
+                  <h3 className="mt-1 font-bold text-ridefit-text">{s.title}</h3>
+                  <p className="mt-1 text-sm text-ridefit-text-secondary">{s.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={0.1}>
+            <Link
+              to="/services"
+              className="mt-6 inline-block rounded-lg bg-ridefit-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+            >
+              정비 서비스 예약하기 →
+            </Link>
+          </Reveal>
         </div>
       </section>
 
