@@ -276,6 +276,21 @@ public class ContentSeeder implements CommandLineRunner {
         });
         // "야마하 범용 알로이 휠 커버 세트"는 NMAX(13")/XMAX(전15"·후14")가 서로 휠 사이즈가 달라 연결하지 않는다.
 
+        // Cygnus Gryphus 125(2026-09-23 신규 추가) - 차종 전용 부품은 만들지 않고, 이름 그대로
+        // "야마하 범용"인 그립/미러만 재사용한다(같은 제조사 핸들바 클램프 규격 공용이라는 기존
+        // NMAX/XMAX 연결과 같은 근거). 나머지 카테고리(머플러/캐리어/시트 등)는 이 차종 전용 부품이
+        // 없고, 근거 없이 다른 차종 전용 부품을 끌어다 붙이지 않는다.
+        List<ModelYear> cygnusYears = modelYearsOf("Yamaha", "Cygnus Gryphus 125");
+        if (!cygnusYears.isEmpty()) {
+            partRepository.findByName("야마하 범용 핸들바 그립 세트").ifPresent(grip -> {
+                for (ModelYear y : cygnusYears) compat(y, grip, "호환가능", null);
+            });
+            partRepository.findByName("야마하 범용 사이드미러 세트").ifPresent(mirror -> {
+                String note = "미러 마운트 나사 규격이 모델별로 다를 수 있어 장착 전 확인이 필요합니다";
+                for (ModelYear y : cygnusYears) compat(y, mirror, "브라켓필요", note);
+            });
+        }
+
         Part cbMuffler = part("CB125R 숏 슬립온 머플러", "머플러", 259000);
         Part cbLamp = part("CB125R LED 테일램프 세트", "램프", 42000);
         Part cbHandlebar = part("CB125R 레이싱 클립온 핸들바", "핸들바", 89000);
@@ -424,6 +439,61 @@ public class ContentSeeder implements CommandLineRunner {
         for (ModelYear y : pcxRecent) {
             compat(y, pcxAirFilter, "호환가능", "순정 에어박스 그대로 사용");
         }
+
+        // ---- 상품이 1개뿐이던 카테고리 보강 (2026-09-23) - 실제 있을 법한 범용/차종전용 품목만 추가,
+        // 이미지가 없는 신규 항목은 imageUrl을 채우지 않아 "이미지 준비중"으로 정직하게 표시한다.
+        Part sideBagGeneric = part("범용 방수 사이드백 (편도형)", "사이드백", 52000);
+        Part footpegGeneric = part("범용 확장 풋페그 세트", "풋페그", 28000);
+        Part engineGuardNaked = part("엔진가드 세트 (네이키드/스포츠용)", "엔진가드", 48000);
+        Part rearShockScooter = part("리어 쇼크업소버 (스쿠터용 범용)", "리어쇼크", 65000);
+        Part frontCarrierPcx = part("PCX 프론트 유틸리티 캐리어", "프론트캐리어", 52000);
+        Part topboxBracketPcx = part("PCX 탑박스 브라켓 세트", "탑박스", 38000);
+        Part phoneMountClamp = part("핸들바 퀵클램프 스마트폰 거치대", "스마트폰거치대", 16000);
+        Part phoneMountPouch = part("바이크용 방수 스마트폰 파우치형 거치대", "스마트폰거치대", 24000);
+        Part usbSocketCigar = part("시거잭 겸용 USB 충전 소켓", "USB충전기", 15000);
+        Part usbSocketTypeC = part("퀵차지 지원 USB-C 충전 소켓", "USB충전기", 23000);
+        Part rearBagSaddle = part("소형 리어백 (안장 고정형)", "리어백", 29000);
+        Part handlebarFrameBag = part("핸들바 프레임백 (대용량)", "핸들바가방", 32000);
+        Part handguardRacing = part("레이싱 스타일 핸드가드 세트", "핸드가드", 45000);
+        Part knuckleGuardWind = part("반투명 윈드 너클가드", "너클가드", 19000);
+        Part frontBasketFoldable = part("접이식 프론트 바구니", "프론트바구니", 27000);
+
+        for (ModelYear y : allExisting) {
+            compat(y, sideBagGeneric, "브라켓필요", "프레임 레일/시트 스트랩 고정형, 차종별 고정점 확인 필요");
+            compat(y, footpegGeneric, "브라켓필요", "페그 마운트 규격이 차종마다 달라 브라켓 확인 필요");
+            compat(y, phoneMountClamp, "호환가능", "핸들바 클램프 방식(22~32mm 대응)");
+            compat(y, phoneMountPouch, "호환가능", "핸들바 스트랩 고정 방식, 범용");
+            compat(y, usbSocketCigar, "브라켓필요", "배터리 상시전원 배선 연결 필요");
+            compat(y, usbSocketTypeC, "브라켓필요", "배터리 상시전원 배선 연결 필요");
+            compat(y, rearBagSaddle, "호환가능", "캐리어 없이 안장 스트랩만으로 고정");
+            compat(y, handlebarFrameBag, "호환가능", "핸들바 스트랩 고정 방식, 범용");
+        }
+        for (ModelYear y : exposedHandlebar) {
+            compat(y, engineGuardNaked, "호환가능", "엔진 하단 마운트 볼트 공용 규격");
+            compat(y, handguardRacing, "호환가능", "핸들바 외경 22mm 기준 클램프");
+            compat(y, knuckleGuardWind, "호환가능", "핸들바 외경 22mm 기준 클램프");
+        }
+        for (ModelYear y : stepThrough) {
+            compat(y, rearShockScooter, "브라켓필요", "차종별 쇼크 마운트 길이 확인 필요");
+        }
+        for (ModelYear y : pcxRecent) {
+            compat(y, frontCarrierPcx, "브라켓필요", "헤드라이트 스테이 교체형 브라켓 필요");
+            compat(y, topboxBracketPcx, "브라켓필요", "탑박스 베이스 별도 구매 필요");
+        }
+
+        // 예전에 잘못 들어간 카테고리명 정정("사이드미러"/"윈드스크린"은 각각 "미러"/"스크린"으로 통일돼 있어야 함).
+        // 값이 이미 맞으면 그대로 두는 방식이라 재기동해도 안전하다.
+        recategorize("네이키드 라운드 미러 세트", "미러");
+        recategorize("숏 스포츠 스크린 (PCX)", "스크린");
+    }
+
+    private void recategorize(String partName, String correctCategory) {
+        partRepository.findByName(partName).ifPresent(p -> {
+            if (!correctCategory.equals(p.getCategory())) {
+                p.setCategory(correctCategory);
+                partRepository.save(p);
+            }
+        });
     }
 
     // DataSeeder와 동일한 find-or-create 패턴.

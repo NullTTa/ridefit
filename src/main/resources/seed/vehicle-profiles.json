@@ -37,6 +37,13 @@
       "cons": ["장거리에서는 배기량의 한계가 있음", "RIDEFIT에 등록된 호환 부품 데이터는 아직 준비 중"]
     },
     {
+      "manufacturer": "Yamaha", "model": "Cygnus Gryphus 125", "newModel": { "type": "스쿠터", "years": [2021] }, "displacementCc": 125, "bodyStyle": "스쿠터", "priceTier": 2, "imageUrl": "/assets/vehicles/cygnus-gryphus-125/main.png",
+      "traits": { "COMMUTE": 5, "TOURING": 2, "DESIGN": 5, "PERFORMANCE": 3, "COMFORT": 4, "ECONOMY": 4, "TUNING": 3, "CITY": 5 },
+      "summary": "일본·대만에서 판매되는 스포티한 플랫플로어 125cc 스쿠터. LED 풀등화와 LCD 계기판을 갖춘 준프리미엄 모델이에요.",
+      "pros": ["스포티하고 각진 디자인", "LED 풀등화·LCD 계기판 등 준프리미엄 사양", "플랫플로어 구조로 짐 싣기가 편함"],
+      "cons": ["국내 정식 판매 모델이 아니라 부품·정비 접근성이 낮을 수 있음", "RIDEFIT에 등록된 호환 부품 데이터는 아직 준비 중"]
+    },
+    {
       "manufacturer": "Yamaha", "model": "XMAX 300", "newModel": { "type": "맥시스쿠터", "years": [2019, 2023] }, "displacementCc": 292, "bodyStyle": "맥시스쿠터", "priceTier": 4,
       "traits": { "COMMUTE": 4, "TOURING": 5, "DESIGN": 4, "PERFORMANCE": 4, "COMFORT": 5, "ECONOMY": 2, "TUNING": 3, "CITY": 3 },
       "summary": "300cc급 맥시스쿠터. 편안한 자세와 넉넉한 출력으로 출퇴근과 장거리 투어링을 함께 노리는 라이더에게 어울려요.",
