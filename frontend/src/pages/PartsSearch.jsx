@@ -6,9 +6,11 @@ import SafeImage from '../components/SafeImage'
 import SellerListings from '../components/SellerListings'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
-import { getVehicle360Frames } from '../constants/vehicle360'
+import VehicleYearBadge, { ModelImageNotice } from '../components/VehicleYearBadge'
+import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
 import { getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
+import { formatFitmentYears } from '../lib/fitment'
 import { loadPartCategorySlugs } from '../lib/guide'
 
 const STATUS_STYLE = {
@@ -238,6 +240,8 @@ function PartsSearch() {
                   </div>
                 )}
 
+                <div className="relative mx-auto w-full max-w-2xl">
+                <VehicleYearBadge vehicle={vehicle} />
                 {viewMode === '360' && vehicle360Frames ? (
                   // "부품 장착" 무대(VehicleFitStage)와 같은 종횡비를 써서, 두 보기 모드를 오갈 때
                   // 차량이 갑자기 커지거나 작아 보이지 않게 한다(둘 다 실제 사진 비율 기준).
@@ -246,10 +250,14 @@ function PartsSearch() {
                     alt={vehicle?.nickname || vehicle?.modelYearLabel}
                     className="mx-auto w-full max-w-2xl"
                     style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
+                    startIndex={getVehicle360StartIndex(vehicle?.modelImageUrl)}
+                    normalizeTo={vehicle?.modelImageUrl}
                   />
                 ) : (
                   <VehicleFitStage vehicle={vehicle} parts={selectedParts} conflictPartIds={conflictPartIds} />
                 )}
+                </div>
+                <ModelImageNotice vehicle={vehicle} className="mt-2" />
 
                 <p className="mt-4 text-center text-sm font-medium text-ridefit-text">
                   {vehicle ? vehicle.nickname || vehicle.modelYearLabel : '차량 선택'}
@@ -406,6 +414,12 @@ function PartsSearch() {
                                 </span>
                               )}
                             </p>
+                            {/* 이 차종에서 이 부품이 장착 가능한 연식(compatibility 기준). 상세는 부품 상세의 "호환 차량". */}
+                            {formatFitmentYears(part.sameModelFitments) && (
+                              <p className="mt-0.5 truncate text-xs text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>
+                                적용: {vehicle?.vehicleModelName} {formatFitmentYears(part.sameModelFitments)}
+                              </p>
+                            )}
                           </div>
 
                           <button

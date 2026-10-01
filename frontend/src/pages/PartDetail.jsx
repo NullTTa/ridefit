@@ -7,9 +7,16 @@ import SellerListings from '../components/SellerListings'
 import YoutubeEmbed from '../components/YoutubeEmbed'
 import { api } from '../lib/api'
 import { fitRoomPath } from '../lib/fitRoom'
+import { formatFitment, groupFitmentsByModel } from '../lib/fitment'
 import { loadPartCategorySlugs } from '../lib/guide'
 
 const FEEDBACK_LABEL = { MATCHED: '맞았어요', NOT_MATCHED: '안 맞았어요' }
+
+const FITMENT_STATUS_STYLE = {
+  호환가능: 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success',
+  브라켓필요: 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning',
+  호환불가: 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger',
+}
 
 function formatDate(iso) {
   if (!iso) return ''
@@ -26,6 +33,10 @@ function PartDetail() {
   const [part, setPart] = useState(null)
   const [reviews, setReviews] = useState([])
   const [checkResult, setCheckResult] = useState(null)
+  // 이 부품이 호환 등록된 차량(차종/연식/세대 코드) - compatibility 그대로
+  const [fitments, setFitments] = useState([])
+  // ?vehicleId= 로 들어온 내 차량(호환 차량 목록에서 "내 차량" 표시, 호환 안내 문구에 사용)
+  const [myVehicle, setMyVehicle] = useState(null)
   const [categorySlugs, setCategorySlugs] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -42,11 +53,18 @@ function PartDetail() {
       api.get(`/api/parts/${partId}${query}`),
       api.get(`/api/parts/${partId}/reviews`, { auth: false }),
       vehicleId ? api.get(`/api/parts/${partId}/check?myVehicleId=${vehicleId}`) : Promise.resolve(null),
+      // 호환 차량 목록/내 차량 정보는 부가 정보라 실패해도 상세 화면은 그대로 보여준다.
+      api.get(`/api/parts/${partId}/compatibilities`, { auth: false }).catch(() => []),
+      vehicleId
+        ? api.get('/api/my-vehicles').then((list) => list.find((v) => String(v.id) === String(vehicleId)) ?? null).catch(() => null)
+        : Promise.resolve(null),
     ])
-      .then(([partData, reviewData, checkData]) => {
+      .then(([partData, reviewData, checkData, fitmentData, vehicleData]) => {
         setPart(partData)
         setReviews(reviewData)
         setCheckResult(checkData)
+        setFitments(fitmentData)
+        setMyVehicle(vehicleData)
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -130,7 +148,10 @@ function PartDetail() {
                   : 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger'
               }`}
             >
-              {checkResult.proceedAllowed ? `내 차량과 호환됩니다 (${checkResult.status})` : '내 차량과 호환되지 않음'}
+              {/* 판정은 기존 /check(CompatibilityCheckService) 결과를 그대로 쓴다. 차량 이름만 덧붙인다. */}
+              {checkResult.proceedAllowed ? '✓ ' : '⚠ '}
+              {myVehicle ? `내 차량(${myVehicle.nickname || myVehicle.modelYearLabel})` : '내 차량'}
+              {checkResult.proceedAllowed ? `과 호환됩니다 (${checkResult.status})` : '과 호환이 확인되지 않았어요'}
             </div>
           )}
 
@@ -159,7 +180,45 @@ function PartDetail() {
         </div>
       </div>
 
-      <div className="mt-8 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
+      {/* 호환 차량: compatibility + model_year에 등록된 값만 보여준다(연식을 추측해 만들지 않음). */}
+      <div className="mt-8 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg" data-testid="part-fitments">
+        <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">호환 차량</h2>
+        {fitments.length === 0 ? (
+          <p className="text-sm text-ridefit-text-secondary">아직 등록된 호환 차량 정보가 없어요.</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {groupFitmentsByModel(fitments).map((g) => (
+              <div key={g.key}>
+                <p className="mb-1.5 text-sm font-semibold text-ridefit-text">
+                  {g.manufacturerName} {g.vehicleModelName}
+                </p>
+                <ul className="flex flex-col gap-1.5">
+                  {g.rows.map((f) => {
+                    const isMine = myVehicle && f.modelYearId === myVehicle.modelYearId
+                    return (
+                      <li
+                        key={f.modelYearId}
+                        className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-3 py-2 text-sm ${
+                          isMine ? 'border-ridefit-primary bg-ridefit-primary/10' : 'border-ridefit-border bg-ridefit-bg'
+                        }`}
+                      >
+                        <span className="font-medium text-ridefit-text">{formatFitment(f)}</span>
+                        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${FITMENT_STATUS_STYLE[f.status] ?? 'border-ridefit-border text-ridefit-text-secondary'}`}>
+                          {f.status}
+                        </span>
+                        {isMine && <span className="text-[11px] font-semibold text-ridefit-primary">내 차량</span>}
+                        {f.note && <span className="w-full text-xs text-ridefit-text-secondary">{f.note}</span>}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
         <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">판매처 가격비교</h2>
         <SellerListings partId={part.id} />
       </div>

@@ -5,9 +5,11 @@ import PartBadges from '../components/PartBadges'
 import SafeImage from '../components/SafeImage'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
-import { getVehicle360Frames } from '../constants/vehicle360'
+import VehicleYearBadge, { ModelImageNotice } from '../components/VehicleYearBadge'
+import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
 import { getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
+import { formatFitmentYears } from '../lib/fitment'
 
 const STATUS_STYLE = {
   호환가능: 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success',
@@ -94,18 +96,19 @@ function FitRoom() {
     }
   }
 
+  // 서버 호출(충돌 확인/장착 시도 집계)은 setState 업데이트 함수 밖에서 한 번만 한다.
+  // 업데이트 함수 안에 두면 React StrictMode(개발 모드)가 함수를 두 번 실행해 집계가 2배로 쌓인다.
   const togglePart = (partId) => {
-    setActivePartIds((prev) => {
-      const next = new Set(prev)
-      const turningOn = !next.has(partId)
-      turningOn ? next.add(partId) : next.delete(partId)
-      checkConflicts(next)
-      if (turningOn) {
-        // 실제 "장착 시도" 신호 - 인기상품 계산에 쓰인다.
-        api.post(`/api/parts/${partId}/fit-selections`).catch(() => {})
-      }
-      return next
-    })
+    const next = new Set(activePartIds)
+    const turningOn = !next.has(partId)
+    if (turningOn) next.add(partId)
+    else next.delete(partId)
+    setActivePartIds(next)
+    checkConflicts(next)
+    if (turningOn) {
+      // 실제 "장착 시도" 신호 - 인기상품 계산에 쓰인다.
+      api.post(`/api/parts/${partId}/fit-selections`).catch(() => {})
+    }
   }
 
   const activeConflictPairs = conflicts.filter(
@@ -187,12 +190,16 @@ function FitRoom() {
             </div>
           )}
 
+          {/* 위치 미리보기 / 360° / 장착 모습이 같은 무대 폭(max-w-2xl)과 종횡비(getVehicleStageAspectRatio)를 쓴다. */}
+          <div className="relative mx-auto w-full max-w-2xl">
+          <VehicleYearBadge vehicle={vehicle} />
           {viewMode === 'ai' && aiResult ? (
             <figure data-testid="ai-fit-result">
               <SafeImage
                 src={aiResult.imageUrl}
                 alt={`${aiResult.part.name} 장착 모습`}
-                className="mx-auto w-full max-w-2xl rounded-lg"
+                className="mx-auto w-full max-w-2xl rounded-lg object-contain"
+                style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
                 fallbackClassName="mx-auto h-64 w-full max-w-2xl rounded-lg"
                 fallbackText="장착 모습을 불러오지 못했어요"
               />
@@ -202,15 +209,20 @@ function FitRoom() {
             </figure>
           ) : viewMode === '360' && vehicle360Frames ? (
             // "부품 장착" 무대와 같은 종횡비를 써서 두 보기 모드를 오갈 때 차량 크기가 달라 보이지 않게 한다.
+            // 대표 사진과 같은 각도의 프레임부터 시작하고, 프레임별 차량 높이/바닥선을 대표 사진에 맞춘다.
             <Vehicle360Viewer
               frames={vehicle360Frames}
               alt={vehicle.nickname || vehicle.modelYearLabel}
-              className="mx-auto w-full max-w-lg"
+              className="mx-auto w-full max-w-2xl"
               style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
+              startIndex={getVehicle360StartIndex(vehicle.modelImageUrl)}
+              normalizeTo={vehicle.modelImageUrl}
             />
           ) : (
             <VehicleFitStage vehicle={vehicle} parts={activeParts} conflictPartIds={conflictPartIds} />
           )}
+          </div>
+          <ModelImageNotice vehicle={vehicle} className="mt-2" />
 
           {viewMode === 'fit' && activeParts.length === 0 && (
             <p className="mt-4 text-center text-sm text-ridefit-text-secondary">
@@ -281,6 +293,11 @@ function FitRoom() {
                           <p className="text-xs text-ridefit-text-secondary">
                             {part.price.toLocaleString()}원 · {part.status}
                           </p>
+                          {formatFitmentYears(part.sameModelFitments) && (
+                            <p className="text-[11px] text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>
+                              적용: {formatFitmentYears(part.sameModelFitments)}
+                            </p>
+                          )}
                           {part.stats?.ratingCount > 0 && (
                             <p className="text-xs text-ridefit-text-secondary">
                               <span className="text-ridefit-warning">★</span> {part.stats.avgRating.toFixed(1)}{' '}

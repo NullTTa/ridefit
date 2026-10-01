@@ -9,7 +9,9 @@ public final class ModelYearLabel {
     }
 
     public static String of(ModelYear modelYear) {
-        String base = modelYear.getYear() + " " + modelYear.getVehicleModel().getName();
+        // 연식 값이 없는 레거시 연식은 "null Super Cub 110"이 되지 않도록 차종명만 쓴다(연식을 추측해 채우지 않음).
+        String name = modelYear.getVehicleModel().getName();
+        String base = modelYear.getYear() == null ? name : modelYear.getYear() + " " + name;
         String code = modelYear.getChassisCode();
         return (code == null || code.isBlank()) ? base : base + " (" + code + ")";
     }

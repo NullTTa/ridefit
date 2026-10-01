@@ -6,6 +6,7 @@ import com.ridefit.ridefit.domain.ModelYear;
 import com.ridefit.ridefit.domain.MyVehicle;
 import com.ridefit.ridefit.domain.Part;
 import com.ridefit.ridefit.dto.MyVehicleResponse;
+import com.ridefit.ridefit.dto.PartFitmentResponse;
 import com.ridefit.ridefit.dto.PartPopularityStats;
 import com.ridefit.ridefit.exception.ApiException;
 import com.ridefit.ridefit.repository.CompatibilityRepository;
@@ -13,6 +14,7 @@ import com.ridefit.ridefit.repository.MemberRepository;
 import com.ridefit.ridefit.repository.ModelYearRepository;
 import com.ridefit.ridefit.repository.MyVehicleRepository;
 import com.ridefit.ridefit.security.CurrentMember;
+import com.ridefit.ridefit.service.CompatibilityCheckService;
 import com.ridefit.ridefit.service.PartPopularityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -114,6 +116,17 @@ public class MyVehicleController {
                 .flatMap(group -> partPopularityService.statsForGroup(group).entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+        // 부품마다 "내 차와 같은 차종"에서 장착 가능한(호환가능/브라켓필요) 연식 목록 - 카드의 적용 연식 표시용.
+        Long vehicleModelId = myVehicle.getModelYear().getVehicleModel().getId();
+        Map<Long, List<PartFitmentResponse>> fitmentsByPartId = all.isEmpty() ? Map.of()
+                : compatibilityRepository.findByPartIdInWithModel(
+                                all.stream().map(c -> c.getPart().getId()).collect(Collectors.toSet())).stream()
+                        .filter(c -> c.getModelYear().getVehicleModel().getId().equals(vehicleModelId))
+                        .filter(c -> CompatibilityCheckService.isProceedStatus(c.getStatus()))
+                        .map(c -> Map.entry(c.getPart().getId(), PartFitmentResponse.from(c)))
+                        .collect(Collectors.groupingBy(Map.Entry::getKey,
+                                Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
+
         List<CompatiblePartResponse> result = all.stream()
                 .filter(c -> category == null || category.equals(c.getPart().getCategory()))
                 .map(c -> new CompatiblePartResponse(
@@ -125,7 +138,9 @@ public class MyVehicleController {
                         c.getStatus(),
                         c.getNote(),
                         c.getPart().getInstallVideoUrl(),
-                        statsByPartId.get(c.getPart().getId())))
+                        statsByPartId.get(c.getPart().getId()),
+                        fitmentsByPartId.getOrDefault(c.getPart().getId(), List.of()).stream()
+                                .sorted(PartFitmentResponse.ORDER).toList()))
                 .toList();
 
         return ResponseEntity.ok(result);
@@ -148,6 +163,8 @@ public class MyVehicleController {
 
     public record CompatiblePartResponse(Long partId, String category, String name, Integer price, String imageUrl,
                                           String status, String note, String installVideoUrl,
-                                          PartPopularityStats stats) {
+                                          PartPopularityStats stats,
+                                          // 내 차와 같은 차종에서 이 부품이 장착 가능한 연식들(적용 연식 표시용)
+                                          List<PartFitmentResponse> sameModelFitments) {
     }
 }

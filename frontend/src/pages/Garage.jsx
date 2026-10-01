@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import SimilarVehicles from '../components/SimilarVehicles'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
-import { getVehicle360Frames } from '../constants/vehicle360'
+import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
 import { api } from '../lib/api'
 
 function Garage() {
@@ -72,6 +72,7 @@ function Garage() {
             >
               <Vehicle360Viewer
                 frames={getVehicle360Frames(vehicle) ?? [vehicle.photoUrl || vehicle.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE]}
+                startIndex={getVehicle360Frames(vehicle) ? getVehicle360StartIndex(vehicle.modelImageUrl) : 0}
                 alt={vehicle.nickname || vehicle.modelYearLabel}
                 className="h-40 w-full p-2"
                 showControls={false}

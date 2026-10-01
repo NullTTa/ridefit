@@ -11,7 +11,7 @@ public record RecentPartCheckResponse(
     public static RecentPartCheckResponse from(RecentPartCheck check) {
         var vehicle = check.getMyVehicle();
         var modelYear = vehicle.getModelYear();
-        String label = modelYear.getYear() + " " + modelYear.getVehicleModel().getName();
+        String label = ModelYearLabel.of(modelYear);
 
         return new RecentPartCheckResponse(
                 check.getId(),

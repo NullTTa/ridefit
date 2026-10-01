@@ -5,7 +5,7 @@ import TraitBars from '../components/TraitBars'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleImage from '../components/VehicleImage'
 import { useAuth } from '../context/AuthContext'
-import { VEHICLE_360_FRAMES } from '../constants/vehicle360'
+import { getVehicle360StartIndex, VEHICLE_360_FRAMES } from '../constants/vehicle360'
 import { api } from '../lib/api'
 import { loadPartCategorySlugs } from '../lib/guide'
 import { addRecentVehicle } from '../lib/recentVehicles'
@@ -130,6 +130,7 @@ function VehicleDetail() {
           {VEHICLE_360_FRAMES[vehicle.imageUrl] ? (
             <Vehicle360Viewer
               frames={VEHICLE_360_FRAMES[vehicle.imageUrl]}
+              startIndex={getVehicle360StartIndex(vehicle.imageUrl)}
               alt={vehicle.name}
               className="h-72 w-full sm:h-96"
             />

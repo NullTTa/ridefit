@@ -6,6 +6,7 @@ import com.ridefit.ridefit.dto.CompatibilityCheckResponse;
 import com.ridefit.ridefit.dto.CrawlResultResponse;
 import com.ridefit.ridefit.dto.CreatePartRequest;
 import com.ridefit.ridefit.dto.PartDetailResponse;
+import com.ridefit.ridefit.dto.PartFitmentResponse;
 import com.ridefit.ridefit.dto.PartPopularityStats;
 import com.ridefit.ridefit.dto.PartResponse;
 import com.ridefit.ridefit.dto.PartReviewResponse;
@@ -92,6 +93,19 @@ public class PartController {
         }
 
         return PartDetailResponse.from(part, stats);
+    }
+
+    // 이 부품이 호환 등록된 모든 차량(차종 + 연식 + 세대 코드 + 상태). DB에 저장된 compatibility 그대로이며,
+    // 호환불가로 등록된 연식도 상태와 함께 내려준다(화면에서 구분 표시).
+    @GetMapping("/api/parts/{id}/compatibilities")
+    public List<PartFitmentResponse> getPartCompatibilities(@PathVariable Long id) {
+        if (!partRepository.existsById(id)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "부품 정보를 찾을 수 없습니다.");
+        }
+        return compatibilityRepository.findByPartIdInWithModel(List.of(id)).stream()
+                .map(PartFitmentResponse::from)
+                .sorted(PartFitmentResponse.ORDER)
+                .toList();
     }
 
     @GetMapping("/api/parts/{id}/reviews")

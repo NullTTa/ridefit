@@ -9,6 +9,17 @@ function formatDate(iso) {
   return iso ? iso.slice(0, 10) : null
 }
 
+// 실제로 열 수 있는 상품 주소(http/https)만 링크로 쓴다. 저장된 주소가 없거나 형식이 다르면 null -
+// 그 판매처는 "상품 보기" 링크 대신 "판매처 정보 준비 중"으로 표시한다(주소를 추측해 만들지 않는다).
+function productLink(sourceUrl) {
+  try {
+    const u = new URL(sourceUrl)
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u : null
+  } catch {
+    return null
+  }
+}
+
 // 판매처 가격비교. 쿠팡/네이버쇼핑 등을 실시간으로 자동 검색하는 기능이 아니라, 등록된 판매처끼리 비교한다.
 //  - 가격이 확인되지 않은 판매처는 "가격 확인 필요"로 표시(0원 표시 금지).
 //  - "최저가" 배지는 서버가 "가격 확인된 실제 판매처 2곳 이상"일 때만 붙인다(하드코딩 없음).
@@ -103,7 +114,9 @@ function SellerListings({ partId }) {
 
       {!loading && listings.length > 0 && (
         <ul className="mb-4 flex flex-col gap-2" data-testid="seller-listings">
-          {listings.map((l) => (
+          {listings.map((l) => {
+            const link = l.sample ? null : productLink(l.sourceUrl)
+            return (
             <li
               key={l.id}
               className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
@@ -130,6 +143,8 @@ function SellerListings({ partId }) {
                   )}
                 </p>
                 {l.productName && <p className="truncate text-xs text-ridefit-text-secondary">{l.productName}</p>}
+                {/* 어느 쇼핑몰 주소인지 바로 보이게 도메인을 같이 표시한다. */}
+                {link && <p className="truncate text-[11px] text-ridefit-text-secondary/80">{link.hostname.replace(/^www\./, '')}</p>}
                 {formatDate(l.checkedAt) && (
                   <p className="text-[11px] text-ridefit-text-secondary/80">확인일 {formatDate(l.checkedAt)}</p>
                 )}
@@ -142,9 +157,11 @@ function SellerListings({ partId }) {
                 )}
                 {l.sample ? (
                   <span className="text-[11px] text-ridefit-text-secondary">실제 판매처 아님</span>
+                ) : !link ? (
+                  <span className="text-[11px] text-ridefit-text-secondary">판매처 정보 준비 중</span>
                 ) : (
                   <a
-                    href={l.sourceUrl}
+                    href={link.href}
                     target="_blank"
                     rel="noreferrer noopener"
                     className="text-xs font-medium text-ridefit-primary hover:underline"
@@ -154,7 +171,8 @@ function SellerListings({ partId }) {
                 )}
               </div>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
 

@@ -24,6 +24,23 @@ export const VEHICLE_360_FRAMES = {
   ),
 }
 
+// 차종 대표 사진(위치 미리보기에 쓰는 사진)과 같은 각도의 프레임 번호(0부터). 360 보기를 이 프레임부터
+// 시작해야 위치 미리보기 -> 360 전환 때 차량이 정면(폭이 좁은 각도)으로 바뀌며 작아 보이지 않는다.
+// 확인 방법: 대표 사진과 프레임을 나란히 놓고 각도를 비교 + 투명 영역(bbox) 측정.
+//  - Super Cub 110: 대표 사진 = 우측 앞 3/4 -> 02.png (01=정면, 03=우측면)
+//  - PCX: 대표 사진의 차량 영역이 02.png와 픽셀 단위로 같다(같은 사진)
+//  - NMAX 125: 대표 사진의 차량 영역이 03.png와 픽셀 단위로 같다(같은 사진)
+const VEHICLE_360_START_INDEX = {
+  '/assets/vehicles/super-cub-110.png': 1,
+  '/assets/vehicles/pcx/main.png': 1,
+  '/assets/vehicles/n-max-125/main.png': 2,
+}
+
+// modelImageUrl(차종 대표 사진 경로) 기준. 등록이 없으면 0(첫 프레임).
+export function getVehicle360StartIndex(modelImageUrl) {
+  return VEHICLE_360_START_INDEX[modelImageUrl] ?? 0
+}
+
 // 사용자가 올린 개인 사진(photoUrl)은 각도 정보가 없으므로 360 미지원 -> null.
 // 등록된 프레임이 없는 차종도 null -> 호출부에서 기존 정적 이미지로 자연스럽게 폴백한다.
 export function getVehicle360Frames(vehicle) {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 // 이미지 시퀀스 기반 360도 차량 뷰어. 실제 3D 모델/Three.js가 아니라 "각도별 사진을 순서대로
 // 갈아끼우는" 방식이다. 프레임이 1장뿐이면(아직 여러 각도 사진이 없는 차종) 정지 이미지처럼
@@ -14,12 +14,87 @@ const AUTO_ROTATE_INTERVAL_MS = 900
 // 사용자가 드래그를 끝낸 뒤 자동 회전이 다시 시작되기까지의 유예 시간(ms).
 const RESUME_DELAY_MS = 1200
 
+// 투명 배경 PNG에서 차량이 차지하는 영역(0~1 비율). 불투명 이미지면 null(크기 보정을 하지 않는다).
+// 같은 출처(/assets) 이미지만 쓰므로 canvas로 읽어도 tainted가 되지 않는다. 작은 크기로 줄여서 잰다.
+function measureBounds(img) {
+  const W = 240
+  const H = Math.max(1, Math.round((W * img.naturalHeight) / img.naturalWidth))
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  ctx.drawImage(img, 0, 0, W, H)
+  const data = ctx.getImageData(0, 0, W, H).data
+  let x0 = W, y0 = H, x1 = -1, y1 = -1, transparent = false
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const a = data[(y * W + x) * 4 + 3]
+      if (a < 250) transparent = true
+      if (a > 24) {
+        if (x < x0) x0 = x
+        if (x > x1) x1 = x
+        if (y < y0) y0 = y
+        if (y > y1) y1 = y
+      }
+    }
+  }
+  if (!transparent || x1 < 0) return null
+  return { x0: x0 / W, y0: y0 / H, x1: (x1 + 1) / W, y1: (y1 + 1) / H }
+}
+
+// 현재 프레임의 차량 높이/바닥선을 기준 이미지(위치 미리보기 사진)에 맞추는 transform.
+// - 높이를 기준과 같게 맞추고(scale), 바닥(바퀴가 닿는 선)을 기준 바닥선에 맞춘다(translateY).
+// - 좌우 중심은 프레임 그대로 둔다(정면/측면 프레임은 원래 폭이 달라야 자연스럽다).
+// - 확대해도 이미지 밖으로 잘리지 않도록 배율 상한을 둔다. 결과적으로 위/아래는 기준 사진 범위를 넘지 않는다.
+function normalizeTransform(cur, ref, box, natural) {
+  if (!cur || !ref || !box.w || !box.h || !natural.w) return null
+  // object-contain으로 실제 그려진 영역(레터박스 제외)
+  const scale = Math.min(box.w / natural.w, box.h / natural.h)
+  const dw = natural.w * scale
+  const dh = natural.h * scale
+  const offX = (box.w - dw) / 2
+  const offY = (box.h - dh) / 2
+  const curH = cur.y1 - cur.y0
+  const refH = ref.y1 - ref.y0
+  if (curH <= 0 || refH <= 0) return null
+  const cx = (cur.x0 + cur.x1) / 2
+  let s = refH / curH
+  s = Math.min(s, 1.3, ref.y1 / curH, cx / Math.max(cx - cur.x0, 1e-6), (1 - cx) / Math.max(cur.x1 - cx, 1e-6))
+  s = Math.max(s, 0.7)
+  const originX = offX + cx * dw
+  const originY = offY + cur.y1 * dh
+  const ty = (ref.y1 - cur.y1) * dh
+  if (Math.abs(s - 1) < 0.005 && Math.abs(ty) < 0.5) return null
+  return {
+    transformOrigin: `${originX}px ${originY}px`,
+    transform: `translateY(${ty}px) scale(${s})`,
+  }
+}
+
 // frames: 프레임 이미지 경로 배열(0도부터 순서대로). 최소 1장.
+// startIndex: 처음 보여줄 프레임. 차종 대표 사진과 같은 각도의 프레임을 주면, "위치 미리보기"에서 360으로
+//   넘어올 때 차량이 갑자기 정면(폭이 좁은 각도)으로 바뀌어 작아 보이지 않는다.
+// normalizeTo: 기준 이미지 경로(위치 미리보기 사진). 주면 프레임마다 차량 높이/바닥선을 그 사진에 맞춘다 -
+//   원본 프레임 세트마다 촬영 배율이 조금씩 달라 돌릴 때 커졌다 작아졌다 하는 것을 막는다. 이미지 파일은 그대로다.
 // pxPerFrame: 프레임 하나 넘어가는 데 필요한 드래그 픽셀 거리(작을수록 민감).
 // showControls: 재생/멈춤 버튼과 드래그 안내 문구 표시 여부 - 차고 카드처럼 작은 썸네일에서는
 //   버튼이 화면을 가리므로 false로 끄고, 자동 회전 자체는 그대로 동작한다.
-function Vehicle360Viewer({ frames, alt = '차량', className = '', style, pxPerFrame = 12, showControls = true }) {
-  const [index, setIndex] = useState(0)
+function Vehicle360Viewer({
+  frames,
+  alt = '차량',
+  className = '',
+  style,
+  pxPerFrame = 12,
+  showControls = true,
+  startIndex = 0,
+  normalizeTo,
+}) {
+  const [index, setIndex] = useState(() => (Number.isInteger(startIndex) && startIndex >= 0 ? startIndex : 0))
+  // 프레임(및 기준 이미지)별 차량 영역. normalizeTo가 있을 때만 잰다.
+  const [bounds, setBounds] = useState({})
+  const [box, setBox] = useState({ w: 0, h: 0 })
+  const [natural, setNatural] = useState({ w: 0, h: 0 })
+  const imgRef = useRef(null)
   const [hasInteracted, setHasInteracted] = useState(false)
   const [failedFrames, setFailedFrames] = useState(() => new Set())
   // autoRotate: 재생/멈춤 버튼으로 사용자가 직접 켜고 끄는 상태(기본 재생).
@@ -50,18 +125,45 @@ function Vehicle360Viewer({ frames, alt = '차량', className = '', style, pxPer
   useEffect(() => {
     if (!interactive) return
     let cancelled = false
+    const measure = (src, img) => {
+      if (!normalizeTo || cancelled) return
+      let b = null
+      try {
+        b = measureBounds(img)
+      } catch {
+        b = null
+      }
+      setBounds((prev) => ({ ...prev, [src]: b }))
+    }
     validFrames.forEach((src, i) => {
       const img = new Image()
+      img.onload = () => measure(src, img)
       img.onerror = () => {
         if (!cancelled) setFailedFrames((prev) => new Set(prev).add(i))
       }
       img.src = src
     })
+    if (normalizeTo) {
+      const ref = new Image()
+      ref.onload = () => measure(normalizeTo, ref)
+      ref.src = normalizeTo
+    }
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validFrames.join('|')])
+  }, [validFrames.join('|'), normalizeTo])
+
+  // 크기 보정 계산에 필요한 <img> 박스 크기 - 화면 크기가 바뀌면 다시 잰다.
+  useLayoutEffect(() => {
+    const el = imgRef.current
+    if (!normalizeTo || !el || typeof ResizeObserver === 'undefined') return
+    const update = () => setBox({ w: el.offsetWidth, h: el.offsetHeight })
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [normalizeTo, frameCount])
 
   if (frameCount === 0) return null
 
@@ -80,6 +182,7 @@ function Vehicle360Viewer({ frames, alt = '차량', className = '', style, pxPer
 
   const currentIndex = resolveIndex(index)
   const currentSrc = validFrames[currentIndex]
+  const normalizeStyle = normalizeTo ? normalizeTransform(bounds[currentSrc], bounds[normalizeTo], box, natural) : null
 
   const handlePointerDown = (e) => {
     if (!interactive) return
@@ -127,10 +230,17 @@ function Vehicle360Viewer({ frames, alt = '차량', className = '', style, pxPer
       data-frame-count={frameCount}
     >
       <img
+        ref={imgRef}
         src={currentSrc}
         alt={alt}
         draggable={false}
         className="h-full w-full select-none object-contain"
+        style={normalizeStyle ?? undefined}
+        data-frame-index={currentIndex}
+        onLoad={(e) => {
+          const { naturalWidth: w, naturalHeight: h } = e.currentTarget
+          if (w !== natural.w || h !== natural.h) setNatural({ w, h })
+        }}
         onError={() => setFailedFrames((prev) => new Set(prev).add(currentIndex))}
       />
       {interactive && showControls && !hasInteracted && (

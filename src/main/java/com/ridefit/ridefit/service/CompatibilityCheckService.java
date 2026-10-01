@@ -24,6 +24,11 @@ import java.util.Set;
 public class CompatibilityCheckService {
 
     static final Set<String> PROCEED_STATUSES = Set.of("호환가능", "브라켓필요");
+
+    // 장착 진행 가능한 호환 상태인지(호환가능/브라켓필요). FitRoom 후보, 부품 적용 연식 표시가 같은 기준을 쓴다.
+    public static boolean isProceedStatus(String status) {
+        return status != null && PROCEED_STATUSES.contains(status);
+    }
     private static final String NO_DATA_STATUS = "정보없음";
 
     private final PartRepository partRepository;
