@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
+import FitVehiclePicker from '../components/FitVehiclePicker'
 import PartBadges from '../components/PartBadges'
 import SafeImage from '../components/SafeImage'
 import SellerListings from '../components/SellerListings'
 import YoutubeEmbed from '../components/YoutubeEmbed'
 import { api } from '../lib/api'
+import { fitRoomPath } from '../lib/fitRoom'
 import { loadPartCategorySlugs } from '../lib/guide'
 
 const FEEDBACK_LABEL = { MATCHED: '맞았어요', NOT_MATCHED: '안 맞았어요' }
@@ -116,7 +118,7 @@ function PartDetail() {
           )}
           {(stats.viewCount > 0 || stats.fitSelectionCount > 0) && (
             <p className="text-xs text-ridefit-text-secondary">
-              RIDEFIT에서 조회 {stats.viewCount}회 · 장착해보기 {stats.fitSelectionCount}회
+              RIDEFIT에서 조회 {stats.viewCount}회 · 장착 시도 {stats.fitSelectionCount}회
             </p>
           )}
 
@@ -132,14 +134,18 @@ function PartDetail() {
             </div>
           )}
 
-          <div className="mt-2 flex flex-wrap gap-2">
-            {vehicleId && checkResult?.proceedAllowed && (
+          <div className="mt-2 flex flex-wrap items-start gap-2">
+            {/* 보고 있는 차량과 호환되면 그 차량의 FitRoom으로 바로, 아니면(차량 미지정/비호환) 내 차량 중에서 고른다. */}
+            {vehicleId && checkResult?.proceedAllowed ? (
               <Link
-                to={`/garage/${vehicleId}/fit`}
+                to={fitRoomPath(vehicleId, part.id)}
                 className="rounded-lg bg-ridefit-primary px-3 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                data-testid={`fit-try-${part.id}`}
               >
-                장착해보기
+                내 차에 장착해보기
               </Link>
+            ) : (
+              <FitVehiclePicker partId={part.id} currentVehicleId={vehicleId} className="w-full sm:w-auto" />
             )}
             {!vehicleId && (
               <Link

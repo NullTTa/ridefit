@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import AiFitPanel from '../components/AiFitPanel'
 import PartBadges from '../components/PartBadges'
 import SafeImage from '../components/SafeImage'
@@ -16,6 +16,12 @@ const STATUS_STYLE = {
 
 function FitRoom() {
   const { myVehicleId } = useParams()
+  const [searchParams] = useSearchParams()
+  // 숫자가 아닌 값은 무시한다(호환 목록과 비교할 수 없음).
+  const rawPartId = searchParams.get('partId')
+  const requestedPartId = rawPartId && /^\d+$/.test(rawPartId) ? String(Number(rawPartId)) : null
+  // URL로 요청된 부품의 자동 선택 결과: null(요청 없음) | { ok, name }
+  const [preselect, setPreselect] = useState(null)
 
   const [vehicle, setVehicle] = useState(null)
   const [parts, setParts] = useState([])
@@ -31,6 +37,7 @@ function FitRoom() {
 
   useEffect(() => {
     setLoading(true)
+    setPreselect(null)
     Promise.all([
       api.get('/api/my-vehicles'),
       api.get(`/api/my-vehicles/${myVehicleId}/compatible-parts`),
@@ -38,11 +45,26 @@ function FitRoom() {
       .then(([vehicles, compatibleParts]) => {
         setVehicle(vehicles.find((v) => String(v.id) === String(myVehicleId)) ?? null)
         // 호환불가/정보없음 부품은 애초에 장착 후보에서 제외한다.
-        setParts(compatibleParts.filter((p) => p.status === '호환가능' || p.status === '브라켓필요'))
+        const candidates = compatibleParts.filter((p) => p.status === '호환가능' || p.status === '브라켓필요')
+        setParts(candidates)
+
+        // ?partId= 로 들어오면(부품 찾아보기/상세의 "내 차에 장착해보기") 그 부품을 켠 상태로 연다.
+        // 이 차량의 호환 후보 안에 있을 때만 켠다 - URL로 호환성 검사를 건너뛸 수 없다.
+        // 사용자가 직접 켠 것이 아니므로 fit-selections(장착 시도 집계)는 기록하지 않는다.
+        if (requestedPartId != null) {
+          const match = candidates.find((p) => String(p.partId) === requestedPartId)
+          if (match) {
+            setActivePartIds(new Set([match.partId]))
+            setPreselect({ ok: true, name: match.name })
+          } else {
+            const known = compatibleParts.find((p) => String(p.partId) === requestedPartId)
+            setPreselect({ ok: false, name: known?.name ?? null })
+          }
+        }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [myVehicleId])
+  }, [myVehicleId, requestedPartId])
 
   const categories = useMemo(() => {
     const map = new Map()
@@ -92,8 +114,15 @@ function FitRoom() {
   const conflictPartIds = new Set(activeConflictPairs.flatMap((c) => [c.partAId, c.partBId]))
 
   if (loading) return <p className="mx-auto max-w-5xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
-  if (error) return <p className="mx-auto max-w-5xl px-4 py-16 text-ridefit-danger">에러: {error}</p>
-  if (!vehicle) return <p className="mx-auto max-w-5xl px-4 py-16 text-ridefit-danger">존재하지 않는 차량이에요.</p>
+  if (error || !vehicle)
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-16">
+        <p className="text-ridefit-danger">{error ? `에러: ${error}` : '존재하지 않는 차량이에요.'}</p>
+        <Link to="/garage" className="mt-3 inline-block text-sm font-medium text-ridefit-primary hover:underline">
+          내 차고로 돌아가기 →
+        </Link>
+      </div>
+    )
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
@@ -102,6 +131,22 @@ function FitRoom() {
         {vehicle.nickname || vehicle.modelYearLabel} — 호환되는 부품을 켜고 끄면서 조합을 비교해보세요.
       </p>
 
+      {preselect && (
+        <div
+          className={`-mt-4 mb-6 rounded-lg border px-4 py-3 text-sm ${
+            preselect.ok
+              ? 'border-ridefit-border bg-ridefit-card text-ridefit-text'
+              : 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning'
+          }`}
+          data-testid="fit-preselect-notice"
+        >
+          {preselect.ok
+            ? `'${preselect.name}'을(를) 장착한 상태로 열었어요. 아래 "장착한 모습 보기"에서 장착한 모습도 확인할 수 있어요.`
+            : `${preselect.name ? `'${preselect.name}'은(는) ` : '선택한 부품은 '}${
+                vehicle.nickname || vehicle.modelYearLabel
+              }과(와) 호환이 확인되지 않아 자동으로 장착하지 않았어요. 오른쪽 목록의 호환 부품은 그대로 사용할 수 있어요.`}
+        </div>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
         {/* 차량 이미지 + 장착된 부품 이미지 오버레이(오버레이 이미지가 없는 부품은 배지) */}

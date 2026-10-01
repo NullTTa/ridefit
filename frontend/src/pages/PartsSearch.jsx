@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import FitVehiclePicker from '../components/FitVehiclePicker'
 import PartBadges from '../components/PartBadges'
 import SafeImage from '../components/SafeImage'
 import SellerListings from '../components/SellerListings'
@@ -444,6 +445,23 @@ function PartsSearch() {
                             <SellerListings partId={part.partId} />
                           </div>
                         )}
+
+                        {/* 위의 "장착"은 이 화면 안에서의 빠른 위치 미리보기, 여기는 FitRoom(장착한 모습 포함)으로 넘어가는 진입점. */}
+                        <div className="mt-3 flex min-w-0 flex-wrap items-start gap-2 sm:pl-[76px]">
+                          <Link
+                            to={`/parts/${part.partId}?vehicleId=${vehicleId}`}
+                            className="rounded-lg border border-ridefit-border px-3 py-1.5 text-xs font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary"
+                          >
+                            상세보기
+                          </Link>
+                          <FitVehiclePicker
+                            partId={part.partId}
+                            vehicles={vehicles}
+                            currentVehicleId={vehicleId}
+                            className="min-w-0 flex-1"
+                            buttonClassName="rounded-lg bg-ridefit-primary/10 px-3 py-1.5 text-xs font-semibold text-ridefit-primary transition hover:bg-ridefit-primary/20 disabled:opacity-50"
+                          />
+                        </div>
                       </div>
                     )
                   })}
