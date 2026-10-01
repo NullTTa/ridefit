@@ -1,12 +1,11 @@
 package com.ridefit.ridefit.controller;
 
 import com.ridefit.ridefit.domain.Part;
-import com.ridefit.ridefit.domain.SellerListing;
 import com.ridefit.ridefit.dto.CreateSellerListingRequest;
 import com.ridefit.ridefit.dto.SellerListingResponse;
 import com.ridefit.ridefit.exception.ApiException;
 import com.ridefit.ridefit.repository.PartRepository;
-import com.ridefit.ridefit.repository.SellerListingRepository;
+import com.ridefit.ridefit.service.SellerListingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,26 +17,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
-// 하나의 부품에 등록된 "사용자가 직접 등록한" 판매처 링크들끼리 가격을 비교한다.
+// 하나의 부품에 등록된 판매처 링크들끼리 가격을 비교한다.
 // 실시간으로 쿠팡/네이버쇼핑 등을 자동 검색하는 기능이 아니다.
 @RestController
 @RequestMapping("/api/parts/{partId}/listings")
 @RequiredArgsConstructor
 public class SellerListingController {
 
-    private final SellerListingRepository sellerListingRepository;
+    private final SellerListingService sellerListingService;
     private final PartRepository partRepository;
 
     @GetMapping
     public List<SellerListingResponse> list(@PathVariable Long partId) {
-        List<SellerListing> listings = sellerListingRepository.findByPartIdOrderByPriceAsc(partId);
-        Integer lowest = listings.stream().map(SellerListing::getPrice).min(Integer::compareTo).orElse(null);
-        return listings.stream()
-                .map(l -> SellerListingResponse.from(l, lowest != null && l.getPrice().equals(lowest)))
-                .toList();
+        return sellerListingService.list(partId);
     }
 
     @PostMapping
@@ -45,27 +39,8 @@ public class SellerListingController {
             @PathVariable Long partId, @Valid @RequestBody CreateSellerListingRequest request) {
         Part part = partRepository.findById(partId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "부품을 찾을 수 없습니다."));
-
-        SellerListing listing = SellerListing.builder()
-                .part(part)
-                .sellerName(request.sellerName())
-                .price(request.price())
-                .thumbnailUrl(request.thumbnailUrl())
-                .sourceUrl(request.sourceUrl())
-                .createdAt(LocalDateTime.now())
-                .build();
-        SellerListing saved = sellerListingRepository.save(listing);
-
-        // 상품 대표 이미지가 아직 없다면, 방금 등록한 실제 판매처 링크에서 크롤링된 썸네일로 채워준다.
-        // 이미 대표 이미지가 있으면(관리자가 직접 넣었거나 이전에 채워졌으면) 덮어쓰지 않는다.
-        if (part.getImageUrl() == null && request.thumbnailUrl() != null && !request.thumbnailUrl().isBlank()) {
-            part.setImageUrl(request.thumbnailUrl());
-            partRepository.save(part);
-        }
-
-        List<SellerListing> all = sellerListingRepository.findByPartIdOrderByPriceAsc(partId);
-        boolean lowest = all.get(0).getId().equals(saved.getId());
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(SellerListingResponse.from(saved, lowest));
+        SellerListingResponse saved = sellerListingService.add(part, request.sellerName(), request.price(),
+                request.thumbnailUrl(), request.sourceUrl(), request.productName(), request.externalProductId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 }

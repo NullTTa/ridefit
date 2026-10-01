@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import PartBadges from '../components/PartBadges'
+import SafeImage from '../components/SafeImage'
 import SellerListings from '../components/SellerListings'
 import YoutubeEmbed from '../components/YoutubeEmbed'
 import { api } from '../lib/api'
@@ -60,17 +61,13 @@ function PartDetail() {
     <div className="mx-auto max-w-3xl px-4 py-16">
       <div className="grid gap-6 sm:grid-cols-2">
         <div>
-          {part.imageUrl ? (
-            <img
-              src={part.imageUrl}
-              alt={part.name}
-              className="aspect-square w-full rounded-xl border border-ridefit-border bg-white object-contain p-4"
-            />
-          ) : (
-            <div className="flex h-48 w-full items-center justify-center rounded-xl border border-ridefit-border bg-ridefit-card text-sm text-ridefit-text-secondary">
-              이미지 없음
-            </div>
-          )}
+          <SafeImage
+            src={part.imageUrl}
+            alt={part.name}
+            className="aspect-square w-full rounded-xl border border-ridefit-border bg-white object-contain p-4"
+            fallbackClassName="h-48 w-full rounded-xl border border-ridefit-border bg-ridefit-card text-sm"
+            fallbackText="이미지 없음"
+          />
         </div>
 
         <div className="flex flex-col gap-2">
@@ -108,8 +105,9 @@ function PartDetail() {
           )}
 
           <p className="text-2xl font-bold text-ridefit-text">{part.price.toLocaleString()}원</p>
+          {/* 예시 판매처/가격 미확인 판매처는 서버에서 제외된 값이다(PartPopularityService). */}
           {stats.lowestPrice != null && stats.lowestPrice < part.price && (
-            <p className="text-sm text-ridefit-primary">등록된 판매처 중 최저가 {stats.lowestPrice.toLocaleString()}원</p>
+            <p className="text-sm text-ridefit-primary">판매처 확인 가격 {stats.lowestPrice.toLocaleString()}원부터</p>
           )}
 
           {/* 외부 판매량은 확인 가능한 데이터가 있을 때만 표시 - 지금은 항상 없음(구조만 존재) */}
@@ -156,7 +154,7 @@ function PartDetail() {
       </div>
 
       <div className="mt-8 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
-        <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">판매처 비교</h2>
+        <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">판매처 가격비교</h2>
         <SellerListings partId={part.id} />
       </div>
 

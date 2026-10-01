@@ -4,11 +4,12 @@ import com.ridefit.ridefit.domain.Part;
 
 public record PartDetailResponse(
         Long id, String category, String name, Integer price, String imageUrl, String sourceUrl,
-        String installVideoUrl, PartPopularityStats stats) {
+        String installVideoUrl, PartPopularityStats stats, String imageSourceUrl, boolean aiReferenceReady) {
 
     public static PartDetailResponse from(Part part, PartPopularityStats stats) {
         return new PartDetailResponse(
                 part.getId(), part.getCategory(), part.getName(), part.getPrice(), part.getImageUrl(),
-                part.getSourceUrl(), part.getInstallVideoUrl(), stats);
+                part.getSourceUrl(), part.getInstallVideoUrl(), stats, part.getImageSourceUrl(),
+                part.getAiReferenceImageUrl() != null);
     }
 }

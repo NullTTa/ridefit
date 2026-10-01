@@ -29,7 +29,16 @@ public class Part {
 
     private Integer price;
 
+    // 대표 이미지(상품 상세/목록/가격비교에 쓰는 이미지). 우리 서버에 저장한 경우 "/uploads/parts/..." 경로,
+    // 아직 저장하지 못한 경우 원본 외부 URL 또는 기존 정적 자산 경로("/assets/parts/...")가 들어 있다.
     private String imageUrl;
+
+    // 대표 이미지를 가져온 원본 외부 URL(출처). 내부로 저장했더라도 출처를 잃지 않도록 따로 보존한다.
+    private String imageSourceUrl;
+
+    // AI 장착 합성에 넣을 "부품만 깨끗하게 보이는" 참조 이미지. 대표 이미지(포장 사진/여러 제품 사진일 수
+    // 있음)와 일부러 분리했다. null이면 "AI 장착용 이미지 준비 필요" 상태 - 관리자가 확인 후에만 채운다.
+    private String aiReferenceImageUrl;
 
     // null이면 관리자/시드로 등록된 카탈로그 부품, 값이 있으면 사용자가 링크로 가져온 커스텀 부품.
     @Column(name = "source_url")

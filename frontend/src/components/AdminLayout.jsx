@@ -4,6 +4,8 @@ const TABS = [
   { to: '/admin', label: '대시보드', end: true },
   { to: '/admin/compatibilities', label: '호환성 관리' },
   { to: '/admin/part-conflicts', label: '부품 충돌 관리' },
+  { to: '/admin/product-import', label: '상품 URL로 부품 등록' },
+  { to: '/admin/ai-references', label: 'AI 장착 이미지 관리' },
   { to: '/admin/part-videos', label: '부품 이미지/영상/평점 관리' },
   { to: '/admin/vehicle-models', label: '차종 이미지 관리' },
   { to: '/admin/members', label: '회원 관리' },

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import PartBadges from '../components/PartBadges'
+import SafeImage from '../components/SafeImage'
 import SellerListings from '../components/SellerListings'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
@@ -26,6 +27,8 @@ function PartsSearch() {
   const [parts, setParts] = useState([])
   const [categories, setCategories] = useState([])
   const [category, setCategory] = useState(null)
+  // 부품명/카테고리 검색어(현재 차량의 호환 부품 안에서만 거른다).
+  const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -140,10 +143,14 @@ function PartsSearch() {
     () => parts.filter((p) => selectedPartIds.includes(p.partId)),
     [parts, selectedPartIds],
   )
-  const filteredParts = useMemo(
-    () => (category ? parts.filter((p) => p.category === category) : parts),
-    [parts, category],
-  )
+  const filteredParts = useMemo(() => {
+    const q = keyword.trim().toLowerCase()
+    return parts.filter(
+      (p) =>
+        (!category || p.category === category) &&
+        (!q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)),
+    )
+  }, [parts, category, keyword])
   const visibleParts = filteredParts.slice(0, visibleCount)
   const hasMoreParts = filteredParts.length > visibleParts.length
   const activeConflictPairs = (conflicts ?? []).filter(
@@ -286,8 +293,19 @@ function PartsSearch() {
               )}
             </div>
 
-            {/* 카테고리 필터 + 부품 목록 */}
+            {/* 검색 + 카테고리 필터 + 부품 목록 */}
             <div className="min-w-0">
+              <input
+                type="search"
+                value={keyword}
+                onChange={(e) => {
+                  setKeyword(e.target.value)
+                  setVisibleCount(PAGE_SIZE)
+                }}
+                placeholder={`${vehicle?.vehicleModelName ?? '내 차량'} 호환 부품 검색 (예: 머플러, 윈드스크린)`}
+                aria-label="호환 부품 검색"
+                className="mb-3 w-full rounded-lg border border-ridefit-border bg-ridefit-card px-3 py-2 text-sm text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary"
+              />
               <div className="mb-4 flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -320,7 +338,11 @@ function PartsSearch() {
               {error && <p className="text-ridefit-danger">에러: {error}</p>}
 
               {!loading && !error && visibleParts.length === 0 && (
-                <p className="text-ridefit-text-secondary">아직 이 차량에 대해 호환이 확인된 부품이 없어요.</p>
+                <p className="text-ridefit-text-secondary">
+                  {keyword.trim() || category
+                    ? '조건에 맞는 호환 부품이 없어요. 검색어나 카테고리를 바꿔보세요.'
+                    : '아직 이 차량에 대해 호환이 확인된 부품이 없어요.'}
+                </p>
               )}
 
               {!loading && !error && visibleParts.length > 0 && (
@@ -335,17 +357,12 @@ function PartsSearch() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          {part.imageUrl ? (
-                            <img
-                              src={part.imageUrl}
-                              alt={part.name}
-                              className="h-16 w-16 shrink-0 rounded-lg border border-ridefit-border bg-white object-contain p-1"
-                            />
-                          ) : (
-                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-ridefit-border bg-ridefit-bg-alt text-[10px] text-ridefit-text-secondary">
-                              이미지 준비중
-                            </div>
-                          )}
+                          <SafeImage
+                            src={part.imageUrl}
+                            alt={part.name}
+                            className="h-16 w-16 shrink-0 rounded-lg border border-ridefit-border bg-white object-contain p-1"
+                            fallbackClassName="h-16 w-16 shrink-0 rounded-lg border border-ridefit-border text-[10px]"
+                          />
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
@@ -384,7 +401,7 @@ function PartsSearch() {
                               {part.price.toLocaleString()}원
                               {part.stats?.lowestPrice != null && part.stats.lowestPrice < part.price && (
                                 <span className="ml-2 text-xs font-normal text-ridefit-primary">
-                                  최저가 {part.stats.lowestPrice.toLocaleString()}원
+                                  판매처 {part.stats.lowestPrice.toLocaleString()}원부터
                                 </span>
                               )}
                             </p>
@@ -423,7 +440,7 @@ function PartsSearch() {
                           )}
                         </div>
                         {expandedPartId === part.partId && (
-                          <div className="mt-2 pl-[76px]">
+                          <div className="mt-2 sm:pl-[76px]">
                             <SellerListings partId={part.partId} />
                           </div>
                         )}

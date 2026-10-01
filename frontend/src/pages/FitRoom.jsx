@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import AiFitPanel from '../components/AiFitPanel'
 import PartBadges from '../components/PartBadges'
+import SafeImage from '../components/SafeImage'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
 import { getVehicle360Frames } from '../constants/vehicle360'
@@ -24,6 +26,8 @@ function FitRoom() {
   const [conflicts, setConflicts] = useState([])
   const [checkingConflicts, setCheckingConflicts] = useState(false)
   const [viewMode, setViewMode] = useState('fit')
+  // "장착해보기" 결과({ imageUrl, cached, part }). 없으면 "장착 모습" 탭 자체를 숨긴다.
+  const [aiResult, setAiResult] = useState(null)
 
   useEffect(() => {
     setLoading(true)
@@ -98,10 +102,11 @@ function FitRoom() {
         {vehicle.nickname || vehicle.modelYearLabel} — 호환되는 부품을 켜고 끄면서 조합을 비교해보세요.
       </p>
 
+
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
         {/* 차량 이미지 + 장착된 부품 이미지 오버레이(오버레이 이미지가 없는 부품은 배지) */}
         <div className="relative self-start overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6 lg:sticky lg:top-6">
-          {vehicle360Frames && (
+          {(vehicle360Frames || aiResult) && (
             <div className="mb-4 flex justify-center gap-2">
               <button
                 type="button"
@@ -110,8 +115,9 @@ function FitRoom() {
                   viewMode === 'fit' ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
                 }`}
               >
-                부품 장착
+                위치 미리보기
               </button>
+              {vehicle360Frames && (
               <button
                 type="button"
                 onClick={() => setViewMode('360')}
@@ -121,10 +127,35 @@ function FitRoom() {
               >
                 360° 보기
               </button>
+              )}
+              {aiResult && (
+                <button
+                  type="button"
+                  onClick={() => setViewMode('ai')}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    viewMode === 'ai' ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
+                  }`}
+                >
+                  장착 모습
+                </button>
+              )}
             </div>
           )}
 
-          {viewMode === '360' && vehicle360Frames ? (
+          {viewMode === 'ai' && aiResult ? (
+            <figure data-testid="ai-fit-result">
+              <SafeImage
+                src={aiResult.imageUrl}
+                alt={`${aiResult.part.name} 장착 모습`}
+                className="mx-auto w-full max-w-2xl rounded-lg"
+                fallbackClassName="mx-auto h-64 w-full max-w-2xl rounded-lg"
+                fallbackText="장착 모습을 불러오지 못했어요"
+              />
+              <figcaption className="mt-3 text-center text-xs text-ridefit-text-secondary">
+                {aiResult.part.name} · 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있습니다.
+              </figcaption>
+            </figure>
+          ) : viewMode === '360' && vehicle360Frames ? (
             // "부품 장착" 무대와 같은 종횡비를 써서 두 보기 모드를 오갈 때 차량 크기가 달라 보이지 않게 한다.
             <Vehicle360Viewer
               frames={vehicle360Frames}
@@ -141,6 +172,18 @@ function FitRoom() {
               오른쪽 목록에서 부품을 켜면 차량 위에 표시돼요.
             </p>
           )}
+
+          <AiFitPanel
+            vehicle={vehicle}
+            myVehicleId={myVehicleId}
+            activeParts={activeParts}
+            viewMode={viewMode}
+            onShowBasic={() => setViewMode('fit')}
+            onShowResult={(result) => {
+              setAiResult(result)
+              setViewMode('ai')
+            }}
+          />
         </div>
 
         {/* 카테고리별 부품 토글 목록 */}
@@ -176,17 +219,12 @@ function FitRoom() {
                           onChange={() => togglePart(part.partId)}
                           className="h-4 w-4 shrink-0 accent-ridefit-primary"
                         />
-                        {part.imageUrl ? (
-                          <img
-                            src={part.imageUrl}
-                            alt=""
-                            className="h-12 w-12 shrink-0 rounded-md border border-ridefit-border bg-white object-contain p-0.5"
-                          />
-                        ) : (
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-ridefit-border bg-ridefit-bg-alt text-center text-[9px] leading-tight text-ridefit-text-secondary">
-                            이미지 준비중
-                          </div>
-                        )}
+                        <SafeImage
+                          src={part.imageUrl}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-md border border-ridefit-border bg-white object-contain p-0.5"
+                          fallbackClassName="h-12 w-12 shrink-0 rounded-md border border-ridefit-border text-[9px] leading-tight"
+                        />
                         <div>
                           <Link
                             to={`/parts/${part.partId}?vehicleId=${myVehicleId}`}
@@ -211,15 +249,6 @@ function FitRoom() {
                           )}
                         </div>
                       </div>
-                      {isActive && (
-                        <Link
-                          to={`/synth?partId=${part.partId}&vehicleId=${myVehicleId}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="shrink-0 text-xs font-medium text-ridefit-primary hover:underline"
-                        >
-                          AI 합성 보기
-                        </Link>
-                      )}
                     </label>
                   )
                 })}

@@ -17,7 +17,7 @@ const FEATURED_GUIDES = ['engine-oil', 'coolant', 'urea-solution', 'handle-dampe
 const SERVICE_FEATURES = [
   { title: '정확한 호환성 확인', description: '추측이 아닌, 등록된 호환 데이터를 기반으로 판정합니다.' },
   { title: '다양한 부품 검색', description: '카테고리별로 필요한 부품을 빠르게 찾아보세요.' },
-  { title: 'AI 장착 미리보기', description: '부품을 장착한 모습을 AI로 미리 확인해보세요.' },
+  { title: '장착 미리보기', description: '내 오토바이에 부품을 장착한 모습을 미리 확인해보세요.' },
 ]
 
 const JOURNEY = [

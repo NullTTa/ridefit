@@ -77,9 +77,17 @@ public class PartPopularityService {
         long positive = postRepository.countByInstalledPartIdAndCompatibleFeedback(part.getId(), "MATCHED");
         long negative = postRepository.countByInstalledPartIdAndCompatibleFeedback(part.getId(), "NOT_MATCHED");
         long photoCount = postRepository.countByInstalledPartIdAndImageUrlIsNotNull(part.getId());
-        long sellerCount = sellerListingRepository.countByPartId(part.getId());
-        Integer lowestPrice = sellerListingRepository.findByPartIdOrderByPriceAsc(part.getId()).stream()
-                .findFirst().map(l -> l.getPrice()).orElse(null);
+        // 판매처 수/최저가는 실제 판매처끼리만 센다(예시 판매처(.test)는 제외 - SellerListing.isSample()).
+        List<com.ridefit.ridefit.domain.SellerListing> realListings = sellerListingRepository
+                .findByPartIdOrderByPriceAsc(part.getId()).stream()
+                .filter(l -> !l.isSample())
+                .toList();
+        long sellerCount = realListings.size();
+        // 가격이 확인된 판매처끼리만 비교한다(가격 미확인은 제외).
+        Integer lowestPrice = realListings.stream()
+                .filter(l -> l.getPrice() != null)
+                .map(l -> l.getPrice())
+                .min(Integer::compareTo).orElse(null);
 
         // 랭킹 계산용 내부 점수일 뿐, 사용자에게 그대로 노출하는 값이 아니다. 실제로 쌓인
         // 조회/장착시도/후기/평점에 가중치를 둔 단순 합산.

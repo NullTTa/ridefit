@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminPartController {
 
     private final PartRepository partRepository;
+    private final com.ridefit.ridefit.service.ImageStorageService imageStorageService;
 
     @GetMapping
     public Page<PartResponse> list(@PageableDefault(size = 20) Pageable pageable) {
@@ -46,6 +47,18 @@ public class AdminPartController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "부품을 찾을 수 없습니다."));
         part.setImageUrl(request.imageUrl());
         return PartResponse.from(partRepository.save(part));
+    }
+
+    // AI 장착용 참조 이미지 지정/해제. 대표 이미지와 별개이며, 서버에 있는 이미지만 허용한다.
+    @PatchMapping("/{id}/ai-reference")
+    public PartResponse updateAiReference(@PathVariable Long id, @RequestBody AiReferenceRequest request) {
+        Part part = partRepository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "부품을 찾을 수 없습니다."));
+        part.setAiReferenceImageUrl(imageStorageService.requireReadableInternalImage(request.aiReferenceImageUrl()));
+        return PartResponse.from(partRepository.save(part));
+    }
+
+    public record AiReferenceRequest(String aiReferenceImageUrl) {
     }
 
     // 외부 사이트 평점은 관리자가 실제로 확인한 값만 입력한다 (자동 추정 없음).

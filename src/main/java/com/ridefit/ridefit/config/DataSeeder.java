@@ -13,7 +13,6 @@ import com.ridefit.ridefit.domain.PartConflict;
 import com.ridefit.ridefit.domain.Post;
 import com.ridefit.ridefit.domain.RecentPartCheck;
 import com.ridefit.ridefit.domain.Role;
-import com.ridefit.ridefit.domain.SellerListing;
 import com.ridefit.ridefit.domain.VehicleModel;
 import com.ridefit.ridefit.repository.CommentRepository;
 import com.ridefit.ridefit.repository.CompatibilityRepository;
@@ -295,31 +294,6 @@ public class DataSeeder implements CommandLineRunner {
         installVideo(cubCarrier, "https://www.youtube.com/watch?v=is2SxPzgBAY");
         installVideo(pcxCarrier, "https://www.youtube.com/watch?v=5J07BCV-34I");
 
-        // ---- 판매처(최저가 비교) ----
-        listing(cubMuffler, "바이크나라", 189000, "https://example-shop.test/bikenara/cub-muffler");
-        listing(cubMuffler, "모토스토어", 179000, "https://example-shop.test/motostore/cub-muffler");
-        listing(cubMuffler, "라이더샵", 195000, "https://example-shop.test/ridershop/cub-muffler");
-        listing(pcxCarrier, "PCX전문샵", 95000, "https://example-shop.test/pcxshop/carrier");
-        listing(pcxCarrier, "스쿠터월드", 89000, "https://example-shop.test/scooterworld/pcx-carrier");
-        listing(tricityCarrier, "야마하부품샵", 89000, "https://example-shop.test/yamahaparts/tricity-carrier");
-        listing(tricityCarrier, "트리시티클럽", 84000, "https://example-shop.test/tricityclub/carrier");
-        listing(tricityCarrier, "스쿠터마켓", 92000, "https://example-shop.test/scootermarket/tricity-carrier");
-        listing(addressCarrier, "스즈키부품몰", 58000, "https://example-shop.test/suzukiparts/address-carrier");
-        listing(addressCarrier, "어드레스클럽", 61000, "https://example-shop.test/addressclub/carrier");
-        listing(z125Mirror, "가와사키파츠", 41000, "https://example-shop.test/kawasakiparts/z125-mirror");
-        listing(z125Mirror, "네이키드샵", 38000, "https://example-shop.test/nakedshop/z125-mirror");
-        listing(z125Mirror, "바이크팩토리", 43000, "https://example-shop.test/bikefactory/z125-mirror");
-        listing(cubMirror, "커브가족", 30000, "https://example-shop.test/cubfamily/basic-mirror");
-        listing(cubMirror, "바이크나라", 33000, "https://example-shop.test/bikenara/cub-mirror");
-        listing(cubSeat, "커브가족", 46000, "https://example-shop.test/cubfamily/punching-seat-cover");
-        listing(cubSeat, "바이크나라", 49500, "https://example-shop.test/bikenara/cub-seat-cover");
-        listing(pcxLever, "PCX전문샵", 52000, "https://example-shop.test/pcxshop/brake-lever");
-        listing(pcxLever, "라이더샵", 55500, "https://example-shop.test/ridershop/pcx-lever");
-        listing(pcxLamp, "스쿠터마켓", 36500, "https://example-shop.test/scootermarket/led-blinker");
-        listing(pcxLamp, "PCX전문샵", 39000, "https://example-shop.test/pcxshop/led-signal");
-        listing(tricityScreen, "야마하부품샵", 91000, "https://example-shop.test/yamahaparts/tricity-screen");
-        listing(tricityScreen, "트리시티클럽", 97000, "https://example-shop.test/tricityclub/screen");
-
         // ---- 인기 부품 초기 지표 (실사용 기록이 쌓이기 전, 데모에서 "인기 부품" 섹션을 보여주기 위한 값) ----
         // popularity()는 view/fitSelection이 아직 0/0일 때만 값을 채운다 - 실사용자가 실제로 조회/장착해본
         // 뒤에는(0이 아니게 된 뒤에는) 재기동해도 이 초기값으로 덮어쓰지 않는다.
@@ -550,17 +524,6 @@ public class DataSeeder implements CommandLineRunner {
         part.setViewCount(viewCount);
         part.setFitSelectionCount(fitSelectionCount);
         partRepository.save(part);
-    }
-
-    private void listing(Part part, String sellerName, int price, String sourceUrl) {
-        boolean exists = sellerListingRepository.findByPartIdOrderByPriceAsc(part.getId()).stream()
-                .anyMatch(l -> l.getSellerName().equals(sellerName));
-        if (exists) {
-            return;
-        }
-        sellerListingRepository.save(SellerListing.builder()
-                .part(part).sellerName(sellerName).price(price).sourceUrl(sourceUrl)
-                .createdAt(LocalDateTime.now()).build());
     }
 
     // 이미 존재하는 회원의 role만 ADMIN으로 바꾼다. 없으면 아무 것도 하지 않는다(임의로 계정을 만들지 않음).

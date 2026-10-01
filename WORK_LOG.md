@@ -4,6 +4,116 @@
 
 ---
 
+## FitRoom 장착 UX 정리 - "AI" 표현 제거 (2026-09-30 5차, main 위, 커밋 안 함)
+
+프론트 2개 파일의 표시 문구/버튼 노출 조건만 변경(`AiFitPanel.jsx`, `FitRoom.jsx`). 백엔드·overlay·좌표·API 구조는 그대로.
+
+- 버튼 `AI로 장착해보기` → **`장착해보기`**(저장된 결과가 있으면 `장착 모습 보기`, 생성 중 `장착하는 중...`).
+  탭 `AI 장착` → `장착 모습`, 기존 2D 탭 `부품 장착` → `위치 미리보기`. 서버 안내 문구는 상태 코드별 사용자용 문구로 바꿔 표시하고
+  오류 문구에서는 "AI"만 걷어냄. 생성 이미지라는 고지는 "참고용 합성 이미지"로 남김.
+- `기본 장착 미리보기` 버튼이 안 눌리는 것처럼 보이던 원인: 이미 그 보기(기본값)일 때 눌러도 같은 상태라 변화가 없었음 →
+  다른 보기일 때만 `위치 미리보기로 돌아가기`로 노출.
+- `AI로 장착해보기`가 비활성이던 원인: 참조 이미지가 있는 부품이 part 32(머플러) 하나뿐이고 2023년식(JA44) Cub 차고(17, 31)에서만
+  가능. 그 외 부품/차량은 전부 비활성(이제 "이 부품은 아직 장착 모습을 지원하지 않아요"로 안내). 키가 없던 동안은 전부 비활성이었음.
+- 검증: vite build 성공, 1440/375px에서 위치 미리보기 → 장착 모습 보기(저장 결과) → 돌아가기 정상, 콘솔/HTTP 오류 0.
+  생성 요청(POST /api/ai-fit)은 브라우저에서 차단한 채 확인해 추가 크레딧 사용 없음(ai_fit_result 1건 그대로).
+- [추가] Home 기능 소개 카드(`Home.jsx`), Synth 페이지(`Synth.jsx`), 그 페이지로 가는 링크(`PartImport.jsx`)의 "AI" 문구도
+  "장착 미리보기 / 장착 모습 만들기"로 변경. 문구만 바꿨고 `/api/synth` 호출 구조는 그대로. 관리자 화면의 "AI" 표기는 유지.
+
+---
+
+## Magic Hour Image Editor provider 추가 (2026-09-30 4차, main 위, 커밋 안 함)
+
+Gemini는 키·인증은 정상이지만 무료 등급 이미지 모델 한도가 없어 429(quota)만 나옴 → 무료 크레딧이 있는 Magic Hour를
+"AI로 장착해보기"의 세 번째 provider로 추가. 프론트엔드·OpenAI/Gemini 클라이언트·Synth는 변경 없음.
+
+- 신규 `MagicHourImageClient`: 업로드 주소 요청 → 이미지 PUT 업로드 → `/v1/ai-image-editor` 작업 생성 → `/v1/image-projects/{id}`
+  폴링 → 결과 다운로드. `image_count=1` 고정, 자동 재시도 없음, 키/서명 URL 로그 금지. 기존 프롬프트 뒤에 "새 오토바이를
+  만들지 말고 Image 1을 편집" 문장만 덧붙임. **차량/부품 이미지가 Magic Hour 서버로 업로드됨.**
+- `AiImageProvider`에 `magichour` 분기, `AiFitService`에 Magic Hour 오류 catch 1개(402는 한도 초과 안내로 표시) 추가.
+- 설정: `MAGICHOUR_API_KEY`, `MAGICHOUR_IMAGE_MODEL`(기본 `flux-2-klein`), `MAGICHOUR_IMAGE_RESOLUTION`(기본 `640px`),
+  타임아웃 180초/폴링 3초. `application-local.properties`에 빈 `MAGICHOUR_API_KEY=`와 `AI_FIT_PROVIDER=magichour` 추가해 둠.
+- 검증: build 성공, 테스트 11개 통과, 서버 기동, 키가 비어 있어 상태 API가 `NOT_CONFIGURED`(= magichour가 선택됨).
+  **실제 이미지 생성 요청은 아직 한 번도 보내지 않음** - 키 입력 후 사용자가 직접 테스트 예정.
+- 미확인: flux-2-klein이 입력 이미지 3장(차량/참조/대표)을 받는지, 무료 계정에서 640px·모델 제한(402)이 있는지,
+  투명 배경 차량 사진의 결과 배경 처리.
+- **[17:44 첫 실제 생성 성공]** Super Cub 110(내 차고 17) + 순정 스타일 스테인리스 머플러(part 32), flux-2-klein/640px,
+  입력 3장, 약 9초, 결과 640x320 PNG(`uploads/ai-fit/ea4226ed-...png`, ai_fit_result id=1). 차량 형태는 잘 유지되고 머플러만
+  교체됨. 투명 배경은 검정으로 채워짐, 비율이 2.13→2.0으로 약간 달라짐, 저해상도라 로고 글자가 뭉개짐.
+  주의: 이때 키는 `application.properties`(git 추적 파일)에 직접 들어가 있었음 - `-local` 파일로 옮겨야 함.
+
+---
+
+## Gemini 이미지 API 연동 - "AI로 장착해보기" 제공자 추가 (2026-09-30 3차, main 위, 커밋 안 함)
+
+기존에는 `gemini.api-key` 설정 줄만 있고 Gemini를 호출하는 코드가 없었음. 새 기능/엔드포인트를 만들지 않고, FitRoom의
+"AI로 장착해보기"(`/api/ai-fit`)가 OpenAI 키 없이 Gemini 키만으로도 동작하도록 백엔드에 제공자만 추가.
+
+- 신규 `GeminiImageClient`(`/v1beta/models/{model}:generateContent`, 키는 `x-goog-api-key` 헤더), `AiImageProvider`
+  (`ai.fit.provider=auto|openai|gemini`, auto = OpenAI 키 우선, 없으면 Gemini). `AiFitService`는 OpenAI 클라이언트 대신
+  이 제공자를 쓰도록 7곳만 교체 + Gemini 오류(429 등)도 같은 안내 문구로 처리. 프롬프트/캐시/한도 로직은 그대로.
+- 설정: `GEMINI_API_KEY`, `GEMINI_IMAGE_MODEL`(기본 `gemini-2.5-flash-image`), `AI_FIT_PROVIDER`. 프론트엔드/의존성 변경 없음.
+- 검증: `gradlew build` 성공, 테스트 11개 통과(테스트는 `ai.fit.provider=openai`로 고정해 실제 호출 없음). 8081 검증 서버에서
+  잘못된 키 → 502 안내 문구 + 서버 정상, 실제 키 → Gemini까지 요청 도달했으나 **429(무료 등급 이미지 모델 할당량 0)**로
+  이미지는 생성되지 않음. 화면에는 "AI 서비스 사용 한도를 초과했어요" 표시, 버튼 1회 클릭 = POST 1회, 재시도 없음.
+- 남은 일: Google AI Studio 프로젝트에 결제(유료 등급)를 켜야 이미지 모델 호출이 됨. 그 뒤 `application-local.properties`의
+  `GEMINI_API_KEY=` 줄에 키를 넣고 백엔드 재시작.
+
+---
+
+## 9/28 이미지 5장 → 실제 상품 부품 5개 + 판매처 11건 (2026-09-30 2차, main 위, 커밋 안 함)
+
+`images/`의 9/28 이미지 5장이 각각 어떤 실제 판매 상품인지 판매처 사진과 대조해 확인한 뒤, 기존 관리자 API
+(`POST /api/admin/products` → `PATCH /api/admin/parts/{id}/image` → `POST /api/parts/{id}/listings`)로만 등록.
+직접 SQL·코드 변경 없음. part 84→89, compatibility 593→603(+10, 신규 부품만), seller_listing 5→16.
+
+| id | 부품 | 카테고리 | 이미지(`/assets/parts/`) | 판매처(확인가, 2026-09-30) |
+|---|---|---|---|---|
+| 118 | H2C 슈퍼커브 110 순정 프론트 바스켓 (21년~) [APK1MAL61000TA] | 프론트바구니 | h2c-cub110-front-basket.png | 모토캡슐 24,800 / 11번가 SM바이크 24,900 |
+| 119 | H2C 슈퍼커브 110 순정 윈드스크린 (18년~) [APK76LJ-88210TA] | 스크린 | h2c-cub110-windscreen.png | 모토캡슐 96,500 / 모토몰 119,000 / 바이크007 119,000 |
+| 120 | 오토바이 윈드스크린 스쿠터 범용 윈드쉴드 슈퍼커브 바람막이 | 스크린 | universal-scooter-windscreen.png | 11번가 알테쉬 6,350 / 롯데ON 14,000 |
+| 121 | 사이드백 대용량 짐받이 트렁크 가방 오토바이 겸용 (한 쌍) | 사이드백 | saddlebag-pair-lace.png | 11번가 굿데이픽 41,110 / 리브렌이 55,250 / 딸기쨈직구 61,140 (전부 한 쌍 옵션가) |
+| 122 | 오토바이 사이드백 리어백 가방 음료 수납 보관 | 사이드백 | saddlebag-cupholder-buckle.png | 11번가 셀렉트템 40,000 (S 옵션가, L은 45,000) |
+
+- 호환: 전부 Super Cub 110 2021/2023(model_year 7, 8)에만 연결. H2C 2종·범용 스크린은 호환가능, 범용 새들백 2종은
+  브라켓필요(차종 전용품 아님을 note에 명시). 부품 대표가는 확인된 최저가로 넣음.
+- 윈드스크린은 18년~(APK76LJ)과 21년~ 버전이 따로 팔리는데, 이미지가 써플의 18년~ 상품 사진과 같은 컷이라 18년~로 등록.
+  21년~ 전용 판매글(모토캡슐 110,000 / 바이크007 119,000)은 연결하지 않음.
+- 제외: 써플 H2C 윈드스크린(품절), 11번가 BIKETUNER 바스켓(판매 중 아님), 바이크마루 H2C 바구니(18년~용 다른 제품),
+  바스켓+센터캐리어 세트 상품, G마켓/옥션 전부(봇 확인 화면이라 가격 직접 확인 불가).
+- 이미지 3장(바스켓, 윈드스크린 2장)은 원본 PNG 자체에 체크무늬 배경이 그려져 있어(투명 아님) 화면에도 그대로 보임.
+- FitRoom/부품찾기에 5개 모두 노출(배지 표시, overlay는 없음). 1440/375px 콘솔·HTTP 오류 0, 깨진 이미지 0.
+
+---
+
+## 실제 판매처 등록 + FitRoom overlay 최신화 (2026-09-30, main 위, 커밋 안 함)
+
+**실제 판매처 5건 등록**(기존 `POST /api/parts/{id}/listings` 그대로 사용, 직접 SQL 없음, 코드 변경 없음).
+seller_listing 0 → 5건, example-shop/.test 0건. 전부 상품 페이지를 직접 열어 가격·이미지·판매상태 확인.
+- part 2 "KITACO 캐리어" = 키타코 패션 리어 캐리어 블랙 **80-539-11530**(DB 이미지가 kitaco.co.jp 공식
+  사진과 동일 + 판매처 상품명에 같은 품번): 쿠즈모토 155,000(최저가) / 11번가 EmoCruise_Mall 162,030 /
+  11번가 카플러리 165,810 / 롯데ON 176,760. 11번가·롯데ON은 해외직구 상품.
+- part 77 아사히 챔피온 사이드백: 바이크007 400,000(부품의 source_url과 같은 페이지, 1곳뿐이라 최저가 배지 없음).
+- 보류: 바이크팩토리 키타코 캐리어(품절), G마켓/옥션(봇 확인 화면이라 가격 확인 불가), 아사히 AC-5 단품
+  (구성 다름), OSAKA/IRONHEAD/SP다구치 머플러(실제 상품 특정 불가).
+- **알아둘 점**: 부품 84개 중 브랜드/품번으로 실제 상품을 특정할 수 있는 건 id 2, 77 둘뿐 — 나머지는
+  일반 명칭 시드라 "동일 상품" 판매처 연결이 불가. part 2는 compatibility가 0건이라 부품찾기/FitRoom에 안 나옴
+  (부품 상세 `/parts/2`에서만 확인 가능). part 2의 대표 가격 120,000원은 실제 최저가(155,000)보다 낮은 시드 값.
+- 롯데ON 가격은 쿠폰/결제수단 조건 없는 표시 판매가(176,760) 기준. 쿠폰가 167,670 / 토스페이 159,290은 미사용.
+
+**FitRoom overlay 2장 교체** — `2025HondaSuperCub110rearcarrier.png`는 상품 사진(`cub110-rear-carrier.png`)으론
+이미 반영돼 있었지만, FitRoom이 실제로 얹는 `overlay/cub110-rear-carrier.png`가 옛 사진(파이프 사이가 흰색으로
+메워진 버전)으로 만든 그대로였음. 머플러 overlay도 같은 상태(아래쪽 흰 테두리)라 둘 다 최신 원본에서 투명 여백만
+잘라 다시 생성(487x387 / 297x72, 비율 거의 동일해 좌표 무변경). `overlay/cub110-mirror.png`는 Cub 레이아웃에서
+쓰이지 않아 그대로 둠. 9/28에 추가된 새 이미지 5장(H2C 프론트바스켓, 윈드스크린 2, 사이드백 2)은 대응 부품이
+지정돼 있지 않아 미연결 상태.
+
+검증: 1440/375px에서 `/parts/2`, `/parts/77`, 부품찾기 판매처 비교, FitRoom — 콘솔 오류 0, HTTP 4xx/5xx 0,
+깨진 이미지 0, 가로 스크롤 없음. part/compatibility 등 핵심 테이블 내용 무변경(테스트로 view_count,
+fit_selection_count만 증가).
+
+---
+
 ## 추가 수정: images 폴더 전체 재대조 (같은 세션)
 
 사용자가 "그 폴더 안에 있는 것들만 최신화 시켜"라고 요청 → `images` 폴더 전체(34개 파일)를
@@ -261,16 +371,9 @@ console error 0건, network 4xx/5xx 0건, 깨진 이미지 0건 확인. 백엔�
    빈 폴더, 실제 사진은 `vehicles/super-cub-110/360/`에 있음 — 경로 순서가 뒤바뀐 예전 흔적).
 
 ### 남은 것 (다음 세션에서 이어할 것)
-- **MORIWAKI XXX 삭제** — 코드/시드 JSON엔 없지만 **로컬 MySQL DB `/parts/1`에 레거시로
-  남아있음**(현재 시더가 만든 게 아니라 과거에 DB에 직접 넣은 데이터). 참조 확인 결과
-  Compatibility 1건 + RecentPartCheck 2건만 걸려있어 삭제해도 안전함을 확인했으나,
-  Claude Code 자동 모드의 "되돌릴 수 없는 삭제" 안전장치가 DB DELETE 실행을 막아서
-  사용자가 직접 실행해야 함:
-  ```sql
-  DELETE FROM recent_part_check WHERE part_id=1;
-  DELETE FROM compatibility WHERE part_id=1;
-  DELETE FROM part WHERE id=1;
-  ```
+- ~~**MORIWAKI XXX 삭제**~~ → **[2026-09-28 완료]** 사용자 승인 하에 DELETE 3개
+  (`recent_part_check` 2건 → `compatibility` 1건 → `part` id=1) 실행 완료. 사후 검증(잔존 0건,
+  Super Cub 머플러 id 13/32 정상, 인기 부품에서 사라짐, 콘솔/HTTP 오류 0건) 통과.
 - **Home 섹션 큰 폭 비주얼 리디자인** — 이번 세션엔 시간 제약으로 hover/그라디언트 등
   안전한 수준의 보강만 함. Hero/카드 레이아웃 자체를 더 과감하게 바꾸는 건 안 건드림.
 - **브라우저 실기기/모바일 클릭 테스트** — API curl + `npm run build` + 백엔드 유닛테스트로만

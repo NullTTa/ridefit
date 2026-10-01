@@ -25,6 +25,8 @@ import AdminPartConflicts from './pages/admin/AdminPartConflicts'
 import AdminMembers from './pages/admin/AdminMembers'
 import AdminPartVideos from './pages/admin/AdminPartVideos'
 import AdminVehicleModels from './pages/admin/AdminVehicleModels'
+import AdminProductImport from './pages/admin/AdminProductImport'
+import AdminAiReferences from './pages/admin/AdminAiReferences'
 import FitRoom from './pages/FitRoom'
 import Vehicles from './pages/Vehicles'
 import VehicleDetail from './pages/VehicleDetail'
@@ -157,6 +159,8 @@ function App() {
             <Route path="part-conflicts" element={<AdminPartConflicts />} />
             <Route path="part-videos" element={<AdminPartVideos />} />
             <Route path="vehicle-models" element={<AdminVehicleModels />} />
+            <Route path="product-import" element={<AdminProductImport />} />
+            <Route path="ai-references" element={<AdminAiReferences />} />
             <Route path="members" element={<AdminMembers />} />
           </Route>
           <Route path="*" element={<NotFound />} />

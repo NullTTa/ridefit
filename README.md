@@ -73,7 +73,11 @@ cp src/main/resources/application-local.properties.example src/main/resources/ap
 | `jwt.expiration-ms` | 토큰 만료 시간(ms) | `86400000` |
 | `AI_SYNTH_MODE` (환경변수) 또는 `ai.synth.mode` | `mock` \| `live` | `mock` |
 | `POLLINATIONS_API_KEY` (환경변수) 또는 `pollinations.api-key` | Pollinations API 키 (live일 때만 필요) | (비어있음) |
-| `GEMINI_API_KEY` (환경변수) 또는 `gemini.api-key` | Gemini API 키 (live일 때만 필요) | (비어있음) |
+| `GEMINI_API_KEY` (환경변수) 또는 `gemini.api-key` | Gemini API 키 - FitRoom "AI로 장착해보기"에 사용 (없으면 AI 버튼만 비활성화) | (비어있음) |
+| `GEMINI_IMAGE_MODEL` | Gemini 이미지 모델 이름 | `gemini-2.5-flash-image` |
+| `AI_FIT_PROVIDER` | "AI로 장착해보기" 제공자: `auto` \| `openai` \| `gemini` \| `magichour` (`auto` = OpenAI → Gemini → Magic Hour 순으로 키가 있는 것) | `auto` |
+| `MAGICHOUR_API_KEY` | Magic Hour API 키 - "AI로 장착해보기"에 사용 (차량/부품 이미지가 Magic Hour로 업로드됨) | (비어있음) |
+| `MAGICHOUR_IMAGE_MODEL` / `MAGICHOUR_IMAGE_RESOLUTION` | Magic Hour 편집 모델 / 결과 해상도 | `flux-2-klein` / `640px` |
 
 처음 실행하면 `DataSeeder`가 Honda Super Cub 110 / PCX 샘플 부품과 호환성 데이터, 테스트
 계정(`user@ridefit.dev` / `admin@ridefit.dev`, 비밀번호는 코드의 `DataSeeder` 참고)을

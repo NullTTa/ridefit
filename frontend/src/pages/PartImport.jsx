@@ -290,7 +290,7 @@ function PartImport() {
                     to={`/synth?partId=${part.id}&vehicleId=${selectedVehicleId}`}
                     className="mt-3 inline-block rounded-lg bg-ridefit-primary px-3 py-1.5 text-xs font-semibold text-white hover:brightness-110"
                   >
-                    AI 합성 미리보기로 이동
+                    장착 미리보기로 이동
                   </Link>
                 </>
               ) : (

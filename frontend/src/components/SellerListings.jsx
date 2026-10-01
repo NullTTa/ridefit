@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import SafeImage from './SafeImage'
 
-// 하나의 부품에 사용자가 등록해둔 판매처 링크들끼리 가격을 비교한다.
-// 쿠팡/네이버쇼핑 등을 실시간으로 자동 검색하는 기능이 아니라, "등록된 판매처 중 최저가"임을 분명히 표기한다.
+const inputClass =
+  'rounded border border-ridefit-border bg-ridefit-card px-2 py-1 text-ridefit-text focus:border-ridefit-primary focus:outline-none'
+
+function formatDate(iso) {
+  return iso ? iso.slice(0, 10) : null
+}
+
+// 판매처 가격비교. 쿠팡/네이버쇼핑 등을 실시간으로 자동 검색하는 기능이 아니라, 등록된 판매처끼리 비교한다.
+//  - 가격이 확인되지 않은 판매처는 "가격 확인 필요"로 표시(0원 표시 금지).
+//  - "최저가" 배지는 서버가 "가격 확인된 실제 판매처 2곳 이상"일 때만 붙인다(하드코딩 없음).
+//  - 예약 도메인(.test)의 예시 판매처는 링크 없이 "예시 데이터"로 구분한다.
 function SellerListings({ partId }) {
   const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -10,6 +20,7 @@ function SellerListings({ partId }) {
 
   const [url, setUrl] = useState('')
   const [crawling, setCrawling] = useState(false)
+  const [crawlNotice, setCrawlNotice] = useState(null)
   const [draft, setDraft] = useState(null)
   const [adding, setAdding] = useState(false)
 
@@ -30,13 +41,17 @@ function SellerListings({ partId }) {
     if (!url.trim()) return
     setCrawling(true)
     setError(null)
+    setCrawlNotice(null)
     try {
       const result = await api.post('/api/parts/import', { url })
+      if (!result.success) setCrawlNotice(result.failReason)
       setDraft({
-        sellerName: result.title || url,
+        sellerName: result.sellerName ?? '',
+        productName: result.title ?? '',
         price: result.price ?? '',
-        thumbnailUrl: result.imageUrl || '',
-        sourceUrl: url,
+        thumbnailUrl: result.imageUrl ?? '',
+        externalProductId: result.externalProductId ?? '',
+        sourceUrl: result.finalUrl || url,
       })
     } catch (err) {
       setError(err.message)
@@ -53,12 +68,15 @@ function SellerListings({ partId }) {
     try {
       await api.post(`/api/parts/${partId}/listings`, {
         sellerName: draft.sellerName,
-        price: Number(draft.price),
+        productName: draft.productName || null,
+        price: draft.price === '' ? null : Number(draft.price),
         thumbnailUrl: draft.thumbnailUrl || null,
+        externalProductId: draft.externalProductId || null,
         sourceUrl: draft.sourceUrl,
       })
       setDraft(null)
       setUrl('')
+      setCrawlNotice(null)
       load()
     } catch (err) {
       setError(err.message)
@@ -67,75 +85,137 @@ function SellerListings({ partId }) {
     }
   }
 
+  const realListings = listings.filter((l) => !l.sample)
+  const pricedCount = realListings.filter((l) => l.price != null).length
+
   return (
-    <div
-      className="mt-3 rounded-lg border border-ridefit-border bg-ridefit-bg p-3 text-xs"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <p className="mb-2 font-semibold text-ridefit-text-secondary">등록된 판매처 중 최저가</p>
-
+    <div className="text-sm" onClick={(e) => e.stopPropagation()}>
       {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
-      {error && <p className="text-ridefit-danger">{error}</p>}
+      {error && <p className="mb-2 text-ridefit-danger">{error}</p>}
 
-      {!loading && listings.length === 0 && <p className="text-ridefit-text-secondary">등록된 판매처가 없어요.</p>}
+      {!loading && listings.length === 0 && (
+        <p className="text-ridefit-text-secondary">아직 등록된 판매처가 없어요.</p>
+      )}
+
+      {!loading && pricedCount >= 2 && (
+        <p className="mb-3 text-xs text-ridefit-text-secondary">가격이 확인된 판매처 {pricedCount}곳 기준으로 비교했어요.</p>
+      )}
 
       {!loading && listings.length > 0 && (
-        <ul className="mb-3 flex flex-col gap-1">
+        <ul className="mb-4 flex flex-col gap-2" data-testid="seller-listings">
           {listings.map((l) => (
-            <li key={l.id} className="flex items-center justify-between gap-2">
-              <a
-                href={l.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="truncate text-ridefit-primary hover:underline"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {l.sellerName}
-              </a>
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                {l.lowestPrice && <span className="rounded-full bg-ridefit-primary px-1.5 py-0.5 text-white">최저가</span>}
-                {l.price.toLocaleString()}원
-              </span>
+            <li
+              key={l.id}
+              className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
+                l.lowestPrice ? 'border-ridefit-primary bg-ridefit-primary/5' : 'border-ridefit-border bg-ridefit-bg'
+              }`}
+            >
+              <SafeImage
+                src={l.thumbnailUrl || l.originalImageUrl}
+                alt={l.productName || l.sellerName}
+                className="h-14 w-14 shrink-0 rounded-md border border-ridefit-border bg-white object-contain p-0.5"
+                fallbackClassName="h-14 w-14 shrink-0 rounded-md border border-ridefit-border text-[10px] leading-tight"
+                fallbackText="이미지 없음"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="flex flex-wrap items-center gap-1.5 font-semibold text-ridefit-text">
+                  {l.sellerName}
+                  {l.lowestPrice && (
+                    <span className="rounded-full bg-ridefit-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">최저가</span>
+                  )}
+                  {l.sample && (
+                    <span className="rounded-full border border-ridefit-border px-1.5 py-0.5 text-[10px] font-normal text-ridefit-text-secondary">
+                      예시 데이터
+                    </span>
+                  )}
+                </p>
+                {l.productName && <p className="truncate text-xs text-ridefit-text-secondary">{l.productName}</p>}
+                {formatDate(l.checkedAt) && (
+                  <p className="text-[11px] text-ridefit-text-secondary/80">확인일 {formatDate(l.checkedAt)}</p>
+                )}
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {l.price != null ? (
+                  <span className="font-bold text-ridefit-text">{l.price.toLocaleString()}원</span>
+                ) : (
+                  <span className="text-xs text-ridefit-text-secondary">가격 확인 필요</span>
+                )}
+                {l.sample ? (
+                  <span className="text-[11px] text-ridefit-text-secondary">실제 판매처 아님</span>
+                ) : (
+                  <a
+                    href={l.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="text-xs font-medium text-ridefit-primary hover:underline"
+                  >
+                    상품 보기 →
+                  </a>
+                )}
+              </div>
             </li>
           ))}
         </ul>
       )}
 
       {!draft ? (
-        <form onSubmit={handleCrawl} className="flex gap-1">
+        <form onSubmit={handleCrawl} className="flex gap-1 text-xs">
           <input
             type="url"
-            placeholder="판매처 링크 추가"
+            placeholder="판매처 상품 링크 추가 (https://...)"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            className="min-w-0 flex-1 rounded border border-ridefit-border bg-ridefit-card px-2 py-1 text-ridefit-text"
+            className={`min-w-0 flex-1 ${inputClass}`}
           />
           <button
             type="submit"
             disabled={crawling}
             className="rounded bg-ridefit-primary px-2 py-1 font-semibold text-white disabled:opacity-50"
           >
-            {crawling ? '...' : '가져오기'}
+            {crawling ? '가져오는 중...' : '정보 가져오기'}
           </button>
         </form>
       ) : (
-        <form onSubmit={handleAdd} className="flex flex-col gap-1">
-          <input
-            value={draft.sellerName}
-            onChange={(e) => setDraft((d) => ({ ...d, sellerName: e.target.value }))}
-            onClick={(e) => e.stopPropagation()}
-            className="rounded border border-ridefit-border bg-ridefit-card px-2 py-1 text-ridefit-text"
-            placeholder="판매처 이름"
-          />
+        <form onSubmit={handleAdd} className="flex flex-col gap-1.5 rounded-lg border border-ridefit-border p-3 text-xs">
+          {crawlNotice && <p className="text-ridefit-warning">{crawlNotice}</p>}
+          <div className="flex gap-3">
+            <SafeImage
+              src={draft.thumbnailUrl}
+              alt="상품 이미지 미리보기"
+              className="h-16 w-16 shrink-0 rounded border border-ridefit-border bg-white object-contain"
+              fallbackClassName="h-16 w-16 shrink-0 rounded border border-ridefit-border text-[10px]"
+              fallbackText="이미지 없음"
+            />
+            <div className="flex flex-1 flex-col gap-1.5">
+              <input
+                value={draft.sellerName}
+                onChange={(e) => setDraft((d) => ({ ...d, sellerName: e.target.value }))}
+                className={inputClass}
+                placeholder="판매처 이름 (예: 쿠팡)"
+                required
+              />
+              <input
+                value={draft.productName}
+                onChange={(e) => setDraft((d) => ({ ...d, productName: e.target.value }))}
+                className={inputClass}
+                placeholder="판매처 상품명"
+              />
+            </div>
+          </div>
           <input
             type="number"
+            min="1"
             value={draft.price}
             onChange={(e) => setDraft((d) => ({ ...d, price: e.target.value }))}
-            onClick={(e) => e.stopPropagation()}
-            className="rounded border border-ridefit-border bg-ridefit-card px-2 py-1 text-ridefit-text"
-            placeholder="가격"
-            required
+            className={inputClass}
+            placeholder="가격(원) - 확인한 가격만 입력, 모르면 비워두세요"
+          />
+          <input
+            type="url"
+            value={draft.thumbnailUrl}
+            onChange={(e) => setDraft((d) => ({ ...d, thumbnailUrl: e.target.value }))}
+            className={inputClass}
+            placeholder="상품 이미지 URL (선택)"
           />
           <div className="flex gap-1">
             <button
@@ -143,13 +223,13 @@ function SellerListings({ partId }) {
               disabled={adding}
               className="flex-1 rounded bg-ridefit-primary px-2 py-1 font-semibold text-white disabled:opacity-50"
             >
-              추가
+              {adding ? '추가 중...' : '판매처 추가'}
             </button>
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation()
+              onClick={() => {
                 setDraft(null)
+                setCrawlNotice(null)
               }}
               className="rounded border border-ridefit-border px-2 py-1 text-ridefit-text-secondary"
             >

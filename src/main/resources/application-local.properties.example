@@ -19,3 +19,19 @@ jwt.expiration-ms=86400000
 # ai.synth.mode=mock
 # pollinations.api-key=
 # gemini.api-key=
+
+# AI 장착(OpenAI Image API). 가능하면 환경변수 OPENAI_API_KEY로 넣고, 이 파일에 넣더라도 절대 커밋하지 말 것.
+# OPENAI_API_KEY=
+# OPENAI_IMAGE_MODEL=gpt-image-2.5-sunburst
+# OPENAI_IMAGE_QUALITY=medium
+
+# AI 장착을 Gemini로 쓰려면 아래 한 줄에 키를 넣는다(OpenAI 키가 없으면 자동으로 Gemini를 쓴다). 절대 커밋하지 말 것.
+# GEMINI_API_KEY=
+# GEMINI_IMAGE_MODEL=gemini-2.5-flash-image
+# AI_FIT_PROVIDER=auto
+
+# AI 장착을 Magic Hour로 쓰려면 아래 두 줄을 넣는다(키는 = 뒤에 직접 입력). 절대 커밋하지 말 것.
+# MAGICHOUR_API_KEY=
+# AI_FIT_PROVIDER=magichour
+# MAGICHOUR_IMAGE_MODEL=flux-2-klein
+# MAGICHOUR_IMAGE_RESOLUTION=640px

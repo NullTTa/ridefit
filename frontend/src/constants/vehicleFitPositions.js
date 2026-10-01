@@ -266,3 +266,13 @@ export function getPartOverlays(part, layout) {
   if (!src || !placements) return []
   return placements.map((placement) => ({ ...placement, src }))
 }
+
+// FitRoom 좌표(vehicleFitPositions.js)에서 이 부품 카테고리의 장착 지점을 찾아 차량 사진 기준 0~100% 로 환산한다.
+// AI 프롬프트의 "장착 위치 힌트"로만 쓰인다. 좌표가 없으면 null(AI가 카테고리 설명만으로 위치를 판단).
+export function getAiAnchor(vehicle, part) {
+  const layout = getFitLayout(vehicle)
+  if (!layout || !part) return null
+  const point = layout.overlays?.[part.category]?.[0] ?? layout.anchors?.[part.category]
+  if (!point) return null
+  return { x: (point.x / layout.width) * 100, y: (point.y / layout.height) * 100 }
+}
