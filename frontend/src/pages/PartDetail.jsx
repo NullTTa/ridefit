@@ -12,6 +12,9 @@ import { loadPartCategorySlugs } from '../lib/guide'
 
 const FEEDBACK_LABEL = { MATCHED: '맞았어요', NOT_MATCHED: '안 맞았어요' }
 
+// 부품 구분(part_type) 화면 라벨. DB 값은 OEM/AFTERMARKET/UNIVERSAL, 없으면 "정보 없음".
+const PART_TYPE_LABEL = { OEM: '순정', AFTERMARKET: '애프터마켓', UNIVERSAL: '범용' }
+
 const FITMENT_STATUS_STYLE = {
   호환가능: 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success',
   브라켓필요: 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning',
@@ -101,6 +104,22 @@ function PartDetail() {
             )}
           </p>
           <h1 className="text-xl font-bold text-ridefit-text">{part.name}</h1>
+
+          {/* 부품 메타데이터: 근거가 확인된 부품에만 값이 있다(추정해서 채우지 않음). */}
+          <dl className="grid grid-cols-3 gap-2 rounded-lg border border-ridefit-border bg-ridefit-card px-3 py-2 text-xs" data-testid="part-meta">
+            {[
+              ['브랜드', part.brand],
+              ['품번', part.partNumber],
+              ['구분', PART_TYPE_LABEL[part.partType]],
+            ].map(([label, value]) => (
+              <div key={label} className="min-w-0">
+                <dt className="text-ridefit-text-secondary">{label}</dt>
+                <dd className={`truncate font-medium ${value ? 'text-ridefit-text' : 'text-ridefit-text-secondary/70'}`} title={value ?? undefined}>
+                  {value ?? '정보 없음'}
+                </dd>
+              </div>
+            ))}
+          </dl>
 
           {/* 외부 평점과 RIDEFIT 평점은 출처를 표시해 분리하고, 절대 하나의 점수로 합치지 않는다. */}
           {(stats.externalRating != null || stats.reviewCount > 0) && (

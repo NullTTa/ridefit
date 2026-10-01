@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
@@ -137,8 +138,15 @@ public class ImageStorageService {
         Path dir = Path.of(uploadDir, subdir);
         Files.createDirectories(dir);
         String filename = UUID.randomUUID() + "." + ext;
-        Files.write(dir.resolve(filename), bytes);
+        // CREATE_NEW: 같은 이름의 파일이 이미 있으면 덮어쓰지 않고 실패한다(기존 결과 보호).
+        Files.write(dir.resolve(filename), bytes, StandardOpenOption.CREATE_NEW);
         return "/uploads/" + subdir + "/" + filename;
+    }
+
+    // "/uploads/ai-fit/x.png" 같은 URL 경로가 실제로 저장된 디스크 위치(로그 확인용).
+    public String absolutePathOf(String uploadsUrl) {
+        if (uploadsUrl == null || !uploadsUrl.startsWith("/uploads/")) return String.valueOf(uploadsUrl);
+        return Path.of(uploadDir).toAbsolutePath().normalize().resolve(uploadsUrl.substring("/uploads/".length())).toString();
     }
 
     static String detectExtension(byte[] b) {

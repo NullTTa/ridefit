@@ -2,6 +2,8 @@ package com.ridefit.ridefit.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -66,4 +68,14 @@ public class Part {
     private Double externalRating;
     private Integer externalRatingCount;
     private String externalRatingSource; // 예: "Webike"
+
+    // ---- 부품 메타데이터 (근거가 확인된 부품에만 입력, 모르면 null) ----
+    // 제조사 부품번호/상품코드(예: KITACO "80-539-11530"). 판매처 상품번호(SellerListing.externalProductId)와는 다르다.
+    private String partNumber;
+
+    // 부품 브랜드(예: KITACO, H2C). 차량 제조사(Manufacturer)와는 별개.
+    private String brand;
+
+    @Enumerated(EnumType.STRING)
+    private PartType partType;
 }

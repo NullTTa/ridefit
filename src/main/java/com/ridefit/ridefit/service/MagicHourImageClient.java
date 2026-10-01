@@ -42,7 +42,13 @@ public class MagicHourImageClient {
     private static final String EDIT_GUARD = "\n\nThis is an image EDIT of Image 1, not a new generation. "
             + "Image 1 is the vehicle and must remain the same motorcycle: do not generate a new motorcycle, "
             + "do not change it into a different model, and keep its body, frame, wheels, camera angle and background. "
-            + "Image 2 is the selected part. Only add that part, installed naturally at the mounting location.";
+            + "The other images (Image 2 and after) show the selected part(s). Only add the selected part(s), "
+            + "each installed naturally at its mounting location.";
+
+    // 이 모델/해상도에서 aspect_ratio로 보낼 수 있는 값(설정). 공식 문서의 전체 목록(16:9, 4:3, 3:2 ...)이 아니라
+    // 모델/해상도별로 실제 허용값이 다르다 - flux-2-klein 640px 은 "auto, 1:1, 16:9, 9:16" 만 허용(실제 422 응답).
+    @Value("${magichour.image.aspect-ratios:}")
+    private String aspectRatios;
 
     @Value("${magichour.api-key:}")
     private String apiKey;
@@ -91,10 +97,30 @@ public class MagicHourImageClient {
     }
 
     public byte[] edit(List<OpenAiImageClient.InputImage> images, String prompt) throws IOException, InterruptedException {
+        return edit(images, prompt, null);
+    }
+
+    // 설정된 허용 비율 목록(순서 유지). 비어 있으면 비율을 보내지 않는다.
+    public List<String> supportedAspectRatios() {
+        if (aspectRatios == null || aspectRatios.isBlank()) return List.of();
+        return java.util.Arrays.stream(aspectRatios.split(",")).map(String::trim).filter(v -> v.matches("\\d+:\\d+")).toList();
+    }
+
+    // aspectRatio: 결과 비율("4:3" 등, AI Image Editor 지원값만). null이면 보내지 않는다(= API 기본값 auto, 예전 동작).
+    public byte[] edit(List<OpenAiImageClient.InputImage> images, String prompt, String aspectRatio)
+            throws IOException, InterruptedException {
         long deadline = System.nanoTime() + Duration.ofSeconds(timeoutSeconds).toNanos();
 
         List<String> filePaths = upload(images);
-        String projectId = createEditJob(filePaths, prompt + EDIT_GUARD);
+        String projectId;
+        try {
+            projectId = createEditJob(filePaths, prompt + EDIT_GUARD, aspectRatio);
+        } catch (MagicHourImageException e) {
+            // 비율 값 때문에 작업 생성 자체가 거절되면(422, 작업이 만들어지지 않아 크레딧 차감 없음) 비율 없이(auto) 한 번만 다시 만든다.
+            if (aspectRatio == null || e.status() != 422 || !e.getMessage().toLowerCase().contains("aspect ratio")) throw e;
+            log.warn("Magic Hour가 aspect_ratio={} 를 거절해서 비율 없이(auto) 다시 요청합니다.", aspectRatio);
+            projectId = createEditJob(filePaths, prompt + EDIT_GUARD, null);
+        }
         String downloadUrl = waitForResult(projectId, deadline);
 
         HttpResponse<byte[]> image = httpClient.send(
@@ -140,11 +166,14 @@ public class MagicHourImageClient {
     }
 
     // 3) 편집 작업 생성. 결과는 항상 1장만 요청한다.
-    private String createEditJob(List<String> filePaths, String prompt) throws IOException, InterruptedException {
+    private String createEditJob(List<String> filePaths, String prompt, String aspectRatio) throws IOException, InterruptedException {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("name", "RIDEFIT AI Fit");
         body.put("image_count", 1);
         body.put("model", model);
+        if (aspectRatio != null && supportedAspectRatios().contains(aspectRatio)) {
+            body.put("aspect_ratio", aspectRatio);
+        }
         if (resolution != null && !resolution.isBlank()) {
             body.put("resolution", resolution.trim());
         }
@@ -157,8 +186,8 @@ public class MagicHourImageClient {
         if (id.isBlank()) {
             throw new IOException("Magic Hour 편집 작업 응답에 id가 없습니다.");
         }
-        log.info("Magic Hour 편집 작업 생성: projectId={}, model={}, resolution={}, creditsCharged={}",
-                id, model, resolution(), created.path("credits_charged").asText("?"));
+        log.info("Magic Hour 편집 작업 생성: projectId={}, model={}, resolution={}, aspectRatio={}, creditsCharged={}",
+                id, model, resolution(), body.path("aspect_ratio").asText("auto"), created.path("credits_charged").asText("?"));
         return id;
     }
 

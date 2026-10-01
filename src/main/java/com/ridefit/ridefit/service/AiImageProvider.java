@@ -61,9 +61,20 @@ public class AiImageProvider {
     }
 
     public byte[] edit(List<OpenAiImageClient.InputImage> images, String prompt) throws IOException, InterruptedException {
+        return edit(images, prompt, null);
+    }
+
+    // 결과 비율로 지정할 수 있는 값. 비어 있으면 비율 지정/차량 framing을 하지 않는다(OpenAI/Gemini = 예전 동작 그대로).
+    public List<String> supportedAspectRatios() {
+        return selected().equals(MAGICHOUR) ? magicHourImageClient.supportedAspectRatios() : List.of();
+    }
+
+    // aspectRatio: 원하는 결과 비율(예: "1:1"). 지금은 Magic Hour만 지원한다 - OpenAI/Gemini는 예전처럼 무시.
+    public byte[] edit(List<OpenAiImageClient.InputImage> images, String prompt, String aspectRatio)
+            throws IOException, InterruptedException {
         return switch (selected()) {
             case GEMINI -> geminiImageClient.edit(images, prompt);
-            case MAGICHOUR -> magicHourImageClient.edit(images, prompt);
+            case MAGICHOUR -> magicHourImageClient.edit(images, prompt, aspectRatio);
             default -> openAiImageClient.edit(images, prompt);
         };
     }

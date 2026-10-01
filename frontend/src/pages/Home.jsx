@@ -5,7 +5,7 @@ import PartBadges from '../components/PartBadges'
 import Reveal from '../components/Reveal'
 import SimilarVehicles from '../components/SimilarVehicles'
 import VehicleCard from '../components/VehicleCard'
-import VehicleHighlightAnimation from '../components/VehicleHighlightAnimation'
+import HeroFitShowcase from '../components/HeroFitShowcase'
 import VehicleImage from '../components/VehicleImage'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
@@ -90,24 +90,24 @@ function Home() {
 
   return (
     <div>
-      {/* 1. Hero: 설계도 애니메이션 + 로그인/환영 */}
+      {/* 1. Hero: 부품 장착 쇼케이스(부품 선택 -> 내 바이크에 장착 -> 장착된 모습 확인) + 시작/로그인 */}
       <section className="flex min-h-[calc(100vh-4rem)] flex-col md:flex-row">
-        <div className="relative flex min-h-[40vh] flex-[1.25] items-center justify-center overflow-hidden bg-ridefit-card md:min-h-0">
+        <div className="relative flex min-h-[40vh] flex-[1.25] items-center justify-center overflow-hidden bg-ridefit-card px-4 py-10 md:min-h-0 md:px-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.16),transparent_55%),radial-gradient(circle_at_80%_85%,rgba(255,107,53,0.12),transparent_50%)]" />
-          <VehicleHighlightAnimation />
+          <HeroFitShowcase className="relative max-w-3xl" />
         </div>
 
         <div className="flex flex-1 items-center justify-center px-4 py-14 md:py-16">
           <div className="flex w-full max-w-sm flex-col gap-6">
             <div>
               <p className="font-mono text-xs uppercase tracking-widest text-ridefit-primary">MOBILITY PARTS SERVICE</p>
-              <h1 className="mt-2 text-3xl font-bold leading-tight text-ridefit-text sm:text-4xl">
-                내 바이크에 맞는 부품,
+              <h1 className="mt-2 break-keep text-3xl font-bold leading-tight text-ridefit-text sm:text-4xl">
+                원하는 부품을
                 <br />
-                설계도처럼 정확하게
+                내 바이크에 넣어보세요
               </h1>
               <p className="mt-3 text-sm text-ridefit-text-secondary">
-                차량을 고르고, 호환 부품을 확인하고, 관리 정보와 커뮤니티까지 한곳에서 이어집니다.
+                내 차량에 맞는 부품을 고르면 장착된 모습을 바로 확인할 수 있어요. 호환 여부와 판매처까지 한곳에서 이어집니다.
               </p>
             </div>
 
@@ -115,11 +115,16 @@ function Home() {
               <div className="flex flex-col gap-3">
                 <p className="text-sm text-ridefit-text-secondary">{user?.name}님, 다시 오셨네요.</p>
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <Link to="/garage" className="flex-1 rounded-lg bg-ridefit-primary px-6 py-3 text-center font-semibold text-white transition hover:brightness-110">
-                    내 차고 가기
+                  {/* 차량이 있으면 내 차고(부품 입혀보기 진입), 없으면 차량 등록부터 */}
+                  <Link
+                    to={myVehicles.length > 0 ? '/garage' : '/garage/new'}
+                    className="flex-1 rounded-lg bg-ridefit-primary px-6 py-3 text-center font-semibold text-white transition hover:brightness-110"
+                    data-testid="hero-cta-start"
+                  >
+                    내 바이크 시작하기
                   </Link>
-                  <Link to="/parts" className="flex-1 rounded-lg border border-ridefit-primary px-6 py-3 text-center font-semibold text-ridefit-primary transition hover:bg-ridefit-primary/10">
-                    부품 찾아보기
+                  <Link to="/parts" className="flex-1 rounded-lg border border-ridefit-primary px-6 py-3 text-center font-semibold text-ridefit-primary transition hover:bg-ridefit-primary/10" data-testid="hero-cta-parts">
+                    부품 둘러보기
                   </Link>
                 </div>
                 <Link to="/finder" className="text-center text-sm font-medium text-ridefit-primary hover:underline">
@@ -129,13 +134,17 @@ function Home() {
             ) : (
               <div className="flex flex-col gap-5">
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <Link to="/finder" className="flex-1 rounded-lg bg-ridefit-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:brightness-110">
-                    나의 오토바이 찾기
+                  {/* 로그인이 필요한 화면은 로그인 후 원래 가려던 곳으로 돌아온다(RequireAuth) */}
+                  <Link to="/garage/new" className="flex-1 rounded-lg bg-ridefit-primary px-4 py-3 text-center text-sm font-semibold text-white transition hover:brightness-110" data-testid="hero-cta-start">
+                    내 바이크 시작하기
                   </Link>
-                  <Link to="/vehicles" className="flex-1 rounded-lg border border-ridefit-border px-4 py-2.5 text-center text-sm font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary">
-                    차량 둘러보기
+                  <Link to="/parts" className="flex-1 rounded-lg border border-ridefit-border px-4 py-3 text-center text-sm font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary" data-testid="hero-cta-parts">
+                    부품 둘러보기
                   </Link>
                 </div>
+                <Link to="/finder" className="-mt-2 text-center text-sm font-medium text-ridefit-primary hover:underline">
+                  성향으로 나의 오토바이 찾기 →
+                </Link>
                 <LoginForm as="h2" description="차량 모델과 연식만 등록하면 바로 호환 부품을 확인할 수 있어요." />
               </div>
             )}

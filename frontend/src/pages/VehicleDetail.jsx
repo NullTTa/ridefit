@@ -110,6 +110,9 @@ function VehicleDetail() {
   if (!detail) return null
 
   const { vehicle, pros, cons, years } = detail
+  // 연식(model_year_value) 오름차순. 연식 값이 없는 레거시 연식은 사용자 화면(차고 추가 선택지/연식 목록)에서 뺀다 -
+  // 서버도 그런 연식으로는 신규 등록을 막는다. DB 순서(id)와 무관하게 화면에서만 정렬한다.
+  const datedYears = years.filter((y) => y.year != null).sort((a, b) => a.year - b.year)
   const partsByCategory = parts.reduce((acc, part) => {
     ;(acc[part.category] ??= []).push(part)
     return acc
@@ -173,9 +176,9 @@ function VehicleDetail() {
                     className="flex-1 rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-sm text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary"
                   >
                     <option value="">연식 선택</option>
-                    {years.map((y) => (
+                    {datedYears.map((y) => (
                       <option key={y.id} value={y.id}>
-                        {y.year}
+                        {y.year}년식
                         {y.chassisCode ? ` (${y.chassisCode})` : ''}
                       </option>
                     ))}
@@ -304,11 +307,11 @@ function VehicleDetail() {
         </section>
       )}
 
-      {years.length > 0 && (
+      {datedYears.length > 0 && (
         <section className="mt-10">
           <h2 className="mb-3 text-xl font-bold text-ridefit-text">연식 · 세대</h2>
           <div className="flex flex-wrap gap-2">
-            {years.map((y) => (
+            {datedYears.map((y) => (
               <span key={y.id} className="rounded-lg border border-ridefit-border bg-ridefit-card px-3 py-2 text-sm text-ridefit-text">
                 {y.year}
                 {y.chassisCode && <span className="ml-2 font-mono text-xs text-ridefit-primary">{y.chassisCode}</span>}
@@ -349,7 +352,7 @@ function VehicleDetail() {
                         {/* 연식이 많은 차량(6개)은 한 줄에 다 안 들어가 가로 스크롤을 유발했음 - 배지가
                             자체적으로 줄바꿈되도록 flex-wrap으로 바꿈(375px 모바일에서 실제 확인). */}
                         <span className="flex flex-wrap justify-end gap-x-2 gap-y-1 text-xs">
-                          {part.years.map((y, i) => (
+                          {[...part.years].sort((a, b) => (a.year ?? Infinity) - (b.year ?? Infinity)).map((y, i) => (
                             // 연식(year)이 비어있는 레거시 ModelYear 로우가 같은 부품에 여러 번 걸려 있으면
                             // year만으로는 key가 중복(둘 다 null)될 수 있어 배열 인덱스를 함께 섞는다.
                             <span key={`${y.year ?? 'na'}-${y.status}-${i}`} className={STATUS_STYLE[y.status] ?? 'text-ridefit-text-secondary'}>

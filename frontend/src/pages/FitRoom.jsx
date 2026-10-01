@@ -34,8 +34,29 @@ function FitRoom() {
   const [conflicts, setConflicts] = useState([])
   const [checkingConflicts, setCheckingConflicts] = useState(false)
   const [viewMode, setViewMode] = useState('fit')
-  // "장착해보기" 결과({ imageUrl, cached, part }). 없으면 "장착 모습" 탭 자체를 숨긴다.
+  // "장착해보기" 결과({ imageUrl, cached, title }). 없으면 "장착 모습" 탭 자체를 숨긴다.
   const [aiResult, setAiResult] = useState(null)
+  // 이 차량으로 만든 장착 결과 전체(서버에 저장된 것, 최신순). 만들 때마다 늘어나고 지워지지 않는다.
+  const [savedResults, setSavedResults] = useState([])
+  // "크게 보기"(전체 화면)로 연 장착 결과. null이면 닫힘.
+  const [zoomed, setZoomed] = useState(null)
+
+  useEffect(() => {
+    if (!zoomed) return
+    const onKey = (e) => e.key === 'Escape' && setZoomed(null)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [zoomed])
+
+  const loadSavedResults = () =>
+    api
+      .get(`/api/ai-fit/results?myVehicleId=${myVehicleId}`)
+      .then(setSavedResults)
+      .catch(() => setSavedResults([]))
+
+  useEffect(() => {
+    loadSavedResults()
+  }, [myVehicleId])
 
   useEffect(() => {
     setLoading(true)
@@ -129,6 +150,33 @@ function FitRoom() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
+      {zoomed && (
+        // 전체 화면 보기: 화면 크기 안에서 비율을 지키며 가장 크게(잘리지 않음). 배경/닫기 버튼/Esc로 닫는다.
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="장착 모습 크게 보기"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-black/90 p-3 sm:p-6"
+          onClick={() => setZoomed(null)}
+          data-testid="ai-fit-lightbox"
+        >
+          <img
+            src={zoomed.imageUrl}
+            alt={`${zoomed.title} 장착 모습`}
+            className="h-auto max-h-[calc(100vh-7rem)] w-full rounded-lg object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="max-w-3xl text-center text-xs text-white/80">{zoomed.title}</p>
+          <button
+            type="button"
+            onClick={() => setZoomed(null)}
+            className="rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-white/25"
+          >
+            닫기
+          </button>
+        </div>
+      )}
+
       <h1 className="mb-1 text-2xl font-bold text-ridefit-text">부품 입혀보기</h1>
       <p className="mb-8 text-sm text-ridefit-text-secondary">
         {vehicle.nickname || vehicle.modelYearLabel} — 호환되는 부품을 켜고 끄면서 조합을 비교해보세요.
@@ -144,7 +192,7 @@ function FitRoom() {
           data-testid="fit-preselect-notice"
         >
           {preselect.ok
-            ? `'${preselect.name}'을(를) 장착한 상태로 열었어요. 아래 "장착한 모습 보기"에서 장착한 모습도 확인할 수 있어요.`
+            ? `'${preselect.name}'을(를) 장착한 상태로 열었어요. 아래 "장착한 모습 만들기"에서 장착한 모습도 확인할 수 있어요.`
             : `${preselect.name ? `'${preselect.name}'은(는) ` : '선택한 부품은 '}${
                 vehicle.nickname || vehicle.modelYearLabel
               }과(와) 호환이 확인되지 않아 자동으로 장착하지 않았어요. 오른쪽 목록의 호환 부품은 그대로 사용할 수 있어요.`}
@@ -153,7 +201,12 @@ function FitRoom() {
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
         {/* 차량 이미지 + 장착된 부품 이미지 오버레이(오버레이 이미지가 없는 부품은 배지) */}
-        <div className="relative self-start overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6 lg:sticky lg:top-6">
+        {/* "장착 모습"(합성 결과)을 볼 때만 두 열 전체 폭을 써서 결과를 크게 보여준다(부품 목록은 아래로). 다른 보기는 기존 배치 그대로. */}
+        <div
+          className={`relative self-start overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6 ${
+            viewMode === 'ai' && aiResult ? 'lg:col-span-2' : 'lg:sticky lg:top-6'
+          }`}
+        >
           {(vehicle360Frames || aiResult) && (
             <div className="mb-4 flex justify-center gap-2">
               <button
@@ -190,21 +243,36 @@ function FitRoom() {
             </div>
           )}
 
-          {/* 위치 미리보기 / 360° / 장착 모습이 같은 무대 폭(max-w-2xl)과 종횡비(getVehicleStageAspectRatio)를 쓴다. */}
-          <div className="relative mx-auto w-full max-w-2xl">
+          {/* 위치 미리보기 / 360°는 같은 무대 폭(max-w-2xl)과 종횡비(getVehicleStageAspectRatio)를 쓴다. 장착 모습(합성 결과)은 결과 이미지 자기 비율로 같은 폭을 채운다. */}
+          <div className={`relative mx-auto w-full ${viewMode === 'ai' && aiResult ? 'max-w-4xl' : 'max-w-2xl'}`}>
           <VehicleYearBadge vehicle={vehicle} />
           {viewMode === 'ai' && aiResult ? (
+            // 결과 이미지는 자기 비율 그대로(예: 4:3) 무대 폭을 꽉 채운다 - 차량 무대 비율에 끼워 넣으면 위아래/좌우가 비어 차량이 작아진다.
             <figure data-testid="ai-fit-result">
-              <SafeImage
-                src={aiResult.imageUrl}
-                alt={`${aiResult.part.name} 장착 모습`}
-                className="mx-auto w-full max-w-2xl rounded-lg object-contain"
-                style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
-                fallbackClassName="mx-auto h-64 w-full max-w-2xl rounded-lg"
-                fallbackText="장착 모습을 불러오지 못했어요"
-              />
-              <figcaption className="mt-3 text-center text-xs text-ridefit-text-secondary">
-                {aiResult.part.name} · 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있습니다.
+              <button
+                type="button"
+                onClick={() => setZoomed(aiResult)}
+                className="block w-full cursor-zoom-in"
+                aria-label="장착 모습 크게 보기"
+              >
+                <SafeImage
+                  src={aiResult.imageUrl}
+                  alt={`${aiResult.title} 장착 모습`}
+                  className="mx-auto block h-auto max-h-[75vh] w-full rounded-lg object-contain"
+                  fallbackClassName="mx-auto h-64 w-full max-w-2xl rounded-lg"
+                  fallbackText="장착 모습을 불러오지 못했어요"
+                />
+              </button>
+              <figcaption className="mt-3 flex flex-col items-center gap-2 text-center text-xs text-ridefit-text-secondary">
+                <span>{aiResult.title} · 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있습니다.</span>
+                <button
+                  type="button"
+                  onClick={() => setZoomed(aiResult)}
+                  className="rounded-full border border-ridefit-border px-3 py-1 font-semibold text-ridefit-text transition hover:border-ridefit-primary"
+                  data-testid="ai-fit-zoom"
+                >
+                  크게 보기
+                </button>
               </figcaption>
             </figure>
           ) : viewMode === '360' && vehicle360Frames ? (
@@ -236,15 +304,64 @@ function FitRoom() {
             activeParts={activeParts}
             viewMode={viewMode}
             onShowBasic={() => setViewMode('fit')}
+            onGenerated={loadSavedResults}
             onShowResult={(result) => {
               setAiResult(result)
               setViewMode('ai')
             }}
           />
+
+          {savedResults.length > 0 && (
+            <div className="mt-6 text-left" data-testid="ai-fit-history">
+              <p className="mb-2 text-sm font-semibold text-ridefit-text">저장된 장착 모습 ({savedResults.length})</p>
+              <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {savedResults.map((r) => {
+                  const title = r.partNames.join(' + ')
+                  const active = viewMode === 'ai' && aiResult?.imageUrl === r.imageUrl
+                  return (
+                    <li key={r.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiResult({ imageUrl: r.imageUrl, cached: true, title })
+                          setViewMode('ai')
+                        }}
+                        className={`w-full overflow-hidden rounded-md border bg-ridefit-card text-left transition ${
+                          active ? 'border-ridefit-primary ring-1 ring-ridefit-primary' : 'border-ridefit-border hover:border-ridefit-primary'
+                        }`}
+                        title={title}
+                        data-testid={`ai-fit-history-${r.id}`}
+                      >
+                        <SafeImage
+                          src={r.imageUrl}
+                          alt={`${title} 장착 모습`}
+                          className="aspect-[4/3] w-full bg-ridefit-bg object-contain"
+                          fallbackClassName="aspect-[4/3] w-full text-[9px]"
+                          fallbackText="이미지 없음"
+                        />
+                        <span className="block truncate px-1.5 pt-1 text-[10px] text-ridefit-text">{title}</span>
+                        <span className="block px-1.5 pb-1 text-[10px] text-ridefit-text-secondary">
+                          {new Date(r.createdAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
         </div>
 
-        {/* 카테고리별 부품 토글 목록 */}
+        {/* 카테고리별 부품 토글 목록 - "이 차량에 장착 가능한(호환) 부품" 전체. 체크는 화면 안의 임시 선택일 뿐 저장되지 않는다. */}
         <div className="flex flex-col gap-6">
+          {parts.length > 0 && (
+            <div data-testid="fit-candidates-heading">
+              <h2 className="text-base font-semibold text-ridefit-text">이 차량에 호환되는 부품 ({parts.length}개)</h2>
+              <p className="mt-1 text-xs text-ridefit-text-secondary">
+                장착 가능한 부품 목록이에요. 내가 장착했거나 저장한 부품이 아니에요. 체크한 부품은 미리보기와 장착해보기에만 쓰이고, 기록으로 남지 않아요.
+              </p>
+            </div>
+          )}
           {parts.length === 0 && (
             <p className="text-sm text-ridefit-text-secondary">
               이 차량에 호환이 확인된 부품이 아직 없어요.{' '}

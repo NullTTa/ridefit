@@ -8,8 +8,8 @@ const DEFAULT_LABEL_OFFSET = { dx: 0, dy: -34 }
 
 // 차량 사진 + "장착된 부품" 표시. FitRoom과 PartsSearch가 같이 쓴다.
 //  - 차량 전용 레이아웃이 있으면(예: Super Cub 110 대표 사진): 사진과 같은 종횡비의 무대 위에
-//    부품의 투명 배경 이미지를 실제 위치에 얹는다. 오버레이 이미지가 없는 부품은
-//    "부착 지점(점) + 짧은 연결선 + 작은 라벨" 로 대신한다 - 차량 본체를 덜 가리도록 여백 방향으로 살짝 띄운다.
+//    부품의 투명 배경 이미지를 실제 위치에 얹는다. 오버레이 이미지가 없는 부품은 상품 사진을 억지로 얹지 않고
+//    "부착 지점(점) + 짧은 연결선 + '장착 이미지 준비 중' 라벨" 로 대신한다 - 차량 본체를 덜 가리도록 여백 방향으로 살짝 띄운다.
 //  - 없으면(임시 아이콘/사용자 사진): 예전처럼 4:3 박스에 같은 방식(점+짧은 선+라벨)으로 표시한다.
 // parts: 지금 장착 중인 부품 배열, conflictPartIds: 충돌 중인 partId Set(빨간 윤곽/배지).
 function VehicleFitStage({ vehicle, parts, conflictPartIds }) {
@@ -42,8 +42,10 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds }) {
         key={`badge-${part.partId}`}
         className="absolute z-40 -translate-x-1/2 -translate-y-1/2 animate-fadeIn"
         style={{ left: pct(labelX, totalW), top: pct(labelY, totalH) }}
-        title={part.name}
+        title={`${part.name} - 장착 이미지 준비 중`}
+        aria-label={`${part.category} ${part.name}: 장착 이미지 준비 중`}
         data-testid={`fit-badge-${part.partId}`}
+        data-pending="true"
       >
         <span
           className={`block whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold shadow-lg backdrop-blur ${
@@ -52,7 +54,7 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds }) {
               : 'border-ridefit-primary bg-ridefit-bg/90 text-ridefit-primary'
           }`}
         >
-          {part.category}
+          장착 이미지 준비 중
           {conflict ? ' · 충돌' : ''}
         </span>
       </div>
