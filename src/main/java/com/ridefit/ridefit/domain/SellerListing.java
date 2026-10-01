@@ -36,6 +36,10 @@ public class SellerListing {
     // 판매처 페이지의 실제 상품명(판매처마다 표기가 달라 Part.name과 별도로 보관). 없으면 null.
     private String productName;
 
+    // 화면에 보여줄 상품명. 판매처 원본 상품명(productName)이 기계 번역 오류 등으로 어색할 때만 넣는다.
+    // 원본 productName은 그대로 보존하고, 화면은 displayName이 있으면 그것을, 없으면 productName을 쓴다.
+    private String displayName;
+
     // 확인된 가격만 넣는다. 확인하지 못했으면 null("가격 확인 필요")이며 0으로 채우지 않는다.
     private Integer price;
 

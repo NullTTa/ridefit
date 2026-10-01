@@ -58,6 +58,7 @@ public class MyVehicleController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
         ModelYear modelYear = modelYearRepository.findById(request.modelYearId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "선택한 연식 정보를 찾을 수 없습니다."));
+        requireDatedYear(modelYear);
 
         MyVehicle myVehicle = MyVehicle.builder()
                 .member(member)
@@ -75,6 +76,10 @@ public class MyVehicleController {
         if (request.modelYearId() != null) {
             ModelYear modelYear = modelYearRepository.findById(request.modelYearId())
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "선택한 연식 정보를 찾을 수 없습니다."));
+            // 지금 쓰고 있는 연식을 그대로 다시 보내는 경우(닉네임만 수정 등)는 허용하고, 다른 연식으로 바꿀 때만 검사한다.
+            if (!modelYear.getId().equals(myVehicle.getModelYear().getId())) {
+                requireDatedYear(modelYear);
+            }
             myVehicle.setModelYear(modelYear);
         }
         if (request.nickname() != null) {
@@ -123,6 +128,8 @@ public class MyVehicleController {
                                 all.stream().map(c -> c.getPart().getId()).collect(Collectors.toSet())).stream()
                         .filter(c -> c.getModelYear().getVehicleModel().getId().equals(vehicleModelId))
                         .filter(c -> CompatibilityCheckService.isProceedStatus(c.getStatus()))
+                        // 연식 값이 없는 레거시 연식은 "적용 연식" 표시에서 뺀다(연식 미등록 노출 방지).
+                        .filter(c -> c.getModelYear().getYear() != null)
                         .map(c -> Map.entry(c.getPart().getId(), PartFitmentResponse.from(c)))
                         .collect(Collectors.groupingBy(Map.Entry::getKey,
                                 Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
@@ -144,6 +151,14 @@ public class MyVehicleController {
                 .toList();
 
         return ResponseEntity.ok(result);
+    }
+
+    // 연식 값이 없는 레거시 연식(model_year_value NULL)은 새로 등록/변경할 수 없다 - 등록 화면에서도 숨긴다.
+    // 이미 그 연식을 쓰는 기존 차량은 그대로 둔다(데이터 삭제/이동 없음).
+    private void requireDatedYear(ModelYear modelYear) {
+        if (modelYear.getYear() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "연식 정보가 없는 항목은 선택할 수 없어요. 다른 연식을 선택해주세요.");
+        }
     }
 
     private MyVehicle requireOwnedVehicle(Long myVehicleId) {

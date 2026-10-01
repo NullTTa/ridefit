@@ -92,7 +92,7 @@ function AdminCompatibilities() {
             ))}
           </select>
         </div>
-        <VehicleCascadeSelect onModelYearChange={setModelYearId} />
+        <VehicleCascadeSelect onModelYearChange={setModelYearId} includeUndatedYears />
         <input
           type="text"
           placeholder="비고 (선택)"

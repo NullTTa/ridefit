@@ -4,6 +4,29 @@
 
 ---
 
+## Super Cub 연식/세대 정정 + 판매처 표시명 (2026-10-01, main 위, 커밋함)
+
+Honda Japan 공식 보도자료 기준: EBJ-JA07(2009.06~) → EBJ-JA10(2012.03~) → 2BJ-JA44(2017.11~) → 8BJ-JA59(2022.04~, 2025년도 JA59).
+8BJ-JA71은 **Super Cub C125** 형식(2024-02 C125 보도자료)이라 110에 쓰면 안 됨.
+
+- DB UPDATE(직접 SQL, 이전 값 조건 포함):
+  - model_year 8: 2023 / JA44 → **2023 / JA59** (my_vehicle 17·31, 호환 46건은 그대로)
+  - model_year 1: 연식 NULL / JA71(옛 year 컬럼 2025) → **2025 / JA59** (my_vehicle 1·2·3, 예약 1건 등 참조 보존, 행 유지)
+  - seller_listing 94: 새 컬럼 `display_name`에 한국어 표시명 입력. 원본 `product_name`("슈퍼 새끼 50110…" 기계번역)은 보존.
+- model_year 2(JA07, 연식 NULL, 옛 year 2023 - 공식상 불가능한 조합)는 **삭제하지 않고 레거시로 유지**. my_vehicle 0, 호환 3건(13/15/19,
+  id1에도 같은 3건 있음). 사용자 화면(등록 선택지/호환 차량/차량 상세)에서는 연식 NULL 연식을 숨기고, 서버도 신규 등록/변경을 400으로 막음.
+  관리자 호환성 화면에서는 "연식 미등록 (JA07)"로 계속 보임.
+- DataSeeder: cub23 코드 JA59 + `setChassisCode(cub23, "JA44", "JA59")`, `modelYear(superCub, 2025, "JA59")`(기존 DB는 id1을 찾아 씀).
+- **호환 데이터는 바꾸지 않음**: 2023(JA59)의 46건은 JA44 기준으로 입력된 데모 데이터라 JA59 적합성 추가 검증 필요
+  (특히 32 머플러/81·99 레버/83 엔진가드/84 리어쇼크/85·97 프론트/101 에어필터). 77/13/15/19도 근거 부족으로 유지.
+- 기타: 관리자 회원 목록이 role NULL 초기 회원(1·2·3) 때문에 500이던 문제를 null-safe로 수정(DB role은 그대로),
+  역할 라벨 관리자/일반 회원, `SERVICE · PROTOTYPE` → `서비스 · 체험판`, 상품명 일본어/중국어 감지 시 등록 폼 경고(번역 API 없음).
+- 검증: 백엔드 테스트 15개(신규 SuperCubModelYearTest 2개), vite build, Playwright로 2021 JA44 / 2023 JA59 / 2025 JA59 차고·등록·FitRoom·360·
+  부품 상세·판매처, PCX/NMAX 360, 1280/390px 확인. 2021/2025 차량은 임시 계정에 등록해 확인 후 회원 탈퇴 API로 삭제.
+  작업 전후 my_vehicle 18 / compatibility 603 / reservation 6 / model_year 34 동일, orphan 0. 백업: 작업 전 mysqldump(git 밖).
+
+---
+
 ## FitRoom 장착 UX 정리 - "AI" 표현 제거 (2026-09-30 5차, main 위, 커밋 안 함)
 
 프론트 2개 파일의 표시 문구/버튼 노출 조건만 변경(`AiFitPanel.jsx`, `FitRoom.jsx`). 백엔드·overlay·좌표·API 구조는 그대로.

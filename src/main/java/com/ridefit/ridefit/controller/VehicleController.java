@@ -81,6 +81,8 @@ public class VehicleController {
         requireModel(id);
         Map<Long, VehiclePartResponse> byPart = new LinkedHashMap<>();
         for (ModelYear year : modelYearRepository.findByVehicleModelId(id)) {
+            // 연식 값이 없는 레거시 연식은 차량 상세의 연식별 호환 표시에서 뺀다(데이터는 DB에 그대로 둔다).
+            if (year.getYear() == null) continue;
             for (Compatibility c : compatibilityRepository.findByModelYearId(year.getId())) {
                 var part = c.getPart();
                 byPart.computeIfAbsent(part.getId(), k -> new VehiclePartResponse(

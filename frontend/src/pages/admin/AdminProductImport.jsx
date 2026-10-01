@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import SafeImage from '../../components/SafeImage'
 import { api } from '../../lib/api'
+import { FOREIGN_TEXT_WARNING, hasForeignText } from '../../lib/foreignText'
 
 const inputClass =
   'w-full rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-sm text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary'
@@ -242,6 +243,9 @@ function AdminProductImport() {
                   <label>
                     <span className={labelClass}>상품명 *</span>
                     <input value={form.name} onChange={(e) => update('name', e.target.value)} className={inputClass} required />
+                    {hasForeignText(form.name) && (
+                      <span className="mt-1 block text-xs text-ridefit-warning" data-testid="foreign-text-warning">{FOREIGN_TEXT_WARNING}</span>
+                    )}
                   </label>
                   <label>
                     <span className={labelClass}>대표 이미지 URL (등록 시 서버에 저장 시도)</span>

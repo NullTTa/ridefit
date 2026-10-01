@@ -7,7 +7,15 @@ const selectClass =
 // 제조사 -> 모델 -> 연식 순으로 내려가는 캐스케이딩 선택 컴포넌트.
 // 차량 등록, 부품 링크 자동인식 실패 시 수동 선택, 차량 수정(연식 변경) 화면에서 공통으로 쓰인다.
 // initial* props는 수정 화면에서 기존 값으로 미리 채워둘 때만 사용한다.
-function VehicleCascadeSelect({ onModelYearChange, initialManufacturerId, initialVehicleModelId, initialModelYearId }) {
+// includeUndatedYears: 연식 값이 없는 레거시 연식까지 보여줄지(관리자 화면 전용). 사용자 화면에서는 숨긴다 -
+//   단, 수정 화면에서 지금 쓰고 있는 연식(initialModelYearId)은 선택이 풀리지 않게 그대로 보여준다.
+function VehicleCascadeSelect({
+  onModelYearChange,
+  initialManufacturerId,
+  initialVehicleModelId,
+  initialModelYearId,
+  includeUndatedYears = false,
+}) {
   const [manufacturers, setManufacturers] = useState([])
   const [models, setModels] = useState([])
   const [years, setYears] = useState([])
@@ -95,12 +103,15 @@ function VehicleCascadeSelect({ onModelYearChange, initialManufacturerId, initia
         className={selectClass}
       >
         <option value="">{vehicleModelId ? '연식 선택' : '먼저 모델을 선택하세요'}</option>
-        {years.map((y) => (
-          <option key={y.id} value={y.id}>
-            {y.year}
-            {y.chassisCode ? ` (${y.chassisCode})` : ''}
-          </option>
-        ))}
+        {years
+          .filter((y) => includeUndatedYears || y.year != null || String(y.id) === String(initialModelYearId ?? ''))
+          .sort((a, b) => (a.year ?? Infinity) - (b.year ?? Infinity))
+          .map((y) => (
+            <option key={y.id} value={y.id}>
+              {y.year != null ? `${y.year}년식` : '연식 미등록'}
+              {y.chassisCode ? ` (${y.chassisCode})` : ''}
+            </option>
+          ))}
       </select>
     </div>
   )

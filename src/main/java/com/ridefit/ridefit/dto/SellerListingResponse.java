@@ -10,12 +10,15 @@ import java.time.LocalDateTime;
 public record SellerListingResponse(
         Long id, String sellerName, Integer price, String thumbnailUrl, String sourceUrl, boolean lowestPrice,
         String productName, String originalImageUrl, String externalProductId, LocalDateTime checkedAt,
-        LocalDateTime createdAt, boolean sample) {
+        LocalDateTime createdAt, boolean sample,
+        // 화면 표시용 상품명(없으면 null -> productName을 그대로 표시). productName은 판매처 원본.
+        String displayName) {
 
     public static SellerListingResponse from(SellerListing listing, boolean lowestPrice) {
         return new SellerListingResponse(
                 listing.getId(), listing.getSellerName(), listing.getPrice(), listing.getThumbnailUrl(),
                 listing.getSourceUrl(), lowestPrice, listing.getProductName(), listing.getOriginalImageUrl(),
-                listing.getExternalProductId(), listing.getCheckedAt(), listing.getCreatedAt(), listing.isSample());
+                listing.getExternalProductId(), listing.getCheckedAt(), listing.getCreatedAt(), listing.isSample(),
+                listing.getDisplayName());
     }
 }

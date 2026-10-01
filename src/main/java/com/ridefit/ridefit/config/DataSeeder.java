@@ -107,11 +107,18 @@ public class DataSeeder implements CommandLineRunner {
         // 확실한 코드를 찾지 못한 모델(야마하/스즈키/가와사키 일부)은 코드를 지어내는 대신 null로 비워두되,
         // 연식 자체는 실제 판매/생산 시기에 맞게 바로잡았다.
         //
-        // Honda Super Cub 110: JA07(2009~, "동글이") -> JA10(2011~2017, "각진놈") -> JA44(2018~, 복고 디자인)
+        // Honda Super Cub 110 (Honda Japan 공식 보도자료 기준 형식):
+        //   EBJ-JA07(2009.06~) -> EBJ-JA10(2012.03~) -> 2BJ-JA44(2017.11~) -> 8BJ-JA59(2022.04~, 2025년에도 JA59).
+        //   JA59부터 앞 유압 디스크(ABS) + 캐스트 휠. ※ 8BJ-JA71은 Super Cub C125의 형식이라 110에 쓰면 안 된다.
+        // 예전 시드는 2023년식을 JA44로 넣었었다 -> JA59로 바로잡는다(이미 JA44로 들어간 DB도 아래에서 정정).
         ModelYear cub10 = modelYear(superCub, 2010, "JA07");
         ModelYear cub15 = modelYear(superCub, 2015, "JA10");
         ModelYear cub21 = modelYear(superCub, 2021, "JA44");
-        ModelYear cub23 = modelYear(superCub, 2023, "JA44");
+        ModelYear cub23 = modelYear(superCub, 2023, "JA59");
+        setChassisCode(cub23, "JA44", "JA59");
+        // 2025년식(JA59). 데모 차고 3대가 쓰던 레거시 연식(id=1, JA71/연식 없음)을 2025/JA59로 정정했으므로
+        // 그 DB에서는 기존 행을 그대로 찾아 쓰고(새로 만들지 않음), 새 DB에서만 만들어진다.
+        modelYear(superCub, 2025, "JA59");
         // Honda PCX125: JF28(2010~2013) -> JF56(2014~2017) -> JF81(2018~). 예전 시드의 "KF30"은
         // 검색해보니 실제로는 다른(150cc 계열) 코드라 잘못된 값이었어서 JF81로 바로잡는다.
         ModelYear pcx11 = modelYear(pcx, 2011, "JF28");
@@ -166,7 +173,8 @@ public class DataSeeder implements CommandLineRunner {
         Part pcxLamp = part("LED 방향지시등 세트 (PCX)", "램프", 38000);
         Part pcxOldMuffler = part("구형 머플러 (2018 PCX 호환, 신형 불가)", "머플러", 210000);
 
-        // JA44 세대(2018~) 전용 부품 — 바디/배기 형상이 이전 세대(JA07/JA10)와 달라서 옛 연식엔 안 맞는다.
+        // JA44 세대(2018~) 기준 부품 — 바디/배기 형상이 이전 세대(JA07/JA10)와 달라서 옛 연식엔 안 맞는다.
+        // (2023년식 cub23은 실제 JA59 - 아래 호환 데이터의 JA59 적합 여부는 추가 검증 필요)
         compat(cub21, cubMuffler, "호환가능", "정품 브라켓 포함");
         compat(cub23, cubMuffler, "호환가능", "정품 브라켓 포함");
         compat(cub21, cubCarrier, "브라켓필요", "별도 서브 브라켓 구매 필요");
@@ -176,7 +184,9 @@ public class DataSeeder implements CommandLineRunner {
         for (ModelYear y : List.of(cub10, cub15, cub21, cub23)) {
             compat(y, cubMirror, "호환가능", null);
         }
-        // 아래 8종은 JA44 세대(2018~, cub21/cub23) 바디/프레임 기준. 볼트온 성격이 강한 항목은 호환가능,
+        // 아래 8종은 JA44 세대(2018~) 바디/프레임 기준으로 입력된 데모 데이터다. 2023년식(cub23)은 실제로는 JA59라
+        //   (앞 유압 디스크/캐스트 휠/신엔진) JA59 적합 여부는 추가 검증이 필요하다 - 근거 없이 바꾸지 않고 그대로 둔다.
+        // 볼트온 성격이 강한 항목은 호환가능,
         // 프레임/서브프레임에 직접 물리는 항목(엔진가드/프론트캐리어)은 브라켓필요로 구분했다.
         for (ModelYear y : List.of(cub21, cub23)) {
             compat(y, cubHeadlight, "호환가능", null);
@@ -305,8 +315,8 @@ public class DataSeeder implements CommandLineRunner {
         popularity(ninjaSeatCowl, 12, 4);
 
         // ---- 실제 확보한 부품 사진 연결 (2026-09-21, 사용자가 직접 구한 이미지만 사용) ----
-        // Super Cub 110 이미지 3장은 이 시더가 만드는 cub10/15/21/23(JA07/JA10/JA44)이 아니라,
-        // 실제로 등록된 데모 차고 3건이 전부 쓰는 "2025년식(JA71, model_year id=1)"의 호환 부품
+        // Super Cub 110 이미지 3장은 이 시더가 만드는 cub10/15/21/23이 아니라,
+        // 실제로 등록된 데모 차고 3건이 전부 쓰는 "2025년식(model_year id=1, 예전 표기 JA71 -> JA59로 정정)"의 호환 부품
         // (id 13/15/19)에 연결한다 - 그 부품들은 이 시더가 아니라 이전에 DB에 직접 만들어진
         // 것들이라(findByName만, 없으면 조용히 건너뜀) 아래에서 이름으로 찾아 연결한다.
         // 위 이름의 부품이 없는 DB(시더가 만든 Cub 110 부품만 있는 경우)에서는 시더가 만든 부품에 직접 연결한다.

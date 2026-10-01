@@ -42,7 +42,7 @@ function Services() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-14">
       <div className="mb-6">
-        <p className="font-mono text-xs uppercase tracking-widest text-ridefit-primary">SERVICE · PROTOTYPE</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-ridefit-primary">서비스 · 체험판</p>
         <h1 className="mt-1 text-2xl font-bold text-ridefit-text">정비 · 세차 서비스</h1>
         <p className="mt-2 max-w-2xl text-sm text-ridefit-text-secondary">
           정비소, 오일 교환, 타이어, 세차장을 한곳에서 살펴보고 예약 과정을 미리 체험해보세요.

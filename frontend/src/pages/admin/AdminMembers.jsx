@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
 
+const ROLE_LABEL = { ADMIN: '관리자', USER: '일반 회원' }
+
 function AdminMembers() {
   const [page, setPage] = useState(0)
   const [data, setData] = useState(null)
@@ -36,7 +38,8 @@ function AdminMembers() {
                       m.role === 'ADMIN' ? 'bg-ridefit-primary/20 text-ridefit-primary' : 'bg-ridefit-border text-ridefit-text-secondary'
                     }`}
                   >
-                    {m.role}
+                    {/* DB 값(ADMIN/USER)은 그대로 두고 화면 라벨만 한국어로 */}
+                    {ROLE_LABEL[m.role] ?? (m.role ?? '역할 미지정')}
                   </span>
                 </td>
               </tr>

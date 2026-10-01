@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { FOREIGN_TEXT_WARNING, hasForeignText } from '../lib/foreignText'
 import SafeImage from './SafeImage'
 
 const inputClass =
@@ -142,7 +143,10 @@ function SellerListings({ partId }) {
                     </span>
                   )}
                 </p>
-                {l.productName && <p className="truncate text-xs text-ridefit-text-secondary">{l.productName}</p>}
+                {/* 표시명(displayName)이 있으면 그것을, 없으면 판매처 원본 상품명을 보여준다(원본은 DB에 보존). */}
+                {(l.displayName || l.productName) && (
+                  <p className="truncate text-xs text-ridefit-text-secondary">{l.displayName || l.productName}</p>
+                )}
                 {/* 어느 쇼핑몰 주소인지 바로 보이게 도메인을 같이 표시한다. */}
                 {link && <p className="truncate text-[11px] text-ridefit-text-secondary/80">{link.hostname.replace(/^www\./, '')}</p>}
                 {formatDate(l.checkedAt) && (
@@ -218,6 +222,9 @@ function SellerListings({ partId }) {
                 className={inputClass}
                 placeholder="판매처 상품명"
               />
+              {hasForeignText(draft.productName) && (
+                <p className="text-[11px] text-ridefit-warning" data-testid="foreign-text-warning">{FOREIGN_TEXT_WARNING}</p>
+              )}
             </div>
           </div>
           <input

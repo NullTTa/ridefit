@@ -95,7 +95,7 @@ public class PartController {
         return PartDetailResponse.from(part, stats);
     }
 
-    // 이 부품이 호환 등록된 모든 차량(차종 + 연식 + 세대 코드 + 상태). DB에 저장된 compatibility 그대로이며,
+    // 이 부품이 호환 등록된 차량(차종 + 연식 + 세대 코드 + 상태). DB에 저장된 compatibility 그대로이며,
     // 호환불가로 등록된 연식도 상태와 함께 내려준다(화면에서 구분 표시).
     @GetMapping("/api/parts/{id}/compatibilities")
     public List<PartFitmentResponse> getPartCompatibilities(@PathVariable Long id) {
@@ -103,6 +103,8 @@ public class PartController {
             throw new ApiException(HttpStatus.NOT_FOUND, "부품 정보를 찾을 수 없습니다.");
         }
         return compatibilityRepository.findByPartIdInWithModel(List.of(id)).stream()
+                // 연식 값이 없는 레거시 연식은 사용자 화면의 "호환 차량"에서 뺀다(데이터는 DB에 그대로 둔다).
+                .filter(c -> c.getModelYear().getYear() != null)
                 .map(PartFitmentResponse::from)
                 .sorted(PartFitmentResponse.ORDER)
                 .toList();
