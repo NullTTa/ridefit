@@ -110,7 +110,9 @@ function SellerListings({ partId }) {
       )}
 
       {!loading && pricedCount >= 2 && (
-        <p className="mb-3 text-xs text-ridefit-text-secondary">가격이 확인된 판매처 {pricedCount}곳 기준으로 비교했어요.</p>
+        <p className="mb-3 text-xs text-ridefit-text-secondary">
+          가격이 확인된 판매처 {pricedCount}곳 기준으로 비교했어요. 실시간 조회가 아니라 각 판매처의 가격 확인일 기준이에요.
+        </p>
       )}
 
       {!loading && listings.length > 0 && (
@@ -135,7 +137,7 @@ function SellerListings({ partId }) {
                 <p className="flex flex-wrap items-center gap-1.5 font-semibold text-ridefit-text">
                   {l.sellerName}
                   {l.lowestPrice && (
-                    <span className="rounded-full bg-ridefit-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">최저가</span>
+                    <span className="rounded-full bg-ridefit-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">확인 가격 중 최저</span>
                   )}
                   {l.sample && (
                     <span className="rounded-full border border-ridefit-border px-1.5 py-0.5 text-[10px] font-normal text-ridefit-text-secondary">

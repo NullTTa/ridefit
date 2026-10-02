@@ -1,143 +1,129 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { VEHICLE_FIT_LAYOUTS } from '../constants/vehicleFitPositions'
 
-// 홈 히어로 "부품 장착 쇼케이스": 대표 차량(Super Cub 110)에 부품을 하나씩 넣는 과정을 자동 재생한다.
-//   기본 차량 -> (머플러 안내 -> 장착) -> (사이드백 안내 -> 장착) -> (윈드스크린 안내 -> 장착) -> 마무리 -> 반복
+// 홈 히어로 "내 바이크 꾸미기": 가운데 대표 차량(Super Cub 110), 주변 부품 카드.
+// 카드를 누르면(또는 마우스를 올리면) 그 부품이 바이크에 장착된 모습으로 바뀐다 - 상품 나열이 아니라 "조합해보는" 경험.
 //
-// 이미지 원칙(AI 생성 호출 없음, 가짜 합성 이미지 없음):
-//  - 차량 사진과 장착점 좌표는 FitRoom과 같은 VEHICLE_FIT_LAYOUTS를 읽기만 한다(값/동작 변경 없음).
-//  - 각 단계는 미리 만들어 둔 "완성 합성 이미지"(public/assets/hero/supercub-v2-*.png)로 전환한다. 세 장 모두 같은
-//    차량 원본(1829x860)을 위로 OY=90px 여백을 둔 1829x950 캔버스에 같은 위치로 놓고, 프로젝트의 실제 상품 사진
-//    (스테인리스 머플러 / part 121 사이드백 / part 119 H2C 윈드스크린)을 로컬 OpenCV·Pillow로 합성했다
-//    (순정 머플러 제거 + 흡입구 조임 밴드, 같은 사진 속 크롬/가죽 밝기에 맞춘 재조명, 접촉 그림자, 사이드백 요크,
-//    윈드스크린은 실제 고정판을 양쪽 미러 스템 뿌리에 맞춘 3/4 원근 + 헤드라이트·방향지시등·핸들 커버 앞가림).
-//    뒤 단계 이미지는 앞 단계 위에 부품만
-//    더 얹은 것이라 차량/앞 부품 픽셀이 동일하다(AI 생성 없음). 여백은 실제 높이의 윈드스크린이 잘리지 않게 하기 위함.
+// 이미지 원칙(AI 생성 결과 사용 안 함, 어색한 합성을 억지로 보여주지 않음):
+//  - 실제 장착 모습은 로컬에서 만든 완성 합성 이미지만 쓴다. 지금 자연스러운 것은 머플러 하나뿐이다
+//    (public/assets/hero/supercub-v2-muffler.png: 순정 머플러를 지우고 실제 상품 사진을 같은 각도로 합성, 1829x950,
+//    차량 원본 위로 OY=90px 여백).
+//  - 사이드백/윈드스크린(상품 사진 촬영 각도가 차량과 달라 2D 합성이 어색함 - supercub-v2-*-sidebag*.png 파일은 남겨두고 쓰지 않음),
+//    리어 캐리어(3/4 각도 제품 사진이라 순정 짐대 위에 떠 보임)는 사진을 얹지 않고
+//    FitRoom과 같은 방식(장착 지점 점 + "장착 이미지 준비 중")으로만 보여준다.
+//  - 차량 사진과 장착 지점 좌표는 FitRoom과 같은 VEHICLE_FIT_LAYOUTS를 읽기만 한다.
 const VEHICLE_IMAGE = '/assets/vehicles/super-cub-110.png'
 const LAYOUT = VEHICLE_FIT_LAYOUTS[VEHICLE_IMAGE]
-// 무대(합성 이미지) 크기: 차량 사진 위로 OY 만큼 여백. 라벨/점 좌표는 무대 기준(= 차량 좌표 + OY).
 const OY = 90
 const STAGE = { width: LAYOUT.width, height: LAYOUT.height + OY }
 
-// category: FitRoom 좌표 키 / thumb: 실제 상품 사진(하단 부품 칩) / composite: 이 단계까지 장착된 완성 이미지
-// label: 안내 라벨 위치(차량 사진 픽셀 좌표) - 차량 몸체를 가리지 않는 여백 쪽으로 둔다.
-// anchor: (선택) 가이드 점 위치(차량 사진 픽셀 좌표). 없으면 FitRoom 좌표(LAYOUT.anchors[category])를 쓴다.
-const STEPS = [
+// composite: 이 부품이 장착된 완성 이미지(없으면 장착 이미지 준비 중). slot: 카드 위치(위/아래 줄, 대략 장착 부위 쪽).
+const PARTS = [
+  { key: 'carrier', category: '캐리어', name: '리어 캐리어', thumb: '/assets/parts/cub110-rear-carrier.png', slot: 'top' },
+  { key: 'screen', category: '스크린', name: '윈드스크린', thumb: '/assets/parts/h2c-cub110-windscreen.png', slot: 'top' },
   {
     key: 'muffler',
     category: '머플러',
-    name: '머플러',
-    prompt: '머플러를 넣어보세요',
+    name: '스테인리스 머플러',
     thumb: '/assets/parts/cub110-stainless-exhaust.png',
     composite: '/assets/hero/supercub-v2-muffler.png',
-    label: { x: 250, y: 790 },
+    slot: 'bottom',
   },
-  {
-    key: 'sidebag',
-    category: '사이드백',
-    name: '사이드백',
-    prompt: '사이드백도 넣어보세요',
-    thumb: '/assets/parts/saddlebag-pair-lace.png',
-    composite: '/assets/hero/supercub-v2-muffler-sidebag.png',
-    // FitRoom 사이드백 장착점은 테일램프 근처라, Hero에서만 합성 이미지 속 가방 가운데를 가리키게 한다.
-    anchor: { x: 470, y: 425 },
-    label: { x: 250, y: 230 },
-  },
-  {
-    key: 'screen',
-    category: '스크린',
-    name: '윈드스크린',
-    prompt: '윈드스크린도 추가해보세요',
-    thumb: '/assets/parts/h2c-cub110-windscreen.png',
-    composite: '/assets/hero/supercub-v2-muffler-sidebag-windscreen.png',
-    // FitRoom의 스크린 장착점(헤드라이트 오른쪽 아래)은 합성 이미지의 실제 윈드스크린 위치와 달라서,
-    // Hero에서만 합성 이미지 속 윈드스크린 면을 가리키게 한다(FitRoom 좌표는 그대로).
-    anchor: { x: 1040, y: 25 },
-    label: { x: 1560, y: 40 },
-  },
+  { key: 'sidebag', category: '사이드백', name: '사이드백', thumb: '/assets/parts/saddlebag-pair-lace.png', slot: 'bottom' },
 ]
-
-// 재생 순서. step: 지금 다루는 부품(-1 = 아직 없음), phase: intro | guide | fit | final | reset
-const TIMELINE = [
-  { step: -1, phase: 'intro', ms: 1900 },
-  ...STEPS.flatMap((_, i) => [
-    { step: i, phase: 'guide', ms: 1500 },
-    { step: i, phase: 'fit', ms: 1700 },
-  ]),
-  { step: STEPS.length - 1, phase: 'final', ms: 3000 },
-  { step: -1, phase: 'reset', ms: 700 },
-]
-
-const CAPTION = {
-  intro: '원하는 부품을 넣어보세요.',
-  final: '내 바이크에 직접 장착해보세요.',
-}
+const DEFAULT_FITTED = ['muffler']
 
 const pct = (v, total) => `${(v / total) * 100}%`
-const stageAnchor = (s) => {
-  const a = s.anchor ?? LAYOUT.anchors[s.category]
-  return { x: a.x, y: a.y + OY }
-}
 
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+function PartCard({ part, fitted, focused, onToggle, onFocus, onBlur }) {
+  const ready = Boolean(part.composite)
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      onMouseEnter={onFocus}
+      onMouseLeave={onBlur}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      aria-pressed={ready ? fitted : undefined}
+      data-testid={`hero-part-${part.key}`}
+      data-fitted={fitted}
+      className={`flex min-w-0 items-center gap-2 rounded-xl border px-2 py-2 text-left transition sm:gap-3 sm:px-3 ${
+        fitted
+          ? 'border-ridefit-primary bg-ridefit-primary/15 shadow-[0_0_0_1px_rgba(59,130,246,0.4)]'
+          : focused
+            ? 'border-ridefit-primary/70 bg-ridefit-bg'
+            : 'border-ridefit-border bg-ridefit-bg/80 hover:border-ridefit-primary/60'
+      }`}
+    >
+      <img
+        src={part.thumb}
+        alt=""
+        aria-hidden="true"
+        className="h-9 w-9 shrink-0 rounded-md bg-white object-contain p-0.5 sm:h-11 sm:w-11"
+        draggable={false}
+      />
+      <span className="min-w-0">
+        <span className="block truncate text-xs font-semibold text-ridefit-text sm:text-sm">{part.name}</span>
+        <span className={`block truncate text-[10px] sm:text-[11px] ${fitted ? 'text-ridefit-primary' : 'text-ridefit-text-secondary'}`}>
+          {!ready ? '장착 이미지 준비 중' : fitted ? '✓ 장착됨 · 눌러서 빼기' : '눌러서 장착하기'}
+        </span>
+      </span>
+    </button>
   )
-  useEffect(() => {
-    const q = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const onChange = (e) => setReduced(e.matches)
-    q.addEventListener('change', onChange)
-    return () => q.removeEventListener('change', onChange)
-  }, [])
-  return reduced
 }
 
 function HeroFitShowcase({ className = '' }) {
-  const reducedMotion = usePrefersReducedMotion()
-  const [ready, setReady] = useState(false)
-  const [tick, setTick] = useState(0)
+  const [fitted, setFitted] = useState(() => new Set(DEFAULT_FITTED))
+  // 마우스를 올리거나 포커스한 부품: 장착 가능하면 미리 장착된 모습으로, 아니면 장착 지점만 표시.
+  const [focusedKey, setFocusedKey] = useState(null)
 
-  // 차량 사진이 뜬 뒤에 시작한다(로딩이 늦어도 3초 뒤엔 시작 - 무한 대기 방지).
-  useEffect(() => {
-    let done = false
-    const start = () => { if (!done) { done = true; setReady(true) } }
-    const img = new Image()
-    img.onload = start
-    img.onerror = start
-    img.src = VEHICLE_IMAGE
-    // 완성 합성 이미지도 미리 받아 둔다(첫 전환 때 늦게 뜨지 않도록).
-    STEPS.forEach((s) => { if (s.composite) new Image().src = s.composite })
-    const t = setTimeout(start, 3000)
-    return () => { done = true; clearTimeout(t) }
-  }, [])
+  const toggle = (part) => {
+    if (!part.composite) {
+      setFocusedKey(part.key)
+      return
+    }
+    // 누른 뒤에는 미리보기(포커스) 대신 실제 장착 상태를 보여준다 - 모바일 탭에서 빼기가 바로 보이도록.
+    setFocusedKey(null)
+    setFitted((prev) => {
+      const next = new Set(prev)
+      next.has(part.key) ? next.delete(part.key) : next.add(part.key)
+      return next
+    })
+  }
 
-  useEffect(() => {
-    if (!ready || reducedMotion) return
-    const id = setTimeout(() => setTick((t) => (t + 1) % TIMELINE.length), TIMELINE[tick].ms)
-    return () => clearTimeout(id)
-  }, [ready, reducedMotion, tick])
+  const focused = PARTS.find((p) => p.key === focusedKey) ?? null
+  const showComposite = (p) => p.composite && (fitted.has(p.key) || focusedKey === p.key)
+  const fittedNames = PARTS.filter((p) => p.composite && fitted.has(p.key)).map((p) => p.name)
+  const caption = focused && !focused.composite
+    ? `${focused.name} - 장착 이미지 준비 중이에요`
+    : fittedNames.length > 0
+      ? `${fittedNames.join(' + ')} 장착`
+      : '순정 상태'
 
-  // 움직임을 줄이는 설정이면 최종 상태만 정지 화면으로 보여준다.
-  const frame = reducedMotion ? { step: STEPS.length - 1, phase: 'final' } : TIMELINE[tick]
-  const isFitted = (i) => frame.phase !== 'reset' && frame.phase !== 'intro'
-    && (i < frame.step || (i === frame.step && frame.phase !== 'guide'))
-  const activeStep = frame.phase === 'guide' || frame.phase === 'fit' ? STEPS[frame.step] : null
+  const row = (slot) => (
+    <div className="grid w-full grid-cols-2 gap-2 sm:gap-3">
+      {PARTS.filter((p) => p.slot === slot).map((p) => (
+        <PartCard
+          key={p.key}
+          part={p}
+          fitted={Boolean(p.composite) && fitted.has(p.key)}
+          focused={focusedKey === p.key}
+          onToggle={() => toggle(p)}
+          onFocus={() => setFocusedKey(p.key)}
+          onBlur={() => setFocusedKey((k) => (k === p.key ? null : k))}
+        />
+      ))}
+    </div>
+  )
 
-  const caption = activeStep
-    ? (frame.phase === 'guide' ? activeStep.prompt : `${activeStep.name} 장착`)
-    : (CAPTION[frame.phase] ?? CAPTION.intro)
+  const anchor = focused && !focused.composite ? LAYOUT.anchors[focused.category] : null
 
   return (
-    <div className={`flex w-full flex-col items-center ${className}`} data-testid="hero-fit-showcase" data-phase={frame.phase} data-step={frame.step}>
-      {/* 단계 안내 문구 - 이미지와 겹치지 않게 무대 위에 따로 둔다 */}
-      <p className="mb-3 h-7 text-center text-base font-semibold text-ridefit-text transition-opacity duration-300 sm:text-lg" aria-live="polite" data-testid="hero-caption">
-        {caption}
-      </p>
+    <div className={`flex w-full flex-col items-center gap-3 ${className}`} data-testid="hero-fit-showcase">
+      {row('top')}
 
-      <div
-        className={`relative w-full transition-opacity duration-500 ${ready && frame.phase !== 'reset' ? 'opacity-100' : 'opacity-0'}`}
-        style={{ aspectRatio: `${STAGE.width} / ${STAGE.height}` }}
-      >
+      <div className="relative w-full" style={{ aspectRatio: `${STAGE.width} / ${STAGE.height}` }} data-testid="hero-stage">
         <img
           src={VEHICLE_IMAGE}
           alt="Honda Super Cub 110"
@@ -145,92 +131,49 @@ function HeroFitShowcase({ className = '' }) {
           style={{ top: pct(OY, STAGE.height), height: pct(LAYOUT.height, STAGE.height) }}
           draggable={false}
         />
-
-        {/* 완성 합성 이미지: 장착된 단계의 이미지는 계속 보이고(뒤 단계가 위에 쌓임), 새 단계만 서서히 나타난다 */}
-        {STEPS.map((s, i) => s.composite && (
+        {PARTS.filter((p) => p.composite).map((p) => (
           <img
-            key={`composite-${s.key}`}
-            src={s.composite}
+            key={p.key}
+            src={p.composite}
             alt=""
             aria-hidden="true"
             draggable={false}
-            data-testid={`hero-composite-${s.key}`}
-            data-visible={isFitted(i)}
-            className="absolute inset-0 z-[25] h-full w-full select-none transition-opacity duration-700"
-            style={{ opacity: isFitted(i) ? 1 : 0 }}
+            data-testid={`hero-composite-${p.key}`}
+            data-visible={Boolean(showComposite(p))}
+            className="absolute inset-0 h-full w-full select-none transition-opacity duration-500"
+            style={{ opacity: showComposite(p) ? 1 : 0 }}
           />
         ))}
 
-        {/* 가이드 라인(지금 단계) + 장착 위치 점 */}
-        <svg className="pointer-events-none absolute inset-0 z-30 h-full w-full" viewBox={`0 0 ${STAGE.width} ${STAGE.height}`} preserveAspectRatio="none">
-          {STEPS.map((s, i) => {
-            const a = stageAnchor(s)
-            const ly = s.label.y + OY
-            const active = activeStep?.key === s.key
-            const len = Math.hypot(s.label.x - a.x, ly - a.y)
-            return (
-              <g key={s.key} style={{ opacity: active || isFitted(i) ? 1 : 0, transition: 'opacity 400ms' }}>
-                <line
-                  x1={a.x} y1={a.y} x2={s.label.x} y2={ly}
-                  stroke="#3B82F6" strokeWidth="1.5" strokeOpacity={active ? 0.9 : 0.35}
-                  vectorEffect="non-scaling-stroke"
-                  strokeDasharray={len}
-                  strokeDashoffset={active || isFitted(i) ? 0 : len}
-                  style={{ transition: 'stroke-dashoffset 700ms ease-out, stroke-opacity 400ms' }}
-                />
-                <circle cx={a.x} cy={a.y} r={active ? 13 : 9} fill="#3B82F6" fillOpacity={active ? 1 : 0.7} style={{ transition: 'r 300ms' }} />
-                {active && frame.phase === 'guide' && (
-                  <circle cx={a.x} cy={a.y} r="13" fill="none" stroke="#3B82F6" strokeWidth="2" vectorEffect="non-scaling-stroke">
-                    <animate attributeName="r" from="13" to="42" dur="1.2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" from="0.9" to="0" dur="1.2s" repeatCount="indefinite" />
-                  </circle>
-                )}
-              </g>
-            )
-          })}
-        </svg>
-
-        {/* 부품 이름표(라인 끝) */}
-        {STEPS.map((s, i) => {
-          const active = activeStep?.key === s.key
-          const fitted = isFitted(i)
-          return (
+        {/* 장착 이미지가 없는 부품: 상품 사진을 얹지 않고 장착 지점 + 안내만 */}
+        {anchor && (
+          <>
+            <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${STAGE.width} ${STAGE.height}`} preserveAspectRatio="none">
+              <circle cx={anchor.x} cy={anchor.y + OY} r="12" fill="#3B82F6" />
+              <circle cx={anchor.x} cy={anchor.y + OY} r="12" fill="none" stroke="#3B82F6" strokeWidth="2" vectorEffect="non-scaling-stroke">
+                <animate attributeName="r" from="12" to="40" dur="1.2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" from="0.9" to="0" dur="1.2s" repeatCount="indefinite" />
+              </circle>
+            </svg>
             <span
-              key={`label-${s.key}`}
-              className={`pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold shadow-lg backdrop-blur transition-all duration-300 sm:px-2.5 sm:text-xs ${
-                active ? 'border-ridefit-primary bg-ridefit-primary text-white' : 'border-ridefit-border bg-ridefit-bg/85 text-ridefit-text'
-              }`}
-              style={{ left: pct(s.label.x, STAGE.width), top: pct(s.label.y + OY, STAGE.height), opacity: active || fitted ? 1 : 0 }}
-              data-testid={`hero-label-${s.key}`}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full border border-ridefit-border bg-ridefit-bg/90 px-2 py-0.5 text-[10px] font-semibold text-ridefit-text shadow-lg backdrop-blur sm:text-xs"
+              style={{
+                left: pct(Math.min(Math.max(anchor.x, 260), STAGE.width - 260), STAGE.width),
+                top: pct(anchor.y + OY - 30, STAGE.height),
+              }}
+              data-testid="hero-pending-label"
             >
-              {fitted ? '✓ ' : ''}
-              {s.name}
+              {focused.name} · 장착 이미지 준비 중
             </span>
-          )
-        })}
+          </>
+        )}
       </div>
 
-      {/* 넣어볼 부품(실제 상품 사진) - 장착된 것은 체크, 지금 단계는 강조 */}
-      <ol className="mt-4 flex w-full max-w-md justify-center gap-1.5 sm:gap-3" data-testid="hero-part-chips">
-        {STEPS.map((s, i) => {
-          const active = activeStep?.key === s.key
-          const fitted = isFitted(i)
-          return (
-            <li
-              key={s.key}
-              className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-1.5 py-1.5 transition-colors duration-300 sm:gap-2 sm:px-2 ${
-                active ? 'border-ridefit-primary bg-ridefit-primary/10' : fitted ? 'border-ridefit-border bg-ridefit-card' : 'border-ridefit-border/60 bg-ridefit-card/60'
-              }`}
-            >
-              <img src={s.thumb} alt="" aria-hidden="true" className="h-6 w-6 shrink-0 rounded bg-white object-contain p-0.5 sm:h-8 sm:w-8" />
-              <span className={`min-w-0 truncate text-[11px] font-medium sm:text-xs ${active || fitted ? 'text-ridefit-text' : 'text-ridefit-text-secondary'}`}>
-                {fitted ? '✓ ' : ''}
-                {s.name}
-              </span>
-            </li>
-          )
-        })}
-      </ol>
+      <p className="h-5 text-center text-xs font-medium text-ridefit-text-secondary sm:text-sm" aria-live="polite" data-testid="hero-caption">
+        {caption}
+      </p>
+
+      {row('bottom')}
     </div>
   )
 }

@@ -199,8 +199,8 @@ function Garage() {
                   className="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-ridefit-border px-4 py-10 text-center"
                   data-testid="garage-favorites-empty"
                 >
-                  <p className="text-sm text-ridefit-text">아직 즐겨찾기한 부품이 없습니다.</p>
-                  <p className="text-xs text-ridefit-text-secondary">부품 찾아보기에서 마음에 드는 부품의 ☆를 눌러 저장해보세요.</p>
+                  <p className="text-sm text-ridefit-text">아직 저장한 부품이 없어요.</p>
+                  <p className="text-xs text-ridefit-text-secondary">마음에 드는 부품을 저장해보세요. 부품 찾아보기에서 ☆를 누르면 여기에 모여요.</p>
                 </div>
               )}
 

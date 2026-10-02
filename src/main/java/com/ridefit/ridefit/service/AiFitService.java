@@ -51,13 +51,17 @@ public class AiFitService {
     // v2: 차량 이미지를 AI 전용으로 framing(투명 여백 제거 + 지원 비율에 맞춤) + aspect_ratio 지정.
     // v3: (폐기) 남는 세로 공간을 차량 위쪽에 두고 "그 공간을 써서 실제 크기로" 라고 썼더니 윈드스크린이 실제보다 훨씬 크게
     //     나왔다(2026-10-02 resultId=3). 결과 행/파일은 그대로 남긴다.
-    // v4: 가운데 framing으로 되돌리고, 크기 기준을 "빈 공간"이 아니라 차량 자체(장착부/핸들/헤드라이트 폭)로 잡도록 중립 문구로 바꿈.
-    private static final String PROMPT_VERSION = "v4";
-    // 부품을 화면에 맞추려고 줄이거나, 빈 공간을 채우려고 키우지 않도록(실제 장착 비율 우선) 두 프롬프트에 공통으로 넣는다.
-    private static final String KEEP_REAL_SIZE = "Size each product by its real-world dimensions relative to this motorcycle "
-            + "(judge it against the mounting point, handlebar and headlight width), not by the empty space in the image: "
-            + "do not shrink it to fit the frame and do not enlarge it to fill empty space. "
-            + "Do not crop, zoom, move or resize the motorcycle. ";
+    // v4: 가운데 framing으로 되돌리고, 크기 기준을 "빈 공간"이 아니라 차량 자체(장착부/핸들/헤드라이트 폭)로 잡도록 중립 문구로 바꿈(실제 호출 안 함).
+    // v5: framing을 "위 여백 15% + 좌우로만 패딩(16:9)"으로 바꿔 차량 위 빈 공간 자체를 줄이고, 윈드스크린 위치 문구의
+    //     "rising above the headlight"(위로 키우는 쪽 유도)를 헤드라이트/핸들 기준 문구로 바꿈. 크기 기준 문장을 구체화.
+    private static final String PROMPT_VERSION = "v5";
+    // 부품 크기를 "빈 공간"이 아니라 실제 차량(헤드라이트/핸들바 폭, 장착 위치) 기준으로 정하게 하는 공통 문장(두 프롬프트에 들어간다).
+    private static final String KEEP_REAL_SIZE = "Use the motorcycle's headlight diameter and handlebar width as the scale references, "
+            + "and size the product by its real-world dimensions on this motorcycle, keeping the proportions shown in its product photo. "
+            + "Do not use the empty canvas space to decide the product size: never enlarge an accessory to fill empty space "
+            + "and never shrink it to fit the frame. "
+            + "The product must look physically attached at a realistic mounting position, with realistic scale and the same perspective as Image 1. "
+            + "Keep the motorcycle recognizable and preserve its original geometry; do not crop, zoom, move or resize the motorcycle. ";
 
     // 장착 위치가 명확해 결과가 안정적인 카테고리만 우선 지원한다. 값은 프롬프트에 넣을 영어 장착 위치 설명.
     // (보호대=차체 전체 커버, 휠/시트/에어필터/엔진가드 등은 위치·형태가 애매해 후순위로 제외)
@@ -65,7 +69,8 @@ public class AiFitService {
             Map.entry("프론트바구니", new Placement("front basket",
                     "mounted at the very front of the motorcycle, above the front fender and in front of the headlight/handlebar area", false)),
             Map.entry("스크린", new Placement("windscreen",
-                    "mounted in front of the handlebars, rising above the headlight", false)),
+                    "mounted on the handlebar/headlight area in front of the handlebars; its lower cut-out sits just above the headlight, "
+                            + "and it is narrower than the handlebar", false)),
             Map.entry("미러", new Placement("rear-view mirrors",
                     "on the left and right ends of the handlebars", true)),
             Map.entry("리어백", new Placement("rear bag",
@@ -256,7 +261,13 @@ public class AiFitService {
             if (generated == null || generated.length == 0) {
                 throw new IllegalStateException("이미지 API가 빈 결과를 돌려줬습니다.");
             }
-            // 결과의 빈 배경(1:1 framing으로 생긴 위/아래 여백 등)을 잘라 차량이 결과 이미지를 꽉 채우게 한다.
+            // 요청 비율과 다른 크기로 오면(예: 16:9 요청 -> 640x384) 차량이 늘어나 있으므로 먼저 요청 비율로 되돌린다.
+            Optional<byte[]> restored = AiResultImageCropper.restoreAspect(generated, aspectRatio);
+            if (restored.isPresent()) {
+                log.info("AI 결과 비율 복원: 요청 {} 와 받은 이미지 비율이 달라 높이를 요청 비율에 맞춤(차량 늘어남 보정)", aspectRatio);
+                generated = restored.get();
+            }
+            // 결과의 빈 배경(framing으로 생긴 좌우 여백 등)을 잘라 차량이 결과 이미지를 꽉 채우게 한다.
             Optional<AiResultImageCropper.Cropped> cropped = AiResultImageCropper.crop(generated);
             if (cropped.isPresent()) {
                 AiResultImageCropper.Cropped c = cropped.get();

@@ -410,7 +410,7 @@ function PartsSearch() {
                               {part.price.toLocaleString()}원
                               {part.stats?.lowestPrice != null && part.stats.lowestPrice < part.price && (
                                 <span className="ml-2 text-xs font-normal text-ridefit-primary">
-                                  판매처 {part.stats.lowestPrice.toLocaleString()}원부터
+                                  확인된 판매처 가격 {part.stats.lowestPrice.toLocaleString()}원부터
                                 </span>
                               )}
                             </p>

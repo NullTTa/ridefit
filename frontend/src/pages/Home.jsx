@@ -90,7 +90,8 @@ function Home() {
 
   return (
     <div>
-      {/* 1. Hero: 부품 장착 쇼케이스(부품 선택 -> 내 바이크에 장착 -> 장착된 모습 확인) + 시작/로그인 */}
+      {/* 1. Hero: 내 바이크 꾸미기(가운데 바이크 + 주변 부품 카드, 누르면 장착된 모습으로) + 시작/로그인.
+          CTA "부품 입혀보기": 차량이 있으면 첫 차량의 부품 입혀보기, 없으면 차량 등록부터(비로그인은 로그인 후 이동) */}
       <section className="flex min-h-[calc(100vh-4rem)] flex-col md:flex-row">
         <div className="relative flex min-h-[40vh] flex-[1.25] items-center justify-center overflow-hidden bg-ridefit-card px-4 py-10 md:min-h-0 md:px-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.16),transparent_55%),radial-gradient(circle_at_80%_85%,rgba(255,107,53,0.12),transparent_50%)]" />
@@ -102,12 +103,12 @@ function Home() {
             <div>
               <p className="font-mono text-xs uppercase tracking-widest text-ridefit-primary">MOBILITY PARTS SERVICE</p>
               <h1 className="mt-2 break-keep text-3xl font-bold leading-tight text-ridefit-text sm:text-4xl">
-                원하는 부품을
+                내 바이크를 원하는
                 <br />
-                내 바이크에 넣어보세요
+                모습으로 만들어보세요.
               </h1>
               <p className="mt-3 text-sm text-ridefit-text-secondary">
-                내 차량에 맞는 부품을 고르면 장착된 모습을 바로 확인할 수 있어요. 호환 여부와 판매처까지 한곳에서 이어집니다.
+                마음에 드는 부품을 골라 내 바이크에 직접 조합해보세요.
               </p>
             </div>
 
@@ -117,11 +118,11 @@ function Home() {
                 <div className="flex flex-col gap-3 sm:flex-row">
                   {/* 차량이 있으면 내 차고(부품 입혀보기 진입), 없으면 차량 등록부터 */}
                   <Link
-                    to={myVehicles.length > 0 ? '/garage' : '/garage/new'}
+                    to={myVehicles.length > 0 ? `/garage/${myVehicles[0].id}/fit` : '/garage/new'}
                     className="flex-1 rounded-lg bg-ridefit-primary px-6 py-3 text-center font-semibold text-white transition hover:brightness-110"
                     data-testid="hero-cta-start"
                   >
-                    내 바이크 시작하기
+                    부품 입혀보기
                   </Link>
                   <Link to="/parts" className="flex-1 rounded-lg border border-ridefit-primary px-6 py-3 text-center font-semibold text-ridefit-primary transition hover:bg-ridefit-primary/10" data-testid="hero-cta-parts">
                     부품 둘러보기
@@ -136,7 +137,7 @@ function Home() {
                 <div className="flex flex-col gap-2 sm:flex-row">
                   {/* 로그인이 필요한 화면은 로그인 후 원래 가려던 곳으로 돌아온다(RequireAuth) */}
                   <Link to="/garage/new" className="flex-1 rounded-lg bg-ridefit-primary px-4 py-3 text-center text-sm font-semibold text-white transition hover:brightness-110" data-testid="hero-cta-start">
-                    내 바이크 시작하기
+                    부품 입혀보기
                   </Link>
                   <Link to="/parts" className="flex-1 rounded-lg border border-ridefit-border px-4 py-3 text-center text-sm font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary" data-testid="hero-cta-parts">
                     부품 둘러보기

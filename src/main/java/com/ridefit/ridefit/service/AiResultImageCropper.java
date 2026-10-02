@@ -36,6 +36,32 @@ public final class AiResultImageCropper {
                           double vehicleWidthRatio, double vehicleHeightRatio, String touchedEdges) {
     }
 
+    // 요청한 비율(예: "16:9")과 받은 이미지 비율이 1% 넘게 다르면, 높이를 요청 비율에 맞게 다시 맞춘다(가로 픽셀은 그대로).
+    // 왜: Magic Hour flux-2-klein 640px 에 16:9 를 요청하면 640x384(5:3)가 온다. 실제 결과(2026-10-02 resultId=4)에서
+    // 차량이 원본 대비 세로로 1.067배(= 384/360) 늘어나 있었다 - 입력(16:9)을 결과 크기에 맞춰 늘려 그린 것.
+    // 되돌리면 차량/부품 비율이 원본과 같아진다. 비율이 같거나 ratio가 없으면 empty(그대로 사용).
+    public static Optional<byte[]> restoreAspect(byte[] imageBytes, String ratio) throws IOException {
+        if (ratio == null || !ratio.matches("\\d+:\\d+")) return Optional.empty();
+        BufferedImage src = ImageIO.read(new ByteArrayInputStream(imageBytes));
+        if (src == null) return Optional.empty();
+        String[] p = ratio.split(":");
+        double target = Double.parseDouble(p[0]) / Double.parseDouble(p[1]);
+        double actual = (double) src.getWidth() / src.getHeight();
+        if (Math.abs(actual / target - 1) <= 0.01) return Optional.empty();
+        int w = src.getWidth(), h = (int) Math.round(w / target);
+        BufferedImage out = new BufferedImage(w, h, src.getColorModel().hasAlpha() ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = out.createGraphics();
+        try {
+            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g.drawImage(src, 0, 0, w, h, null);
+        } finally {
+            g.dispose();
+        }
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        ImageIO.write(out, "png", bytes);
+        return Optional.of(bytes.toByteArray());
+    }
+
     public static Optional<Cropped> crop(byte[] imageBytes) throws IOException {
         BufferedImage src = ImageIO.read(new ByteArrayInputStream(imageBytes));
         if (src == null) return Optional.empty();

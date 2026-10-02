@@ -238,7 +238,7 @@ function PartDetail() {
       </div>
 
       <div className="mt-6 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
-        <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">판매처 가격비교</h2>
+        <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">등록된 판매처 가격 비교</h2>
         <SellerListings partId={part.id} />
       </div>
 

@@ -123,13 +123,14 @@ class AiFitStorageTest {
         AiFitResponse r3 = aiFitService.generate(List.of(new PartInput(muffler, 20.0, 75.0), new PartInput(screen, 60.0, 10.0)),
                 vehicle, member.getId(), false);
         assertThat(r3.partIds()).containsExactly(muffler.getId(), screen.getId());
-        // 이미지 API는 3번만 불렸고, 매번 AI 전용으로 다시 구도를 잡은 차량 이미지 + 그 비율("1:1")을 받았다
+        // 이미지 API는 3번만 불렸고, 매번 AI 전용으로 다시 구도를 잡은 차량 이미지 + 그 비율("16:9")을 받았다
+        // (v5: 위쪽 빈 공간을 만들지 않도록 좌우로만 패딩하는 비율을 고른다 - VehicleImageFramer)
         ArgumentCaptor<List<OpenAiImageClient.InputImage>> imagesCaptor = ArgumentCaptor.captor();
         ArgumentCaptor<String> ratioCaptor = ArgumentCaptor.forClass(String.class);
         verify(aiImageProvider, times(3)).edit(imagesCaptor.capture(), anyString(), ratioCaptor.capture());
-        assertThat(ratioCaptor.getAllValues()).containsOnly("1:1");
+        assertThat(ratioCaptor.getAllValues()).containsOnly("16:9");
         BufferedImage sentVehicle = ImageIO.read(new java.io.ByteArrayInputStream(imagesCaptor.getValue().get(0).bytes()));
-        assertThat((double) sentVehicle.getWidth() / sentVehicle.getHeight()).isCloseTo(1.0, org.assertj.core.data.Offset.offset(0.01));
+        assertThat((double) sentVehicle.getWidth() / sentVehicle.getHeight()).isCloseTo(16.0 / 9, org.assertj.core.data.Offset.offset(0.01));
 
         // 파일: 3개가 모두 서로 다른 이름으로 남아 있고, DB 경로(/uploads/ai-fit/...)와 실제 파일이 1:1로 맞는다
         List<String> files;
