@@ -56,6 +56,16 @@ class VehicleImageFramerTest {
             assertThat(alpha(out, out.getWidth() - 1, y)).isZero();
         }
 
+        // 세로로 늘린 공간은 위/아래에 똑같이(가운데 배치). 위쪽에만 몰면 AI가 그 공간을 채우려고 윈드스크린을 과대하게 그렸다.
+        int top = -1, bottom = -1;
+        for (int y = 0; y < out.getHeight() && top < 0; y++)
+            for (int x = 0; x < out.getWidth(); x++) if (alpha(out, x, y) > 16) { top = y; break; }
+        for (int y = out.getHeight() - 1; y >= 0 && bottom < 0; y--)
+            for (int x = 0; x < out.getWidth(); x++) if (alpha(out, x, y) > 16) { bottom = y; break; }
+        int vehicleH = bottom - top + 1;
+        assertThat((double) top / vehicleH).isCloseTo((out.getHeight() - 1 - bottom) / (double) vehicleH, within(0.01));
+        assertThat((double) top / out.getHeight()).isGreaterThan(0.15);
+
         // 장착 위치 힌트 좌표 변환: 원본에서의 한 점이 새 이미지에서 같은 픽셀을 가리킨다
         double px = 500, py = 640;   // 원본 픽셀(뒷바퀴 근처)
         double nx = f.mapX(px / src.getWidth() * 100) / 100 * f.width();

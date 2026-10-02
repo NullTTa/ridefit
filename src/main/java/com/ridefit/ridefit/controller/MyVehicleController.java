@@ -153,6 +153,30 @@ public class MyVehicleController {
         return ResponseEntity.ok(result);
     }
 
+    // 내 차고 "추천 상품": 이 차량에 장착 가능한(호환가능/브라켓필요) 부품 중 RIDEFIT 안에서 실제로 쌓인 신호
+    // (조회/장착해보기/후기/평점)가 있는 것만, 기존 인기 점수 순으로. 신호가 없으면 빈 목록(호환만으로 추천하지 않음).
+    @GetMapping("/api/my-vehicles/{myVehicleId}/recommended-parts")
+    public List<RecommendedPartResponse> getRecommendedParts(
+            @PathVariable Long myVehicleId, @RequestParam(defaultValue = "8") int limit) {
+        MyVehicle myVehicle = requireOwnedVehicle(myVehicleId);
+        Map<Long, Compatibility> byPartId = compatibilityRepository.findByModelYearId(myVehicle.getModelYear().getId()).stream()
+                .filter(c -> CompatibilityCheckService.isProceedStatus(c.getStatus()))
+                .collect(Collectors.toMap(c -> c.getPart().getId(), c -> c, (a, b) -> a));
+        List<Part> parts = byPartId.values().stream().map(Compatibility::getPart).toList();
+        return partPopularityService.rankBySignals(parts, Math.max(1, Math.min(20, limit))).stream()
+                .map(r -> {
+                    Compatibility c = byPartId.get(r.partId());
+                    Part p = c.getPart();
+                    return new RecommendedPartResponse(p.getId(), p.getCategory(), p.getName(), p.getPrice(), p.getImageUrl(),
+                            c.getStatus(), r.stats());
+                })
+                .toList();
+    }
+
+    public record RecommendedPartResponse(Long partId, String category, String name, Integer price, String imageUrl,
+                                          String status, PartPopularityStats stats) {
+    }
+
     // 연식 값이 없는 레거시 연식(model_year_value NULL)은 새로 등록/변경할 수 없다 - 등록 화면에서도 숨긴다.
     // 이미 그 연식을 쓰는 기존 차량은 그대로 둔다(데이터 삭제/이동 없음).
     private void requireDatedYear(ModelYear modelYear) {

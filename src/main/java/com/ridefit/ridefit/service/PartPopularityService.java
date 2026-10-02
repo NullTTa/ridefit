@@ -70,6 +70,22 @@ public class PartPopularityService {
         return rawStats(part).toStats(List.of());
     }
 
+    // 내 차고 "추천 상품": 배지 계산과 같은 내부 점수(조회 + 장착해보기x3 + 후기x5 + 평균평점x4)로 정렬한다.
+    // 새 점수를 만들지 않고, 실제로 쌓인 신호가 하나도 없는(점수 0) 부품은 "추천 근거 없음"이므로 빼고 돌려준다.
+    // 경쟁 배지는 붙이지 않는다(배지는 같은 카테고리 안에서만 비교하는 값이라 카테고리를 섞은 이 목록과 맞지 않음).
+    public List<Ranked> rankBySignals(List<Part> parts, int limit) {
+        return parts.stream()
+                .map(this::rawStats)
+                .filter(r -> r.score() > 0)
+                .sorted(Comparator.comparingLong(RawStats::score).reversed().thenComparing(RawStats::partId, Comparator.reverseOrder()))
+                .limit(limit)
+                .map(r -> new Ranked(r.partId(), r.toStats(List.of())))
+                .toList();
+    }
+
+    public record Ranked(Long partId, PartPopularityStats stats) {
+    }
+
     private RawStats rawStats(Part part) {
         long reviewCount = postRepository.countByInstalledPartId(part.getId());
         Double avgRating = postRepository.findAverageRatingByInstalledPartId(part.getId());

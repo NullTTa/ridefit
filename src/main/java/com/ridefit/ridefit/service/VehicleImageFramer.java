@@ -83,6 +83,8 @@ public final class VehicleImageFramer {
         int ow = (int) Math.round(outW), oh = (int) Math.round(outH);
 
         // 차량 박스를 새 캔버스 가운데에 둔다. 원본 (0,0)이 놓일 위치.
+        // (2026-10-02 실제 호출로 확인: 남는 세로 공간을 전부 위쪽에 두고 "그 공간을 쓰라"고 하자 윈드스크린이 실제보다
+        //  훨씬 크게 그려졌다. 가운데 배치(위/아래 약 18%)로도 윈드스크린이 들어갈 공간은 충분하므로 가운데로 둔다.)
         int offX = (int) Math.round((ow - bw) / 2.0) - minX;
         int offY = (int) Math.round((oh - bh) / 2.0) - minY;
 

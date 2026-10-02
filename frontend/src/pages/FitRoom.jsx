@@ -203,8 +203,8 @@ function FitRoom() {
         {/* 차량 이미지 + 장착된 부품 이미지 오버레이(오버레이 이미지가 없는 부품은 배지) */}
         {/* "장착 모습"(합성 결과)을 볼 때만 두 열 전체 폭을 써서 결과를 크게 보여준다(부품 목록은 아래로). 다른 보기는 기존 배치 그대로. */}
         <div
-          className={`relative self-start overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6 ${
-            viewMode === 'ai' && aiResult ? 'lg:col-span-2' : 'lg:sticky lg:top-6'
+          className={`relative self-start overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card ${
+            viewMode === 'ai' && aiResult ? 'p-3 sm:p-6 lg:col-span-2' : 'p-6 lg:sticky lg:top-6'
           }`}
         >
           {(vehicle360Frames || aiResult) && (
@@ -243,8 +243,8 @@ function FitRoom() {
             </div>
           )}
 
-          {/* 위치 미리보기 / 360°는 같은 무대 폭(max-w-2xl)과 종횡비(getVehicleStageAspectRatio)를 쓴다. 장착 모습(합성 결과)은 결과 이미지 자기 비율로 같은 폭을 채운다. */}
-          <div className={`relative mx-auto w-full ${viewMode === 'ai' && aiResult ? 'max-w-4xl' : 'max-w-2xl'}`}>
+          {/* 위치 미리보기 / 360°는 같은 무대 폭(max-w-2xl)과 종횡비(getVehicleStageAspectRatio)를 쓴다. 장착 모습(합성 결과)은 결과 이미지 자기 비율로 같은 폭을 채운다. isolate: 무대 안의 z-index(연식 배지 z-50 등)가 스크롤 시 상단 헤더(z-50) 위로 올라오지 않게 가둔다. */}
+          <div className={`relative isolate mx-auto w-full ${viewMode === 'ai' && aiResult ? 'max-w-4xl' : 'max-w-2xl'}`}>
           <VehicleYearBadge vehicle={vehicle} />
           {viewMode === 'ai' && aiResult ? (
             // 결과 이미지는 자기 비율 그대로(예: 4:3) 무대 폭을 꽉 채운다 - 차량 무대 비율에 끼워 넣으면 위아래/좌우가 비어 차량이 작아진다.
@@ -258,7 +258,7 @@ function FitRoom() {
                 <SafeImage
                   src={aiResult.imageUrl}
                   alt={`${aiResult.title} 장착 모습`}
-                  className="mx-auto block h-auto max-h-[75vh] w-full rounded-lg object-contain"
+                  className="mx-auto block h-auto max-h-[85vh] w-full rounded-lg object-contain"
                   fallbackClassName="mx-auto h-64 w-full max-w-2xl rounded-lg"
                   fallbackText="장착 모습을 불러오지 못했어요"
                 />

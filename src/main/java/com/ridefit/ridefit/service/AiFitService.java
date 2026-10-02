@@ -49,7 +49,15 @@ public class AiFitService {
 
     // 프롬프트/입력 구성을 바꾸면 이 값을 올려서 예전 캐시와 구분한다(예전 결과 행/파일은 그대로 남는다).
     // v2: 차량 이미지를 AI 전용으로 framing(투명 여백 제거 + 지원 비율에 맞춤) + aspect_ratio 지정.
-    private static final String PROMPT_VERSION = "v2";
+    // v3: (폐기) 남는 세로 공간을 차량 위쪽에 두고 "그 공간을 써서 실제 크기로" 라고 썼더니 윈드스크린이 실제보다 훨씬 크게
+    //     나왔다(2026-10-02 resultId=3). 결과 행/파일은 그대로 남긴다.
+    // v4: 가운데 framing으로 되돌리고, 크기 기준을 "빈 공간"이 아니라 차량 자체(장착부/핸들/헤드라이트 폭)로 잡도록 중립 문구로 바꿈.
+    private static final String PROMPT_VERSION = "v4";
+    // 부품을 화면에 맞추려고 줄이거나, 빈 공간을 채우려고 키우지 않도록(실제 장착 비율 우선) 두 프롬프트에 공통으로 넣는다.
+    private static final String KEEP_REAL_SIZE = "Size each product by its real-world dimensions relative to this motorcycle "
+            + "(judge it against the mounting point, handlebar and headlight width), not by the empty space in the image: "
+            + "do not shrink it to fit the frame and do not enlarge it to fill empty space. "
+            + "Do not crop, zoom, move or resize the motorcycle. ";
 
     // 장착 위치가 명확해 결과가 안정적인 카테고리만 우선 지원한다. 값은 프롬프트에 넣을 영어 장착 위치 설명.
     // (보호대=차체 전체 커버, 휠/시트/에어필터/엔진가드 등은 위치·형태가 애매해 후순위로 제외)
@@ -248,6 +256,18 @@ public class AiFitService {
             if (generated == null || generated.length == 0) {
                 throw new IllegalStateException("이미지 API가 빈 결과를 돌려줬습니다.");
             }
+            // 결과의 빈 배경(1:1 framing으로 생긴 위/아래 여백 등)을 잘라 차량이 결과 이미지를 꽉 채우게 한다.
+            Optional<AiResultImageCropper.Cropped> cropped = AiResultImageCropper.crop(generated);
+            if (cropped.isPresent()) {
+                AiResultImageCropper.Cropped c = cropped.get();
+                log.info("AI 결과 여백 자르기: {}x{} -> {}x{}, 차량이 가로 {}% / 세로 {}% 차지, 테두리에 닿은 쪽={}",
+                        c.sourceWidth(), c.sourceHeight(), c.width(), c.height(),
+                        Math.round(c.vehicleWidthRatio() * 100), Math.round(c.vehicleHeightRatio() * 100),
+                        c.touchedEdges().isEmpty() ? "없음" : c.touchedEdges());
+                generated = c.png();
+            } else {
+                log.info("AI 결과 여백 자르기 생략(단색 배경이 아니거나 차량 영역 검출 실패) - 받은 이미지 그대로 저장");
+            }
             String storedPath = imageStorageService.storeBytes(generated, "ai-fit");
             log.info("AI 장착 결과 파일 저장: url={}, file={}", storedPath, imageStorageService.absolutePathOf(storedPath));
 
@@ -419,6 +439,7 @@ public class AiFitService {
                     .append(" at that location, replace it with the product instead of adding a second one. ");
         }
         p.append("\n\nScale the product realistically relative to the motorcycle - never unrealistically large or small. ")
+                .append(KEEP_REAL_SIZE)
                 .append("Attach it naturally with plausible mounting hardware, matching the perspective and lighting of Image 1. ")
                 .append("Do not change any other part of the motorcycle. Do not add riders, people, text, watermarks, ")
                 .append("or any other accessories. Preserve everything except the installed product. ")
@@ -458,6 +479,7 @@ public class AiFitService {
         p.append("\nKeep each product's real shape, color, material, logo and proportions so it stays recognizable as the same product. ")
                 .append("Do not replace any of them with a different or generic-looking product, and do not skip any of them.\n\n")
                 .append("Scale every product realistically relative to the motorcycle - never unrealistically large or small. ")
+                .append(KEEP_REAL_SIZE)
                 .append("Attach each one naturally with plausible mounting hardware, matching the perspective and lighting of Image 1. ")
                 .append("Do not change any other part of the motorcycle. Do not add riders, people, text, watermarks, ")
                 .append("or any other accessories. Preserve everything except the installed products. ")

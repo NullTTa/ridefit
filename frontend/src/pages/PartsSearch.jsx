@@ -240,7 +240,7 @@ function PartsSearch() {
                   </div>
                 )}
 
-                <div className="relative mx-auto w-full max-w-2xl">
+                <div className="relative isolate mx-auto w-full max-w-2xl">
                 <VehicleYearBadge vehicle={vehicle} />
                 {viewMode === '360' && vehicle360Frames ? (
                   // "부품 장착" 무대(VehicleFitStage)와 같은 종횡비를 써서, 두 보기 모드를 오갈 때
