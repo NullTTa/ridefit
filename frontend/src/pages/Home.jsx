@@ -93,7 +93,7 @@ function Home() {
 
   return (
     <div>
-      {/* 1. Hero: RIDEFIT으로 꾸민 완성 바이크(클릭 없이 바로 보임) + 시작/로그인.
+      {/* 1. Hero: 순정 Super Cub 110 + 장착 지점 노드(머플러/사이드백, 눌러서 장착·해제) + 시작/로그인.
           CTA "부품 입혀보기": 차량이 있으면 첫 차량의 부품 입혀보기, 없으면 차량 등록부터(비로그인은 로그인 후 이동) */}
       <section className="flex min-h-[calc(100vh-4rem)] flex-col md:flex-row">
         <div className="relative flex min-h-[40vh] flex-[1.25] items-center justify-center overflow-hidden bg-ridefit-card px-4 py-10 md:min-h-0 md:px-10">

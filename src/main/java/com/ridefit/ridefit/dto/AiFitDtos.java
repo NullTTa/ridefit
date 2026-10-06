@@ -42,7 +42,8 @@ public final class AiFitDtos {
     }
 
     // 저장된 장착 결과(이 차량으로 만든 것) 목록의 한 줄.
+    // myVehicleId: 결과를 만든 내 차량. 차량 구분 전에 만든 예전 결과는 null(같은 회원+같은 차종이라 FitRoom 목록에는 함께 나온다).
     public record AiFitResultItem(Long id, String imageUrl, List<Long> partIds, List<String> partNames,
-                                  String model, LocalDateTime createdAt) {
+                                  String model, LocalDateTime createdAt, Long myVehicleId) {
     }
 }

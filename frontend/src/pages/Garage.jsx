@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Heart } from 'lucide-react'
+import { ArrowRight, Heart, Images } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Ico } from '../components/Icon'
 import ProductImage from '../components/ProductImage'
+import SafeImage from '../components/SafeImage'
 import SimilarVehicles from '../components/SimilarVehicles'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
@@ -10,6 +11,11 @@ import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehic
 import { api } from '../lib/api'
 
 const formatPrice = (price) => (price != null ? `${price.toLocaleString()}원` : '가격 정보 없음')
+const formatDateTime = (value) =>
+  new Date(value).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+// 내 차고에서는 최근 결과 몇 개만 보여주고, 전체는 FitRoom의 "저장된 장착 모습"에서 본다.
+const SAVED_FIT_PREVIEW = 4
 
 // 내 차고 = "내가 등록한 차량" + "그 차량에 저장한 부품" + 아래쪽 "추천 상품".
 // 저장한 부품은 차량별(favorite.my_vehicle_id)이다 - 다른 차량에 저장한 부품은 섞이지 않는다.
@@ -28,6 +34,8 @@ function Garage() {
   // 선택 차량 기준: 즐겨찾기 부품의 호환 여부 표시용 호환 부품 id(상태) / 추천 상품
   const [compatStatusById, setCompatStatusById] = useState(null)
   const [recommended, setRecommended] = useState(null)
+  // 선택 차량으로 만든 저장된 장착 모습(FitRoom과 같은 /api/ai-fit/results - 조회만, 새로 생성하지 않는다)
+  const [savedFits, setSavedFits] = useState(null)
 
   useEffect(() => {
     api
@@ -50,6 +58,12 @@ function Garage() {
     setCompatStatusById(null)
     setRecommended(null)
     setFavorites(null)
+    setSavedFits(null)
+    api
+      .get(`/api/ai-fit/results?myVehicleId=${vehicle.id}`)
+      // 이 차량으로 만든 결과만(my_vehicle_id 일치). 차량 구분 전 예전 결과(null)는 같은 차종이어도 내 차고에는 넣지 않는다.
+      .then((data) => alive && setSavedFits(data.filter((r) => r.myVehicleId === vehicle.id)))
+      .catch(() => alive && setSavedFits([]))
     api
       .get(`/api/me/favorites?myVehicleId=${vehicle.id}`)
       .then((data) => alive && setFavorites(data))
@@ -304,6 +318,71 @@ function Garage() {
               )}
             </section>
           </div>
+
+          {/* 저장된 장착 모습: 이 차량으로 [장착해보기]에서 만든 결과(최신순). 조회만 하고 새로 만들지 않는다. */}
+          <section className="mt-5 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg" data-testid="garage-saved-fits">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="text-base font-semibold text-ridefit-text">
+                <Ico as={Images} className="mr-1.5 text-ridefit-primary" />저장된 장착 모습{savedFits ? ` (${savedFits.length})` : ''}
+              </h2>
+              {savedFits?.length > 0 && (
+                <Link to={`/garage/${vehicle.id}/fit`} className="text-xs font-medium text-ridefit-primary hover:underline">
+                  {savedFits.length > SAVED_FIT_PREVIEW ? `FitRoom에서 전체 보기` : 'FitRoom 열기'} <Ico as={ArrowRight} />
+                </Link>
+              )}
+            </div>
+            <p className="-mt-1 mb-3 text-xs text-ridefit-text-secondary">
+              이 차량({vehicleName})으로 장착해보기에서 만든 결과만 보여요. 장착 모습은 예시 이미지라 실제 호환 여부는 부품 정보에서 확인해주세요.
+            </p>
+
+            {savedFits === null && <p className="text-sm text-ridefit-text-secondary">불러오는 중...</p>}
+
+            {savedFits?.length === 0 && (
+              <div
+                className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-ridefit-border px-4 py-8 text-center"
+                data-testid="garage-saved-fits-empty"
+              >
+                <p className="text-sm text-ridefit-text">아직 저장된 장착 결과가 없어요.</p>
+                <p className="text-xs text-ridefit-text-secondary">부품 입혀보기에서 [장착 모습 만들기]를 누르면 결과가 여기에도 모여요.</p>
+                <Link to={`/garage/${vehicle.id}/fit`} className="text-sm font-medium text-ridefit-primary hover:underline">
+                  장착해보기 <Ico as={ArrowRight} />
+                </Link>
+              </div>
+            )}
+
+            {savedFits?.length > 0 && (
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {savedFits.slice(0, SAVED_FIT_PREVIEW).map((r) => {
+                  const title = r.partNames.join(' + ')
+                  return (
+                    <li key={r.id}>
+                      <Link
+                        to={`/garage/${vehicle.id}/fit?result=${r.id}`}
+                        className="block h-full overflow-hidden rounded-lg border border-ridefit-border bg-ridefit-bg transition hover:border-ridefit-primary"
+                        title={`${title} - FitRoom에서 크게 보기`}
+                        data-testid={`garage-saved-fit-${r.id}`}
+                      >
+                        <SafeImage
+                          src={r.imageUrl}
+                          alt={`${title} 장착 모습`}
+                          className="aspect-[4/3] w-full bg-black object-contain"
+                          fallbackClassName="aspect-[4/3] w-full text-[10px]"
+                          fallbackText="이미지 없음"
+                        />
+                        <div className="p-2">
+                          <p className="line-clamp-2 text-xs font-medium text-ridefit-text">{title || '부품 정보 없음'}</p>
+                          <p className="mt-0.5 text-[11px] text-ridefit-text-secondary">{formatDateTime(r.createdAt)} 저장</p>
+                          <p className="mt-1 text-[11px] font-medium text-ridefit-primary">
+                            FitRoom에서 보기 <Ico as={ArrowRight} />
+                          </p>
+                        </div>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
 
           {/* 아래: 추천 상품 - 이 차량에 장착 가능한 부품 중 실제 조회/장착해보기/후기/평점이 쌓인 것만 */}
           <section className="mt-12" data-testid="garage-recommended">

@@ -92,11 +92,27 @@ function FitRoom() {
   const loadSavedResults = () =>
     api
       .get(`/api/ai-fit/results?myVehicleId=${myVehicleId}`)
-      .then(setSavedResults)
-      .catch(() => setSavedResults([]))
+      .then((data) => {
+        setSavedResults(data)
+        return data
+      })
+      .catch(() => {
+        setSavedResults([])
+        return []
+      })
+
+  // ?result=<id>(내 차고의 "저장된 장착 모습"에서 들어온 경우): 이 차량의 저장 결과 중 그 결과를 바로 보여준다.
+  // 이 차량 결과 목록에 없는 id는 무시한다(다른 차량 결과를 URL로 열 수 없다). 새로 생성하지 않는다.
+  const requestedResultId = searchParams.get('result')
 
   useEffect(() => {
-    loadSavedResults()
+    loadSavedResults().then((data) => {
+      const r = requestedResultId && data.find((x) => String(x.id) === requestedResultId)
+      if (r) {
+        setAiResult({ imageUrl: r.imageUrl, cached: true, title: r.partNames.join(' + ') })
+        setViewMode('ai')
+      }
+    })
   }, [myVehicleId])
 
   useEffect(() => {

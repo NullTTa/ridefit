@@ -338,7 +338,7 @@ public class AiFitService {
                     List<Long> ids = partIdsOf(r);
                     return new AiFitResultItem(r.getId(), r.getGeneratedImage(), ids,
                             ids.stream().map(id -> partNames.getOrDefault(id, "삭제된 부품")).toList(),
-                            r.getModel(), r.getCreatedAt());
+                            r.getModel(), r.getCreatedAt(), r.getMyVehicleId());
                 })
                 .toList();
     }

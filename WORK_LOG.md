@@ -4,6 +4,29 @@
 
 ---
 
+## 11차 - 내 차고 저장 결과 / Hero 노드 장착 인터랙션 (2026-10-06, main)
+
+- **내 차고 "저장된 장착 모습"**: 기존 `/api/ai-fit/results?myVehicleId=` 그대로 사용(조회만, AI 호출 없음). 최신 4개 + 부품명/저장 시각 +
+  "FitRoom에서 보기"(`/garage/{id}/fit?result={id}`), 없으면 "아직 저장된 장착 결과가 없어요" + 장착해보기 링크.
+  결과 응답(AiFitResultItem)에 `myVehicleId`만 추가 -> 내 차고는 `myVehicleId === 선택 차량`만 표시(예전 결과 #1처럼 my_vehicle_id가 없는 행은
+  같은 차종이어도 제외). 조회 쿼리/FitRoom 목록은 그대로(FitRoom에는 #1이 계속 나옴).
+- **FitRoom `?result=<id>`**: 이 차량 결과 목록에 있는 id만 "장착 모습"으로 바로 연다(다른 차량/회원 id는 무시).
+- **Hero 후보 평가**: 머플러(로컬 합성 hero/supercub-v2-muffler.png, AI #1보다 해상도·정렬 우수) 사용, 사이드백 121(로컬 합성) 사용,
+  앞바구니 제외(AI #9뿐 - 473px라 확대 시 흐림 + 검정 철망/검정 배경 분리 문제, 360 레이어는 다른 사진 기준), 캐리어 제외(3/4 각도 제품 사진이
+  순정 짐대 위에 떠 보임), 윈드스크린 제외.
+- **Hero 레이어**: `public/assets/hero/layers/super-cub-110-{muffler,sidebag}.png`(1829x860, vehicles/super-cub-110.png와 같은 캔버스).
+  합성본([90:950]) - 원본의 실제 픽셀 차이(차이 8 초과 + 주변 3px, 부위 bbox 밖 압축 잡음 제외)만 프리멀티플라이 알파로 역산
+  (over(L, 아래) = 합성본). 순정 머플러를 지운 자리처럼 역산 불가한 픽셀만 무대 배경 #020202 위에 구워 불투명 처리 -> **Hero 무대 배경색을 바꾸면
+  레이어 재생성 필요**. 사이드백 레이어는 머플러 영역과 겹치는 27px(머플러 끝 가장자리, 차이 32 이하)를 제외. 차량+머플러+사이드백 = 기존
+  supercub-v2-muffler-sidebag.png와 최대 차이 8/255(브라우저 캔버스 비교). 원본/합성본/예전 Hero 이미지 파일은 그대로. 스크립트: 세션 scratchpad `make_hero_layers.py`.
+- **Hero UI**: 순정 차량 + 노드 2개(머플러/사이드백, 장착 지점은 VEHICLE_FIT_LAYOUTS anchors), 클릭 장착/재클릭 해제, 여러 개 동시, 레이어는 미리 로드 후
+  opacity 전환(500ms), 연결선 점선 -> 실선 강조. 자동 장착/반복/hover 장착 없음. 상태는 FitRoom처럼 `activePartIds`(Set, 키 = HERO_BUILD partName).
+  "Super Cub 110"만 표시(연식 없음). `HERO_BUILD`에서 앞바구니 제거 -> 홈 CTA `?build=hero`도 머플러+사이드백만 켬(호환 로직은 그대로).
+- **테스트**: 백엔드 32(AiFitStorageTest에 myVehicleId 단언 추가), 프론트 build, lint 오류 0. Playwright(scratchpad `e2e-hero.cjs`) 1280/390 87/87 -
+  Hero 진입 미장착·hover 미장착·각 부품 장착/해제·동시 장착·합성본 일치·노드 2개만·?build=hero·FitRoom 토글/360·Garage 분리/#1 제외/빈 상태/
+  다른 회원 result 차단·부품 목록·정비/예약·관리자 4화면·가로 넘침·페이지 오류. fit-selections 요청은 테스트에서 가짜 응답(DB 집계 변화 없음).
+  AI 생성 요청 0건, ai_fit_result 21행/파일 22개/daily_usage 변화 없음. 확인용 서버는 8080/5173으로 띄운 뒤 종료(`/uploads` 프록시가 8080 고정).
+
 ## 10차 - 2025 Super Cub 110 부품 ON/OFF + 360° 동기화 (2026-10-02 오후, main, 커밋 안 함)
 
 **구조(공통, 다른 차종 영향 없음)**

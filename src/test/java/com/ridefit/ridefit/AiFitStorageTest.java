@@ -148,6 +148,7 @@ class AiFitStorageTest {
         List<AiFitResultItem> list = aiFitService.results(vehicle, member.getId(), names);
         assertThat(list).extracting(AiFitResultItem::id).containsExactly(r3.id(), r2.id(), r1.id());
         assertThat(list.get(0).partNames()).containsExactly(muffler.getName(), screen.getName());
+        assertThat(list).extracting(AiFitResultItem::myVehicleId).containsOnly(vehicle.getId()); // 내 차고는 이 값으로 거른다
         AiFitResult saved = aiFitResultRepository.findById(r3.id()).orElseThrow();
         assertThat(saved.getMyVehicleId()).isEqualTo(vehicle.getId());
         assertThat(saved.getPartIds()).isEqualTo(muffler.getId() + "," + screen.getId());
