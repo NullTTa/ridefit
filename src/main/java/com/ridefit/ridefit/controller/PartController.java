@@ -88,6 +88,10 @@ public class PartController {
                     .filter(p -> p.getCategory().equals(part.getCategory()))
                     .toList();
             stats = partPopularityService.statsForGroup(peers).get(part.getId());
+            // 이 차량과 호환 등록이 없는 부품(비교할 그룹에 없음)은 비교 배지 없이 실측치만 - null이면 상세 화면이 깨진다.
+            if (stats == null) {
+                stats = partPopularityService.soloStats(part);
+            }
         } else {
             stats = partPopularityService.soloStats(part);
         }

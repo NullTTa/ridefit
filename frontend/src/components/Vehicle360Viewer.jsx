@@ -83,6 +83,8 @@ function normalizeTransform(cur, ref, box, natural) {
 //   버튼이 화면을 가리므로 false로 끄고, 자동 회전 자체는 그대로 동작한다.
 // layers: 장착한 부품 레이어 [{ key, frames }] - frames[i]는 i번째 차량 프레임과 같은 캔버스 크기의 투명 PNG(null = 그 각도에선
 //   안 보임). 차량 프레임과 같은 index, 같은 보정(transform), 같은 object-contain 박스로 겹쳐서 각도가 절대 어긋나지 않는다.
+// fillScale: 차량+부품 레이어를 박스 가운데 기준으로 줄이는 비율(0~1, 기본 1). 대표 사진이 차량에 딱 맞게 잘린 차종은
+//   차량이 박스를 꽉 채워 확대돼 보이므로 위치 미리보기(VehicleFitStage)와 같은 getStageScale 값을 넘긴다. 버튼/안내 문구는 줄이지 않는다.
 function Vehicle360Viewer({
   frames,
   alt = '차량',
@@ -93,6 +95,7 @@ function Vehicle360Viewer({
   startIndex = 0,
   normalizeTo,
   layers = [],
+  fillScale = 1,
 }) {
   const [index, setIndex] = useState(() => (Number.isInteger(startIndex) && startIndex >= 0 ? startIndex : 0))
   // 프레임(및 기준 이미지)별 차량 영역. normalizeTo가 있을 때만 잰다.
@@ -240,6 +243,11 @@ function Vehicle360Viewer({
       data-testid="vehicle-360-viewer"
       data-frame-count={frameCount}
     >
+      <div
+        className="relative h-full w-full"
+        style={fillScale < 1 ? { transform: `scale(${fillScale})` } : undefined}
+        data-testid="vehicle-360-stage"
+      >
       <img
         ref={imgRef}
         src={currentSrc}
@@ -273,6 +281,7 @@ function Vehicle360Viewer({
           ) : null,
         ),
       )}
+      </div>
       {interactive && showControls && !hasInteracted && (
         <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-ridefit-border bg-ridefit-bg/85 px-3 py-1 text-xs text-ridefit-text-secondary backdrop-blur">
           <Ico as={MoveHorizontal} className="mr-1" />드래그해서 차량을 돌려보세요

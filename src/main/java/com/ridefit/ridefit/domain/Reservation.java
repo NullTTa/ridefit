@@ -18,7 +18,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-// RIDEFIT 서비스 안에서 신청하는 예약. 실제 업체 시스템으로 전달되거나 결제가 일어나지는 않는다.
+// RIDEFIT 서비스 안에서 신청하는 예약(실제 업체 시스템으로 전달되지는 않는다). REQUESTED = 신청됨(결제 대기),
+// CONFIRMED = Toss 테스트 결제가 승인되어 확정, CANCELED = 취소.
 @Entity
 @Getter
 @Setter
@@ -29,6 +30,7 @@ public class Reservation {
 
     public static final String STATUS_REQUESTED = "REQUESTED";
     public static final String STATUS_CANCELED = "CANCELED";
+    public static final String STATUS_CONFIRMED = "CONFIRMED";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

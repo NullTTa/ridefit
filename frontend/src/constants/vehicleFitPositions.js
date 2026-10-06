@@ -47,6 +47,9 @@ export const PART_OVERLAY_IMAGES = {
   '/assets/parts/cub110-rear-carrier.png': '/assets/parts/overlay/cub110-rear-carrier.png',
   '/assets/parts/cub110-mirror.png': '/assets/parts/overlay/cub110-mirror.png',
   '/assets/parts/kitaco-rear-carrier.png': '/assets/parts/overlay/kitaco-rear-carrier.png',
+  // 사이드백 121(한 쌍): 사용자가 만든 측면 장착 이미지(AI 결과 #26, uploads/ai-fit/c74c65e1-...png)에서 가방만 잘라
+  // Super Cub 110 대표 사진 좌표로 옮긴 것(새로 그린 픽셀 없음). 측면 사진이라 앞쪽 가방 하나만 보인다.
+  '/assets/parts/saddlebag-pair-lace.png': '/assets/parts/overlay/saddlebag-pair-lace-side.png',
 }
 
 // ---------- 3) 차량 사진별 레이아웃 ----------
@@ -64,6 +67,8 @@ export const VEHICLE_FIT_LAYOUTS = {
   '/assets/vehicles/super-cub-110.png': {
     width: 1829,
     height: 860,
+    // 사진 안 차량 영역(0~1, 알파 실측). 차량이 사진 높이를 꽉 채운다(미러 끝 0.003 ~ 바퀴 1.000).
+    vehicleBounds: { y0: 0.003, y1: 1.0 },
     overlays: {
       머플러: [{ x: 528, y: 662, width: 385, rotate: 8, z: 20 }],
       // 순정 사진에 이미 캐리어가 달려 있어서, "확장 캐리어" 오버레이는 그 위에 겹쳐 보인다.
@@ -71,6 +76,9 @@ export const VEHICLE_FIT_LAYOUTS = {
       // 실측한 순정 캐리어 위치(약 x 260~620, y 295~350)에 맞춰 크기/좌표를 줄이고,
       // 사진 속 장착부(짧은 다리)가 시트 쪽(오른쪽)을, 확장된 랙이 테일램프 쪽(왼쪽)을 향하도록 좌우 반전했다.
       캐리어: [{ x: 430, y: 322, width: 170, flipX: true, z: 15 }],
+      // 짐받이 아래 측면에 매달린 위치(짐받이 위가 아님). 뒤 쇼크 윗부분을 가린다(가방이 바깥쪽).
+      // 오버레이는 원본 비율 그대로(가로/세로 같은 배율, 222x181) - width만 주고 height는 auto. 홈 Hero도 이 값을 그대로 쓴다.
+      사이드백: [{ x: 498, y: 450, width: 222, z: 18 }],
       // 순정 사진에 이미 양쪽 미러가 그려져 있어서, 같은 자리에 미러 오버레이를 또 얹으면
       // 두 개가 겹쳐 뜬 것처럼 보인다. 오버레이로 가리는 대신 배지로만 "미러 장착됨"을 표시한다.
     },
@@ -108,6 +116,7 @@ export const VEHICLE_FIT_LAYOUTS = {
   '/assets/vehicles/pcx/main.png': {
     width: 750,
     height: 300,
+    vehicleBounds: { y0: 0.013, y1: 0.92 },
     overlays: {},
     anchors: {
       스크린: { x: 430, y: 45, dx: 110, dy: -40 },
@@ -129,6 +138,7 @@ export const VEHICLE_FIT_LAYOUTS = {
   '/assets/vehicles/n-max-125/main.png': {
     width: 750,
     height: 300,
+    vehicleBounds: { y0: 0.06, y1: 0.877 },
     overlays: {},
     anchors: {
       미러: { x: 450, y: 25, dx: 110, dy: -20 },
@@ -247,6 +257,24 @@ export const VEHICLE_FIT_LAYOUTS = {
 export function getFitLayout(vehicle) {
   if (!vehicle || vehicle.photoUrl) return null
   return VEHICLE_FIT_LAYOUTS[vehicle.modelImageUrl] ?? null
+}
+
+// 무대(위치 미리보기/360°)에서 차량 높이가 차지할 최대 비율. 대표 사진이 차량에 딱 맞게 잘려 있으면(Super Cub: 99.7%)
+// 무대 비율 = 사진 비율이라 차량이 위아래 테두리에 닿아 확대돼 보인다 - 이 비율까지만 차지하도록 무대 가운데 기준으로 줄인다.
+// 이미 여백이 있는 사진(NMAX 81.7%)은 줄이지 않는다(1 = 그대로). 위치 미리보기와 360°에 같은 값을 써야 두 화면의 차량 크기가 같다.
+export const STAGE_VEHICLE_FILL = 0.86
+
+// 차종 대표 사진 경로 기준 축소 비율(0~1). 레이아웃/실측 영역이 없으면 1.
+export function getStageScaleForImage(modelImageUrl) {
+  const b = VEHICLE_FIT_LAYOUTS[modelImageUrl]?.vehicleBounds
+  if (!b || b.y1 <= b.y0) return 1
+  return Math.min(1, STAGE_VEHICLE_FILL / (b.y1 - b.y0))
+}
+
+// 내 차량 기준. 사용자 사진(photoUrl)은 레이아웃이 없으므로 1.
+export function getStageScale(vehicle) {
+  if (!vehicle || vehicle.photoUrl) return 1
+  return getStageScaleForImage(vehicle.modelImageUrl)
 }
 
 // "부품 장착" 무대(VehicleFitStage)와 "360도 보기"(Vehicle360Viewer)가 같은 차량을 같은 크기로 보여주도록

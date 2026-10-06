@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Heart, Images } from 'lucide-react'
+import { ArrowRight, Heart, Images, Trash2, Wrench } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { Ico } from '../components/Icon'
 import ProductImage from '../components/ProductImage'
 import SafeImage from '../components/SafeImage'
@@ -8,7 +9,9 @@ import SimilarVehicles from '../components/SimilarVehicles'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
 import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
+import { getStageScale } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
+import { loadFitBuild } from '../lib/fitBuild'
 
 const formatPrice = (price) => (price != null ? `${price.toLocaleString()}원` : '가격 정보 없음')
 const formatDateTime = (value) =>
@@ -33,9 +36,15 @@ function Garage() {
   const [savingPartId, setSavingPartId] = useState(null)
   // 선택 차량 기준: 즐겨찾기 부품의 호환 여부 표시용 호환 부품 id(상태) / 추천 상품
   const [compatStatusById, setCompatStatusById] = useState(null)
+  // 이 차량의 호환 부품(이름/카테고리) - "현재 구성" 부품 이름을 보여주는 데 쓴다.
+  const [compatParts, setCompatParts] = useState([])
   const [recommended, setRecommended] = useState(null)
   // 선택 차량으로 만든 저장된 장착 모습(FitRoom과 같은 /api/ai-fit/results - 조회만, 새로 생성하지 않는다)
   const [savedFits, setSavedFits] = useState(null)
+  // 저장된 장착 모습 삭제 확인 창(부품 저장 해제와는 별개 - 합성 결과 이미지만 지운다)
+  const [fitToDelete, setFitToDelete] = useState(null)
+  const [deletingFit, setDeletingFit] = useState(false)
+  const [fitDeleteError, setFitDeleteError] = useState('')
 
   useEffect(() => {
     api
@@ -48,6 +57,22 @@ function Garage() {
       .then(setUnassigned)
       .catch(() => setUnassigned([]))
   }, [])
+
+  const confirmDeleteFit = async () => {
+    if (!fitToDelete) return
+    setDeletingFit(true)
+    setFitDeleteError('')
+    try {
+      await api.del(`/api/ai-fit/results/${fitToDelete.id}`)
+      setSavedFits((prev) => prev?.filter((r) => r.id !== fitToDelete.id) ?? prev)
+      setFitToDelete(null)
+    } catch (err) {
+      setFitDeleteError(err.message || '삭제하지 못했어요.')
+      setFitToDelete(null)
+    } finally {
+      setDeletingFit(false)
+    }
+  }
 
   const selectedId = searchParams.get('v')
   const vehicle = vehicles.find((v) => String(v.id) === selectedId) ?? vehicles[0] ?? null
@@ -70,7 +95,11 @@ function Garage() {
       .catch(() => alive && setFavorites([]))
     api
       .get(`/api/my-vehicles/${vehicle.id}/compatible-parts`)
-      .then((data) => alive && setCompatStatusById(new Map(data.map((p) => [p.partId, p.status]))))
+      .then((data) => {
+        if (!alive) return
+        setCompatStatusById(new Map(data.map((p) => [p.partId, p.status])))
+        setCompatParts(data)
+      })
       .catch(() => alive && setCompatStatusById(new Map()))
     api
       .get(`/api/my-vehicles/${vehicle.id}/recommended-parts?limit=8`)
@@ -94,6 +123,19 @@ function Garage() {
     }
   }
 
+  // 이 차량에 저장한 부품에서 빼기(다른 차량에 저장한 같은 부품은 그대로).
+  const removeFavorite = async (partId) => {
+    setSavingPartId(partId)
+    try {
+      await api.del(`/api/me/favorites/${partId}?myVehicleId=${vehicle.id}`)
+      setFavorites((prev) => prev.filter((f) => f.partId !== partId))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSavingPartId(null)
+    }
+  }
+
   const handleDelete = async (id) => {
     if (!window.confirm('이 차량을 차고에서 삭제할까요?')) return
     setDeletingId(id)
@@ -109,6 +151,12 @@ function Garage() {
   }
 
   const vehicleName = vehicle ? vehicle.nickname || vehicle.modelYearLabel : ''
+  // 현재 구성: 부품 입혀보기에서 이 차량에 마지막으로 켜 둔 부품(지금도 장착 가능한 것만). 저장한 부품/장착 모습과는 별개.
+  const currentBuild = vehicle
+    ? loadFitBuild(vehicle.id)
+        .map((id) => compatParts.find((p) => p.partId === id && (p.status === '호환가능' || p.status === '브라켓필요')))
+        .filter(Boolean)
+    : []
   const frames = vehicle ? getVehicle360Frames(vehicle) : null
 
   return (
@@ -170,6 +218,7 @@ function Garage() {
                 key={vehicle.id}
                 frames={frames ?? [vehicle.photoUrl || vehicle.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE]}
                 startIndex={frames ? getVehicle360StartIndex(vehicle.modelImageUrl) : 0}
+                fillScale={getStageScale(vehicle)}
                 alt={vehicleName}
                 className="h-56 w-full p-3"
                 showControls={false}
@@ -179,13 +228,33 @@ function Garage() {
                 <p className="mt-1 text-xl font-semibold text-ridefit-text">{vehicleName}</p>
                 {vehicle.nickname && <p className="text-sm text-ridefit-text-secondary">{vehicle.modelYearLabel}</p>}
 
+                {/* 현재 구성: 부품 입혀보기에서 맞춰 둔 부품(저장한 부품·저장된 장착 모습과 다른 개념). 누르면 그 구성 그대로 이어서 본다. */}
+                <div className="mt-4 rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2.5" data-testid="garage-current-build">
+                  <p className="text-xs font-semibold text-ridefit-text">
+                    <Ico as={Wrench} className="mr-1 text-ridefit-primary" />현재 구성{currentBuild.length > 0 ? ` (${currentBuild.length})` : ''}
+                  </p>
+                  {compatStatusById === null ? (
+                    <p className="mt-1 text-[11px] text-ridefit-text-secondary">불러오는 중...</p>
+                  ) : currentBuild.length > 0 ? (
+                    <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                      {currentBuild.map((p) => (
+                        <li key={p.partId} className="rounded-full border border-ridefit-primary/40 bg-ridefit-primary/10 px-2 py-0.5 text-[11px] text-ridefit-text">
+                          {p.category} · {p.name}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-1 text-[11px] text-ridefit-text-secondary">순정 상태예요. 부품 입혀보기에서 부품을 켜면 여기에 구성이 남아요.</p>
+                  )}
+                </div>
+
                 {/* 핵심 기능이라 가장 크게: 1) 부품 입혀보기 2) 차량 관리 */}
                 <Link
                   to={`/garage/${vehicle.id}/fit`}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-ridefit-primary px-4 py-3.5 text-base font-bold text-white shadow-lg shadow-ridefit-primary/25 transition hover:brightness-110"
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-ridefit-primary px-4 py-3.5 text-base font-bold text-white shadow-lg shadow-ridefit-primary/25 transition hover:brightness-110"
                   data-testid="garage-fit-cta"
                 >
-                  부품 입혀보기
+                  {currentBuild.length > 0 ? '현재 구성 이어서 입혀보기' : '부품 입혀보기'}
                   <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </Link>
                 <Link
@@ -242,7 +311,17 @@ function Garage() {
                   data-testid="garage-favorites-empty"
                 >
                   <p className="text-sm text-ridefit-text">아직 저장한 부품이 없어요.</p>
-                  <p className="text-xs text-ridefit-text-secondary">마음에 드는 부품을 저장해보세요. 이 차량으로 부품 찾아보기에서 [저장]을 누르면 여기에 모여요.</p>
+                  <p className="text-xs text-ridefit-text-secondary">
+                    부품 찾아보기·부품 상세·부품 입혀보기에서 <Ico as={Heart} /> 저장하기를 누른 부품만 여기에 모여요.
+                  </p>
+                  <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs">
+                    <Link to={`/parts?vehicleId=${vehicle.id}`} className="rounded-lg border border-ridefit-primary px-3 py-1.5 font-semibold text-ridefit-primary hover:bg-ridefit-primary/10">
+                      부품 찾아보고 저장하기
+                    </Link>
+                    <Link to={`/garage/${vehicle.id}/fit`} className="rounded-lg border border-ridefit-border px-3 py-1.5 text-ridefit-text-secondary hover:border-ridefit-primary hover:text-ridefit-primary">
+                      장착 가능한 부품 보기
+                    </Link>
+                  </div>
                 </div>
               )}
 
@@ -282,6 +361,27 @@ function Garage() {
                             )}
                           </div>
                         </Link>
+                        <div className="mt-1 flex gap-1">
+                          {/* 장착해보기는 이 차량과 장착 가능한(호환/브라켓) 부품만 - FitRoom이 호환 후보만 켜기 때문 */}
+                          {(status === '호환가능' || status === '브라켓필요') && (
+                            <Link
+                              to={`/garage/${vehicle.id}/fit?partId=${f.partId}`}
+                              className="flex-1 rounded-md bg-ridefit-primary/15 px-2 py-1 text-center text-[11px] font-semibold text-ridefit-primary transition hover:bg-ridefit-primary/25"
+                              data-testid={`garage-fit-${f.partId}`}
+                            >
+                              장착해보기
+                            </Link>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeFavorite(f.partId)}
+                            disabled={savingPartId === f.partId}
+                            className="flex-1 rounded-md border border-ridefit-border px-2 py-1 text-[11px] text-ridefit-text-secondary transition hover:border-ridefit-danger hover:text-ridefit-danger disabled:opacity-50"
+                            data-testid={`garage-unsave-${f.partId}`}
+                          >
+                            {savingPartId === f.partId ? '빼는 중...' : '저장 해제'}
+                          </button>
+                        </div>
                       </li>
                     )
                   })}
@@ -355,7 +455,17 @@ function Garage() {
                 {savedFits.slice(0, SAVED_FIT_PREVIEW).map((r) => {
                   const title = r.partNames.join(' + ')
                   return (
-                    <li key={r.id}>
+                    <li key={r.id} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setFitToDelete(r)}
+                        className="absolute right-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white transition hover:border-ridefit-danger hover:text-ridefit-danger"
+                        aria-label={`${title || '장착 모습'} 장착 모습 삭제`}
+                        title="장착 모습 삭제"
+                        data-testid={`garage-saved-fit-delete-${r.id}`}
+                      >
+                        <Trash2 aria-hidden="true" className="h-4 w-4" />
+                      </button>
                       <Link
                         to={`/garage/${vehicle.id}/fit?result=${r.id}`}
                         className="block h-full overflow-hidden rounded-lg border border-ridefit-border bg-ridefit-bg transition hover:border-ridefit-primary"
@@ -382,6 +492,20 @@ function Garage() {
                 })}
               </ul>
             )}
+            {fitDeleteError && (
+              <p className="mt-2 text-sm text-ridefit-danger" role="alert" data-testid="garage-saved-fit-delete-error">{fitDeleteError}</p>
+            )}
+            <ConfirmDialog
+              open={!!fitToDelete}
+              title="저장된 장착 모습을 삭제할까요?"
+              message="이 합성 결과 이미지를 삭제합니다."
+              confirmLabel="삭제"
+              cancelLabel="취소"
+              danger
+              busy={deletingFit}
+              onConfirm={confirmDeleteFit}
+              onCancel={() => setFitToDelete(null)}
+            />
           </section>
 
           {/* 아래: 추천 상품 - 이 차량에 장착 가능한 부품 중 실제 조회/장착해보기/후기/평점이 쌓인 것만 */}

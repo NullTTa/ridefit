@@ -82,6 +82,11 @@ function Header() {
               내 예약
             </NavLink>
           )}
+          {isAuthenticated && (
+            <NavLink to="/payments" className={navLinkClass}>
+              내 결제
+            </NavLink>
+          )}
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
@@ -180,6 +185,11 @@ function Header() {
           {isAuthenticated && (
             <NavLink to="/reservations" onClick={() => setMenuOpen(false)} className={mobileNavLinkClass}>
               내 예약
+            </NavLink>
+          )}
+          {isAuthenticated && (
+            <NavLink to="/payments" onClick={() => setMenuOpen(false)} className={mobileNavLinkClass}>
+              내 결제
             </NavLink>
           )}
           {isAdmin && (

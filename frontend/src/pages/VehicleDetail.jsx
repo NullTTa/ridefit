@@ -7,6 +7,7 @@ import TraitBars from '../components/TraitBars'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleImage from '../components/VehicleImage'
 import { getVehicle360StartIndex, VEHICLE_360_FRAMES } from '../constants/vehicle360'
+import { getStageScaleForImage } from '../constants/vehicleFitPositions'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 import { loadPartCategorySlugs } from '../lib/guide'
@@ -136,6 +137,7 @@ function VehicleDetail() {
             <Vehicle360Viewer
               frames={VEHICLE_360_FRAMES[vehicle.imageUrl]}
               startIndex={getVehicle360StartIndex(vehicle.imageUrl)}
+              fillScale={getStageScaleForImage(vehicle.imageUrl)}
               alt={vehicle.name}
               className="h-72 w-full sm:h-96"
             />

@@ -10,6 +10,7 @@ import SafeImage from './SafeImage'
 const PART_REASON = {
   REFERENCE_MISSING: '장착 이미지 준비 전',
   UNSUPPORTED_CATEGORY: '이 종류는 아직 지원 전',
+  USE_2D_IMAGE: '위치 미리보기로 확인',
   NOT_COMPATIBLE: '호환 확인 안 됨',
   VEHICLE_IMAGE_MISSING: '차량 사진 없음',
   TOO_MANY: '한 번에 4개까지',
@@ -21,12 +22,14 @@ const STATUS_TEXT = {
   NOT_CONFIGURED: '장착 모습 만들기가 아직 준비되지 않았어요. 위치 미리보기는 그대로 볼 수 있어요.',
   REFERENCE_MISSING: '선택한 부품은 아직 장착 모습을 지원하지 않아요. 위치 미리보기로 확인해주세요.',
   UNSUPPORTED_CATEGORY: '선택한 부품 종류는 아직 장착 모습을 지원하지 않아요. 위치 미리보기로 확인해주세요.',
+  USE_2D_IMAGE: '사이드백은 위치 미리보기의 측면 장착 이미지로 확인해주세요.',
 }
 
 // 서버 문구(예: "AI 이미지를 만들지 못했어요")에서 기술 용어만 걷어낸다.
 const plain = (message) => (message ?? '').replace(/AI\s?/g, '')
 
-function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBasic, onGenerated, viewMode }) {
+// refreshKey: 저장된 장착 모습을 삭제하는 등 서버 캐시가 바뀌었을 때 값을 바꿔 다시 확인하게 한다.
+function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBasic, onGenerated, viewMode, refreshKey = 0 }) {
   const [check, setCheck] = useState(null)
   const [checking, setChecking] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -58,7 +61,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
     return () => {
       cancelled = true
     }
-  }, [inputsKey, myVehicleId])
+  }, [inputsKey, myVehicleId, refreshKey])
 
   const byId = new Map(activeParts.map((p) => [p.partId, p]))
   const statusById = new Map((check?.parts ?? []).map((s) => [s.partId, s]))

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Check, Heart, Star } from 'lucide-react'
+import { ArrowRight, Check, Heart, Star, Trash2 } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import AiFitPanel from '../components/AiFitPanel'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { Ico } from '../components/Icon'
 import PartBadges from '../components/PartBadges'
 import ProductImage from '../components/ProductImage'
@@ -12,8 +13,9 @@ import VehicleYearBadge, { ModelImageNotice } from '../components/VehicleYearBad
 import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
 import { get360PartLayer } from '../constants/vehicle360Parts'
 import { HERO_BUILD } from '../constants/heroBuild'
-import { getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
+import { getStageScale, getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
+import { loadFitBuild, saveFitBuild } from '../lib/fitBuild'
 import { formatFitmentYears } from '../lib/fitment'
 
 const STATUS_STYLE = {
@@ -47,6 +49,11 @@ function FitRoom() {
   const [aiResult, setAiResult] = useState(null)
   // 이 차량으로 만든 장착 결과 전체(서버에 저장된 것, 최신순). 만들 때마다 늘어나고 지워지지 않는다.
   const [savedResults, setSavedResults] = useState([])
+  // 저장된 장착 모습 개별 삭제(합성 결과 이미지만 - 부품 저장/장착해보기 선택과는 무관)
+  const [resultToDelete, setResultToDelete] = useState(null)
+  const [deletingResult, setDeletingResult] = useState(false)
+  const [resultDeleteError, setResultDeleteError] = useState('')
+  const [aiCheckKey, setAiCheckKey] = useState(0)
   // "크게 보기"(전체 화면)로 연 장착 결과. null이면 닫힘.
   const [zoomed, setZoomed] = useState(null)
   // 목록 카테고리 필터(null = 전체). 장착 상태와 무관 - 다른 카테고리에서 장착한 부품은 그대로 장착돼 있다.
@@ -101,6 +108,28 @@ function FitRoom() {
         return []
       })
 
+  const confirmDeleteResult = async () => {
+    const target = resultToDelete
+    if (!target) return
+    setDeletingResult(true)
+    setResultDeleteError('')
+    try {
+      await api.del(`/api/ai-fit/results/${target.id}`)
+      setSavedResults((prev) => prev.filter((r) => r.id !== target.id))
+      // 지금 크게 보고 있던 결과면 기본 장착 화면으로 돌아가고, AI 패널은 캐시 상태를 다시 확인한다.
+      if (aiResult?.imageUrl === target.imageUrl) {
+        setAiResult(null)
+        setViewMode('fit')
+      }
+      setAiCheckKey((k) => k + 1)
+    } catch (err) {
+      setResultDeleteError(err.message || '삭제하지 못했어요.')
+    } finally {
+      setDeletingResult(false)
+      setResultToDelete(null)
+    }
+  }
+
   // ?result=<id>(내 차고의 "저장된 장착 모습"에서 들어온 경우): 이 차량의 저장 결과 중 그 결과를 바로 보여준다.
   // 이 차량 결과 목록에 없는 id는 무시한다(다른 차량 결과를 URL로 열 수 없다). 새로 생성하지 않는다.
   const requestedResultId = searchParams.get('result')
@@ -147,11 +176,26 @@ function FitRoom() {
         } else if (requestedPartId != null) {
           const match = candidates.find((p) => String(p.partId) === requestedPartId)
           if (match) {
-            setActivePartIds(new Set([match.partId]))
+            // "장착해보기"로 들어오면 이 차량의 현재 구성에 이 부품을 더한다(같은 자리 부품은 바꿔 끼움) - 내 차고 "현재 구성"과 이어진다.
+            const kept = loadFitBuild(myVehicleId)
+              .map((id) => candidates.find((p) => p.partId === id))
+              .filter((p) => p && p.partId !== match.partId && p.category !== match.category)
+              .map((p) => p.partId)
+            const next = new Set([...kept, match.partId])
+            setActivePartIds(next)
+            saveFitBuild(myVehicleId, next)
+            if (next.size > 1) checkConflicts(next)
             setPreselect({ ok: true, name: match.name })
           } else {
             const known = compatibleParts.find((p) => String(p.partId) === requestedPartId)
             setPreselect({ ok: false, name: known?.name ?? null })
+          }
+        } else {
+          // 링크로 지정한 부품이 없으면 이 차량에서 마지막으로 맞춰 둔 "현재 구성"을 이어서 보여준다(지금도 호환 후보인 것만).
+          const saved = loadFitBuild(myVehicleId).filter((id) => candidates.some((p) => p.partId === id))
+          if (saved.length > 0) {
+            setActivePartIds(new Set(saved))
+            checkConflicts(new Set(saved))
           }
         }
       })
@@ -211,6 +255,7 @@ function FitRoom() {
       next.add(partId)
     } else next.delete(partId)
     setActivePartIds(next)
+    saveFitBuild(myVehicleId, next)
     checkConflicts(next)
     if (turningOn) {
       // 실제 "장착 시도" 신호 - 인기상품 계산에 쓰인다.
@@ -293,12 +338,8 @@ function FitRoom() {
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
         {/* 차량 이미지 + 장착된 부품 이미지 오버레이(오버레이 이미지가 없는 부품은 배지) */}
-        {/* "장착 모습"(합성 결과)을 볼 때만 두 열 전체 폭을 써서 결과를 크게 보여준다(부품 목록은 아래로). 다른 보기는 기존 배치 그대로. */}
-        <div
-          className={`relative self-start overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card ${
-            viewMode === 'ai' && aiResult ? 'p-3 sm:p-6 lg:col-span-2' : 'p-6 lg:sticky lg:top-6'
-          }`}
-        >
+        {/* 위치 미리보기 / 360° / 장착 모습 모두 같은 카드·같은 무대 크기(보기를 바꿔도 배치와 차량 크기가 그대로). 장착 모습 원본 크기는 "크게 보기". */}
+        <div className="relative self-start overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6 lg:sticky lg:top-6">
           {(vehicle360Frames || aiResult) && (
             <div className="mb-4 flex justify-center gap-2">
               <button
@@ -335,11 +376,13 @@ function FitRoom() {
             </div>
           )}
 
-          {/* 위치 미리보기 / 360°는 같은 무대 폭(max-w-2xl)과 종횡비(getVehicleStageAspectRatio)를 쓴다. 장착 모습(합성 결과)은 결과 이미지 자기 비율로 같은 폭을 채운다. isolate: 무대 안의 z-index(연식 배지 z-50 등)가 스크롤 시 상단 헤더(z-50) 위로 올라오지 않게 가둔다. */}
-          <div className={`relative isolate mx-auto w-full ${viewMode === 'ai' && aiResult ? 'max-w-4xl' : 'max-w-2xl'}`}>
+          {/* 위치 미리보기 / 360° / 장착 모습 모두 같은 무대 폭(max-w-2xl)과 종횡비(getVehicleStageAspectRatio)를 쓴다 - 보기를 바꿔도 차량 크기가 같다.
+              isolate: 무대 안의 z-index(연식 배지 z-50 등)가 스크롤 시 상단 헤더(z-50) 위로 올라오지 않게 가둔다. */}
+          <div className="relative isolate mx-auto w-full max-w-2xl">
           <VehicleYearBadge vehicle={vehicle} />
           {viewMode === 'ai' && aiResult ? (
-            // 결과 이미지는 자기 비율 그대로(예: 4:3) 무대 폭을 꽉 채운다 - 차량 무대 비율에 끼워 넣으면 위아래/좌우가 비어 차량이 작아진다.
+            // 결과 이미지는 차량 주변만 남기고 잘린 사진(차량이 약 89%)이라, 더 넓은 박스에 꽉 채우면 위치 미리보기/360°보다 차량이 2배 가까이
+            // 커 보였다. 같은 무대(폭/종횡비) 안에 object-contain으로 넣어 차량 크기를 다른 보기와 맞춘다. 원본 크기는 "크게 보기"로 본다.
             <figure data-testid="ai-fit-result">
               <button
                 type="button"
@@ -347,13 +390,16 @@ function FitRoom() {
                 className="block w-full cursor-zoom-in"
                 aria-label="장착 모습 크게 보기"
               >
-                <SafeImage
-                  src={aiResult.imageUrl}
-                  alt={`${aiResult.title} 장착 모습`}
-                  className="mx-auto block h-auto max-h-[85vh] w-full rounded-lg object-contain"
-                  fallbackClassName="mx-auto h-64 w-full max-w-2xl rounded-lg"
-                  fallbackText="장착 모습을 불러오지 못했어요"
-                />
+                {/* 이미지는 absolute로 넣어 원본 픽셀 크기가 열(grid) 폭을 밀어내지 않게 한다 - 보기를 바꿔도 무대 폭이 그대로. */}
+                <div className="relative w-full overflow-hidden rounded-lg bg-black" style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}>
+                  <SafeImage
+                    src={aiResult.imageUrl}
+                    alt={`${aiResult.title} 장착 모습`}
+                    className="absolute inset-0 block h-full w-full object-contain"
+                    fallbackClassName="absolute inset-0 h-full w-full rounded-lg"
+                    fallbackText="장착 모습을 불러오지 못했어요"
+                  />
+                </div>
               </button>
               <figcaption className="mt-3 flex flex-col items-center gap-2 text-center text-xs text-ridefit-text-secondary">
                 <span>{aiResult.title} · 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있습니다.</span>
@@ -375,6 +421,7 @@ function FitRoom() {
               alt={vehicle.nickname || vehicle.modelYearLabel}
               className="mx-auto w-full max-w-2xl"
               style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
+              fillScale={getStageScale(vehicle)}
               startIndex={getVehicle360StartIndex(vehicle.modelImageUrl)}
               normalizeTo={vehicle.modelImageUrl}
               layers={layers360}
@@ -410,6 +457,7 @@ function FitRoom() {
             viewMode={viewMode}
             onShowBasic={() => setViewMode('fit')}
             onGenerated={loadSavedResults}
+            refreshKey={aiCheckKey}
             onShowResult={(result) => {
               setAiResult(result)
               setViewMode('ai')
@@ -424,7 +472,17 @@ function FitRoom() {
                   const title = r.partNames.join(' + ')
                   const active = viewMode === 'ai' && aiResult?.imageUrl === r.imageUrl
                   return (
-                    <li key={r.id}>
+                    <li key={r.id} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setResultToDelete(r)}
+                        className="absolute right-1 top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white transition hover:border-ridefit-danger hover:text-ridefit-danger"
+                        aria-label={`${title} 장착 모습 삭제`}
+                        title="장착 모습 삭제"
+                        data-testid={`ai-fit-history-delete-${r.id}`}
+                      >
+                        <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
@@ -455,6 +513,20 @@ function FitRoom() {
               </ul>
             </div>
           )}
+          {resultDeleteError && (
+            <p className="mt-2 text-sm text-ridefit-danger" role="alert" data-testid="ai-fit-history-delete-error">{resultDeleteError}</p>
+          )}
+          <ConfirmDialog
+            open={!!resultToDelete}
+            title="저장된 장착 모습을 삭제할까요?"
+            message="이 합성 결과 이미지를 삭제합니다."
+            confirmLabel="삭제"
+            cancelLabel="취소"
+            danger
+            busy={deletingResult}
+            onConfirm={confirmDeleteResult}
+            onCancel={() => setResultToDelete(null)}
+          />
         </div>
 
         {/* 카테고리별 부품 토글 목록 - "이 차량에 장착 가능한(호환) 부품" 전체. [장착해보기]는 화면 안의 임시 선택일 뿐 저장되지 않는다([♡ 저장]만 차량별 즐겨찾기로 저장). */}
@@ -596,7 +668,7 @@ function FitRoom() {
                                 : 'border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-warning hover:text-ridefit-warning'
                             }`}
                           >
-                            <Ico as={Heart} className="mr-1" filled={isSaved} />{isSaved ? '저장됨' : '저장'}
+                            <Ico as={Heart} className="mr-1" filled={isSaved} />{isSaved ? '저장됨' : '저장하기'}
                           </button>
                         </div>
                       </div>

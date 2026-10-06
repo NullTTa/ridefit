@@ -1,5 +1,5 @@
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
-import { CATEGORY_POSITION, DEFAULT_POSITION, getFitLayout, getPartOverlays } from '../constants/vehicleFitPositions'
+import { CATEGORY_POSITION, DEFAULT_POSITION, getFitLayout, getPartOverlays, getStageScale } from '../constants/vehicleFitPositions'
 
 const pct = (value, total) => `${(value / total) * 100}%`
 
@@ -102,12 +102,16 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds }) {
     )
   }
 
+  // 차량이 무대를 꽉 채우지 않도록 360°와 같은 비율로 가운데 기준 축소(inset이 위아래/좌우 같은 %라 사진 비율과 좌표는 그대로).
+  const inset = `${((1 - getStageScale(vehicle)) / 2) * 100}%`
+
   return (
     <div
       className="relative mx-auto w-full max-w-2xl"
       style={{ aspectRatio: `${layout.width} / ${layout.height}` }}
       data-testid="fit-stage"
     >
+      <div className="absolute" style={{ inset }} data-testid="fit-stage-inner">
       <img src={imageSrc} alt={alt} className="absolute inset-0 h-full w-full select-none" draggable={false} />
 
       {parts.map((part) => {
@@ -143,6 +147,7 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds }) {
         {badgeParts.map((part) => connector(part, resolveAnchor(part)))}
       </svg>
       {badgeParts.map((part) => label(part, resolveAnchor(part)))}
+      </div>
     </div>
   )
 }

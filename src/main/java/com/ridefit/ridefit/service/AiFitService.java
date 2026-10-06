@@ -16,9 +16,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
@@ -56,7 +61,13 @@ public class AiFitService {
     //     "rising above the headlight"(위로 키우는 쪽 유도)를 헤드라이트/핸들 기준 문구로 바꿈. 크기 기준 문장을 구체화.
     // v6: 사이드백 장착 설명을 구체화(짐받이 위 탑케이스처럼 그려지던 문제, 2026-10-02 resultId=5) - "짐받이 아래 옆면에 세로로 매달림,
     //     한 쌍이면 끈은 짐받이를 가로지르고 측면 사진에서는 앞쪽 가방만 보임, 짐받이 위에 올리지 말 것".
-    private static final String PROMPT_VERSION = "v6";
+    // v7: 차량 보존 조건을 명시(바퀴/타이어 크기·차체·프레임 변경 금지, 차량 재디자인 금지, 바퀴·핸들·미러까지 차량 전체가 보이게,
+    //     차량 확대/축소 금지, 부품을 실제보다 크게 그리지 말 것) - PRESERVE_VEHICLE. 장착 의도는 v6과 같다.
+    private static final String PROMPT_VERSION = "v7";
+    private static final String SIDEBAG_CATEGORY = "사이드백";
+    // 캐시 키에 쓰는 버전. v7은 v6과 장착 의도가 같고 보존 조건만 명시했으므로 v6으로 만든 정상 결과를 계속 재사용한다
+    // (비용 절감 - 같은 조합을 새 문구로 다시 만들고 싶으면 regenerate). 장착 의도 자체가 바뀌는 수정이면 함께 올린다.
+    private static final String CACHE_VERSION = "v6";
     // 부품 크기를 "빈 공간"이 아니라 실제 차량(헤드라이트/핸들바 폭, 장착 위치) 기준으로 정하게 하는 공통 문장(두 프롬프트에 들어간다).
     private static final String KEEP_REAL_SIZE = "Use the motorcycle's headlight diameter and handlebar width as the scale references, "
             + "and size the product by its real-world dimensions on this motorcycle, keeping the proportions shown in its product photo. "
@@ -64,6 +75,12 @@ public class AiFitService {
             + "and never shrink it to fit the frame. "
             + "The product must look physically attached at a realistic mounting position, with realistic scale and the same perspective as Image 1. "
             + "Keep the motorcycle recognizable and preserve its original geometry; do not crop, zoom, move or resize the motorcycle. ";
+    // 원본 차량을 그대로 두고 부품만 더하게 하는 공통 문장(두 프롬프트에 들어간다).
+    private static final String PRESERVE_VEHICLE = "Only add the product; everything else stays identical to Image 1. "
+            + "Do not change the wheel or tire size, the frame, the body panels or the seat, and do not redesign the motorcycle. "
+            + "Keep the whole motorcycle visible as in Image 1, including both wheels, the handlebars and the mirrors. "
+            + "Do not enlarge or shrink the motorcycle, and keep the same camera viewpoint and background. "
+            + "The product must not be drawn larger than its real size. ";
 
     // 장착 위치가 명확해 결과가 안정적인 카테고리만 우선 지원한다. 값은 프롬프트에 넣을 영어 장착 위치 설명.
     // (보호대=차체 전체 커버, 휠/시트/에어필터/엔진가드 등은 위치·형태가 애매해 후순위로 제외)
@@ -153,7 +170,7 @@ public class AiFitService {
             return new AiFitCheckResponse(false, first == null ? "NO_PART" : first.code(),
                     first == null ? "부품을 선택해주세요." : first.message(), statuses, null, null);
         }
-        Optional<AiFitResult> cached = aiFitResultRepository.findFirstByCacheKeyOrderByCreatedAtDescIdDesc(cacheKey(usable, vehicle));
+        Optional<AiFitResult> cached = usableCached(cacheKey(usable, vehicle));
         if (cached.isPresent()) {
             return new AiFitCheckResponse(true, "CACHED", "이전에 만든 AI 장착 이미지가 있어요.", statuses,
                     cached.get().getGeneratedImage(), cached.get().getCreatedAt());
@@ -188,7 +205,7 @@ public class AiFitService {
         List<Long> partIds = inputs.stream().map(in -> in.part().getId()).toList();
 
         String key = cacheKey(inputs, vehicle);
-        Optional<AiFitResult> cached = aiFitResultRepository.findFirstByCacheKeyOrderByCreatedAtDescIdDesc(key);
+        Optional<AiFitResult> cached = usableCached(key);
         if (cached.isPresent() && !regenerate) {
             log.info("AI 장착: 저장된 결과 재사용 resultId={}, partIds={}, myVehicleId={}, image={}",
                     cached.get().getId(), partIds, vehicle.getId(), cached.get().getGeneratedImage());
@@ -343,6 +360,35 @@ public class AiFitService {
                 .toList();
     }
 
+    // 저장된 장착 모습 1건 삭제(부품 저장/즐겨찾기와는 별개). 본인이 만든 결과만 지울 수 있다.
+    // DB 행을 지우고, 커밋된 뒤에 그 이미지 파일을 지운다 - 단, 다른 결과가 같은 파일을 가리키면 파일은 남긴다(uploads/ai-fit 안의 파일만).
+    // 같은 조합을 다시 고르면 저장 결과가 없으므로 새로 만들 수 있다(재사용 대상에서도 자연히 빠짐).
+    @Transactional
+    public void deleteResult(Long resultId, Long memberId) {
+        AiFitResult r = aiFitResultRepository.findById(resultId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "장착 모습을 찾을 수 없어요."));
+        if (r.getRequestedByMemberId() == null || !r.getRequestedByMemberId().equals(memberId)) {
+            log.warn("다른 회원의 장착 모습 삭제 시도 차단: resultId={}, memberId={}", resultId, memberId);
+            throw new ApiException(HttpStatus.FORBIDDEN, "본인이 만든 장착 모습만 삭제할 수 있어요.");
+        }
+        String image = r.getGeneratedImage();
+        aiFitResultRepository.delete(r);
+        aiFitResultRepository.flush();
+        boolean shared = image != null && aiFitResultRepository.countByGeneratedImage(image) > 0;
+        log.info("장착 모습 삭제: resultId={}, memberId={}, image={}, 파일 공유 중={}", resultId, memberId, image, shared);
+        if (image == null || shared) return;
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    imageStorageService.deleteAiFitImage(image);
+                }
+            });
+        } else {
+            imageStorageService.deleteAiFitImage(image);
+        }
+    }
+
     public static List<Long> partIdsOf(AiFitResult r) {
         if (r.getPartIds() != null && !r.getPartIds().isBlank()) {
             return Arrays.stream(r.getPartIds().split(",")).map(String::trim).filter(x -> !x.isEmpty())
@@ -372,6 +418,11 @@ public class AiFitService {
         if (!compatibilityCheckService.isProceedAllowed(part.getId(), vehicle.getModelYear().getId())) {
             return new Readiness("NOT_COMPATIBLE", "이 차량과 호환이 확인되지 않은 부품은 AI 장착을 할 수 없어요.");
         }
+        // 사이드백: 생성 모델이 측면에 매다는 가방을 짐받이 위 탑케이스처럼 그리는 결과가 반복됐다(resultId 5, 6, 20, 24).
+        // 새로 생성하지 않고 위치 미리보기의 측면 장착 이미지(직접 합성 오버레이)로 보여준다.
+        if (SIDEBAG_CATEGORY.equals(part.getCategory())) {
+            return new Readiness("USE_2D_IMAGE", "사이드백은 위치 미리보기의 측면 장착 이미지로 확인해주세요.");
+        }
         if (!PLACEMENTS.containsKey(part.getCategory())) {
             return new Readiness("UNSUPPORTED_CATEGORY",
                     "'" + part.getCategory() + "' 카테고리는 아직 AI 장착을 지원하지 않아요.");
@@ -398,7 +449,7 @@ public class AiFitService {
             PartInput in = inputs.get(0);
             return cacheKey(in.part(), vehicle, in.anchorX(), in.anchorY());
         }
-        StringBuilder raw = new StringBuilder(String.join("|", "multi", PROMPT_VERSION, aiImageProvider.model(),
+        StringBuilder raw = new StringBuilder(String.join("|", "multi", CACHE_VERSION, aiImageProvider.model(),
                 aiImageProvider.quality(), String.valueOf(vehicleImagePath(vehicle)), String.valueOf(vehicle.getModelYear().getId())));
         inputs.stream()
                 .sorted(Comparator.comparing(in -> in.part().getId()))
@@ -409,11 +460,24 @@ public class AiFitService {
 
     private String cacheKey(Part part, MyVehicle vehicle, Double anchorX, Double anchorY) {
         String raw = String.join("|",
-                PROMPT_VERSION, aiImageProvider.model(), aiImageProvider.quality(),
+                CACHE_VERSION, aiImageProvider.model(), aiImageProvider.quality(),
                 String.valueOf(part.getId()), String.valueOf(part.getAiReferenceImageUrl()),
                 String.valueOf(part.getImageUrl()), String.valueOf(vehicleImagePath(vehicle)),
                 String.valueOf(vehicle.getModelYear().getId()), anchorText(anchorX), anchorText(anchorY));
         return sha256(raw);
+    }
+
+    // 재사용 가능한 저장 결과: 같은 조합의 최신 결과 중 이미지 파일이 실제로 남아 있는 것만.
+    // 실패한 요청은 DB에 저장되지 않으므로(성공해서 파일을 저장한 뒤에만 행을 만든다) 여기 나오지 않는다.
+    // 파일이 지워졌거나 경로가 깨진 결과는 재사용하지 않고 새로 만들게 한다(DB 행은 지우지 않는다).
+    private Optional<AiFitResult> usableCached(String key) {
+        return aiFitResultRepository.findFirstByCacheKeyOrderByCreatedAtDescIdDesc(key)
+                .filter(r -> {
+                    boolean exists = r.getGeneratedImage() != null
+                            && Files.isRegularFile(Path.of(imageStorageService.absolutePathOf(r.getGeneratedImage())));
+                    if (!exists) log.warn("AI 장착: 저장 결과 파일이 없어 재사용하지 않음 resultId={}, image={}", r.getId(), r.getGeneratedImage());
+                    return exists;
+                });
     }
 
     private static String sha256(String raw) {
@@ -459,6 +523,7 @@ public class AiFitService {
         }
         p.append("\n\nScale the product realistically relative to the motorcycle - never unrealistically large or small. ")
                 .append(KEEP_REAL_SIZE)
+                .append(PRESERVE_VEHICLE)
                 .append("Attach it naturally with plausible mounting hardware, matching the perspective and lighting of Image 1. ")
                 .append("Do not change any other part of the motorcycle. Do not add riders, people, text, watermarks, ")
                 .append("or any other accessories. Preserve everything except the installed product. ")
@@ -499,6 +564,7 @@ public class AiFitService {
                 .append("Do not replace any of them with a different or generic-looking product, and do not skip any of them.\n\n")
                 .append("Scale every product realistically relative to the motorcycle - never unrealistically large or small. ")
                 .append(KEEP_REAL_SIZE)
+                .append(PRESERVE_VEHICLE)
                 .append("Attach each one naturally with plausible mounting hardware, matching the perspective and lighting of Image 1. ")
                 .append("Do not change any other part of the motorcycle. Do not add riders, people, text, watermarks, ")
                 .append("or any other accessories. Preserve everything except the installed products. ")

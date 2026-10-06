@@ -132,7 +132,7 @@ function ServiceDetail() {
         <div className="rounded-2xl border border-ridefit-success-border bg-ridefit-success-bg px-6 py-10">
           <CircleCheck aria-hidden="true" className="mx-auto h-12 w-12 text-ridefit-success" strokeWidth={1.75} />
           <h1 className="mt-3 text-2xl font-bold text-ridefit-text">예약 신청이 완료됐어요</h1>
-          <p className="mt-1 text-sm text-ridefit-success">방문 예정일에 맞춰 매장에서 서비스를 받아보세요.</p>
+          <p className="mt-1 text-sm text-ridefit-success">결제를 마치면 예약이 확정돼요(Toss Payments 테스트 결제).</p>
 
           <dl className="mt-6 grid grid-cols-[6rem_1fr] gap-y-3 text-left text-sm">
             <dt className="text-ridefit-text-secondary">매장</dt>
@@ -174,7 +174,16 @@ function ServiceDetail() {
           예약 확정 여부는 매장 상황에 따라 달라질 수 있어요. 급한 정비가 필요하면 매장에 직접 문의해주세요.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link to="/reservations" className="rounded-lg bg-ridefit-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110">
+          {reservation.items.length > 0 && reservation.totalPrice != null && (
+            <Link
+              to={`/checkout?reservationId=${reservation.id}`}
+              className="rounded-lg bg-ridefit-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+              data-testid="reservation-pay"
+            >
+              결제하고 예약 확정하기
+            </Link>
+          )}
+          <Link to="/reservations" className="rounded-lg border border-ridefit-border px-5 py-2.5 text-sm font-medium text-ridefit-text transition hover:border-ridefit-primary">
             내 예약 보기
           </Link>
           <Link to="/services" className="rounded-lg border border-ridefit-border px-5 py-2.5 text-sm font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary">

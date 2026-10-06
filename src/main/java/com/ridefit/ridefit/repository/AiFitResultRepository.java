@@ -16,6 +16,9 @@ public interface AiFitResultRepository extends JpaRepository<AiFitResult, Long> 
 
     long countByCreatedAtAfter(LocalDateTime since);
 
+    // 같은 이미지 파일을 가리키는 결과 수(삭제할 때 다른 결과가 같은 파일을 쓰면 파일은 남긴다).
+    long countByGeneratedImage(String generatedImage);
+
     // 내 차량으로 만든 결과(최신순). 차량 id가 저장되기 전의 예전 결과는 "같은 회원 + 같은 차종"으로 함께 보여준다.
     @Query("select r from AiFitResult r where r.myVehicleId = :myVehicleId"
             + " or (r.myVehicleId is null and r.requestedByMemberId = :memberId and r.vehicleModel.id = :vehicleModelId)"

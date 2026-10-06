@@ -47,7 +47,7 @@ function GuideArticle() {
 
       <header className="mb-8">
         <div className="flex items-center gap-3">
-          <GuideIcon type={article.type} className="h-10 w-10 shrink-0 text-ridefit-primary" />
+          <GuideIcon type={article.type} slug={article.slug} className="h-10 w-10 shrink-0 text-ridefit-primary" />
           <h1 className="text-3xl font-bold text-ridefit-text">{article.title}</h1>
         </div>
         <p className="mt-3 text-ridefit-text-secondary">{article.summary}</p>
@@ -151,7 +151,7 @@ function GuideArticle() {
               >
                 <p className="text-xs text-ridefit-primary">{GUIDE_TYPE_LABEL[r.type]}</p>
                 <p className="mt-1 font-semibold text-ridefit-text">
-                  <GuideIcon type={r.type} className="mr-1.5 inline-block h-4 w-4 align-[-0.125em] text-ridefit-primary" />
+                  <GuideIcon type={r.type} slug={r.slug} className="mr-1.5 inline-block h-4 w-4 align-[-0.125em] text-ridefit-primary" />
                   {r.title}
                 </p>
               </Link>

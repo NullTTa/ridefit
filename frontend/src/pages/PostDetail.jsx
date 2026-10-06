@@ -118,7 +118,8 @@ function PostDetail() {
 
       {post.imageUrl && (
         <img
-          src={post.imageUrl.startsWith('/') ? `${API_BASE}${post.imageUrl}` : post.imageUrl}
+          // 서버에 올린 사진(/uploads/...)만 백엔드 주소를 붙인다. /assets/...는 프론트 정적 파일(예: RIDEFIT 장착 이미지)이다.
+          src={post.imageUrl.startsWith('/uploads/') ? `${API_BASE}${post.imageUrl}` : post.imageUrl}
           alt="첨부 사진"
           className="mb-6 w-full max-w-lg rounded-lg"
         />

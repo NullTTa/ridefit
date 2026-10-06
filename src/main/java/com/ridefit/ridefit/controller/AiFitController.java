@@ -16,7 +16,10 @@ import com.ridefit.ridefit.security.CurrentMember;
 import com.ridefit.ridefit.service.AiFitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -87,6 +90,13 @@ public class AiFitController {
         Map<Long, String> names = partRepository.findAll().stream()
                 .collect(Collectors.toMap(Part::getId, Part::getName, (a, b) -> a));
         return aiFitService.results(vehicle, currentMember.id(), names);
+    }
+
+    // 저장된 장착 모습 1건 삭제(본인 결과만, 이미지 파일도 함께 정리). 부품 저장(즐겨찾기)에는 영향 없음.
+    @DeleteMapping("/api/ai-fit/results/{id}")
+    public ResponseEntity<Void> deleteResult(@PathVariable Long id) {
+        aiFitService.deleteResult(id, currentMember.id());
+        return ResponseEntity.noContent().build();
     }
 
     // 부품 id 확인(존재/중복 제거, 순서 유지) + 위치 힌트 범위 정리.

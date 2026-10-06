@@ -89,3 +89,29 @@ body {
     transition: none;
   }
 }
+
+/* ---------- 홈 Hero(HeroFitShowcase): 다음 차례 부품의 연결선이 장착 지점에서 노드까지 한 번 그려지고 노드가 나타난다(반복 없음) ---------- */
+@keyframes hero-line-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes hero-node-in {
+  0%,
+  45% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.hero-line-draw {
+  stroke-dashoffset: 0;
+  animation: hero-line-draw 0.7s ease-out;
+}
+.hero-node-in {
+  animation: hero-node-in 1s ease-out;
+}

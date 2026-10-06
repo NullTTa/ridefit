@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Eye, ImageIcon, MessageCircle, Sprout, ThumbsUp, Trophy } from 'lucide-react'
+import { Eye, ImageIcon, MessageCircle, Sparkles, Sprout, ThumbsUp, Trophy } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Ico } from '../components/Icon'
 import SafeImage from '../components/SafeImage'
+import { rideBuildOf } from '../constants/rideBuilds'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 
@@ -196,14 +197,20 @@ function Community() {
                 data-testid={`community-card-${post.id}`}
               >
                 {post.imageUrl && (
-                  <div className="aspect-[16/9] w-full overflow-hidden bg-ridefit-bg">
+                  // RIDEFIT 장착 이미지(검정 배경, 차량 전체)는 잘리지 않게 contain + 배지, 일반 사진은 cover로 채운다.
+                  <div className={`relative aspect-[16/9] w-full overflow-hidden ${rideBuildOf(post.imageUrl) ? 'bg-black' : 'bg-ridefit-bg'}`}>
                     <SafeImage
                       src={post.imageUrl}
                       alt=""
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                      className={`h-full w-full transition duration-300 group-hover:scale-[1.02] ${rideBuildOf(post.imageUrl) ? 'object-contain' : 'object-cover'}`}
                       fallbackClassName="h-full w-full text-xs"
                       fallbackText="사진을 불러오지 못했어요"
                     />
+                    {rideBuildOf(post.imageUrl) && (
+                      <span className="absolute left-2 top-2 rounded-full border border-ridefit-primary/50 bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-ridefit-primary">
+                        <Ico as={Sparkles} className="mr-1" />RIDEFIT 장착 미리보기
+                      </span>
+                    )}
                   </div>
                 )}
                 <div className="flex flex-1 flex-col p-4">
@@ -219,6 +226,11 @@ function Community() {
                     )}
                   </div>
                   <p className="line-clamp-2 font-semibold leading-snug text-ridefit-text group-hover:text-ridefit-primary">{post.title}</p>
+                  {rideBuildOf(post.imageUrl) && (
+                    <p className="mt-1 truncate text-xs text-ridefit-text-secondary" data-testid={`community-build-${post.id}`}>
+                      {[rideBuildOf(post.imageUrl).vehicle, ...rideBuildOf(post.imageUrl).parts].join(' · ')}
+                    </p>
+                  )}
                   <div className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-ridefit-text-secondary">
                     <span className="min-w-0 truncate">
                       {post.authorName} · {formatDate(post.createdAt)}

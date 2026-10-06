@@ -5,15 +5,14 @@ import com.ridefit.ridefit.domain.MyVehicle;
 import com.ridefit.ridefit.domain.Reservation;
 import com.ridefit.ridefit.domain.ReservationItem;
 import com.ridefit.ridefit.domain.ServiceShop;
-import com.ridefit.ridefit.domain.ShopMaintenancePrice;
 import com.ridefit.ridefit.dto.ModelYearLabel;
 import com.ridefit.ridefit.exception.ApiException;
 import com.ridefit.ridefit.repository.MemberRepository;
 import com.ridefit.ridefit.repository.MyVehicleRepository;
 import com.ridefit.ridefit.repository.ReservationRepository;
 import com.ridefit.ridefit.repository.ServiceShopRepository;
-import com.ridefit.ridefit.repository.ShopMaintenancePriceRepository;
 import com.ridefit.ridefit.security.CurrentMember;
+import com.ridefit.ridefit.service.ReservationPricing;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -35,7 +34,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-// RIDEFIT 서비스 안에서 신청하는 예약. 실제 업체 시스템으로 전달되거나 결제가 일어나지는 않는다.
+// RIDEFIT 서비스 안에서 신청하는 예약(실제 업체 시스템으로 전달되지는 않는다). 결제는 PaymentController(Toss 테스트 결제)에서 하고,
+// 결제가 승인되면 예약이 CONFIRMED(예약 확정)가 된다. 결제 전 예약은 REQUESTED(신청됨, 결제 대기)다.
 @RestController
 @RequiredArgsConstructor
 public class ReservationController {
@@ -47,7 +47,7 @@ public class ReservationController {
     private final ServiceShopRepository shopRepository;
     private final MyVehicleRepository myVehicleRepository;
     private final MemberRepository memberRepository;
-    private final ShopMaintenancePriceRepository shopMaintenancePriceRepository;
+    private final ReservationPricing reservationPricing;
     private final CurrentMember currentMember;
 
     @PostMapping("/api/reservations")
@@ -94,13 +94,7 @@ public class ReservationController {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "같은 서비스를 두 번 선택할 수 없습니다: " + serviceName);
             }
 
-            // 가격은 반드시 서버가 DB(ShopMaintenancePrice)에서 조회해 확정한다 - 요청 바디에 price가 있어도 무시한다.
-            ShopMaintenancePrice priceEntry = shopMaintenancePriceRepository
-                    .findByShop_IdAndService_Name(shop.getId(), serviceName)
-                    .orElse(null);
-
             EngineOilType oilType = null;
-            Integer price = priceEntry == null ? null : priceEntry.getPrice();
             if (itemRequest.oilType() != null && !itemRequest.oilType().isBlank()) {
                 if (!ENGINE_OIL_SERVICE_NAME.equals(serviceName)) {
                     throw new ApiException(HttpStatus.BAD_REQUEST, "오일 종류는 엔진오일 교환 서비스에만 선택할 수 있습니다.");
@@ -110,10 +104,11 @@ public class ReservationController {
                 } catch (IllegalArgumentException e) {
                     throw new ApiException(HttpStatus.BAD_REQUEST, "올바르지 않은 오일 종류입니다.");
                 }
-                if (price != null) {
-                    price += oilType.extraPrice();
-                }
             }
+
+            // 가격은 반드시 서버가 DB(ShopMaintenancePrice + 오일 추가금)에서 확정한다 - 요청 바디에 price가 있어도 무시한다.
+            ReservationPricing.ItemPrice itemPrice = reservationPricing.price(shop.getId(), serviceName, oilType);
+            Integer price = itemPrice.price();
 
             if (price == null) {
                 totalKnown = false;
@@ -123,7 +118,7 @@ public class ReservationController {
 
             items.add(ReservationItem.builder()
                     .reservation(reservation)
-                    .service(priceEntry == null ? null : priceEntry.getService())
+                    .service(itemPrice.priceEntry() == null ? null : itemPrice.priceEntry().getService())
                     .serviceName(serviceName)
                     .price(price)
                     .oilType(oilType)
@@ -151,6 +146,10 @@ public class ReservationController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "예약 정보를 찾을 수 없습니다."));
         if (!reservation.getMember().getId().equals(currentMember.id())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "본인의 예약만 취소할 수 있습니다.");
+        }
+        // 결제까지 끝난(확정) 예약은 환불 처리가 함께 필요하다 - 결제 취소(환불) 기능이 아직 없으므로 여기서 상태만 바꾸지 않는다.
+        if (Reservation.STATUS_CONFIRMED.equals(reservation.getStatus())) {
+            throw new ApiException(HttpStatus.CONFLICT, "결제가 완료된 예약은 바로 취소할 수 없어요. 매장에 문의해주세요.");
         }
         reservation.setStatus(Reservation.STATUS_CANCELED);
         return ReservationResponse.from(reservation);

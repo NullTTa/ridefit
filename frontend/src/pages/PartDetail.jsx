@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Check, Star, TriangleAlert } from 'lucide-react'
+import { ArrowRight, Check, CircleHelp, Heart, ShoppingCart, Star, TriangleAlert, Wrench } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import FitVehiclePicker from '../components/FitVehiclePicker'
 import { Ico } from '../components/Icon'
@@ -45,6 +45,9 @@ function PartDetail() {
   const [categorySlugs, setCategorySlugs] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // 이 차량(?vehicleId)에 저장했는지 - 내 차고 "이 차량에 저장한 부품"과 같은 데이터(차량별 즐겨찾기). null = 확인 중/차량 없음
+  const [saved, setSaved] = useState(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     loadPartCategorySlugs().then(setCategorySlugs)
@@ -74,6 +77,33 @@ function PartDetail() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [partId, vehicleId])
+
+  useEffect(() => {
+    setSaved(null)
+    if (!vehicleId) return
+    let alive = true
+    api
+      .get(`/api/me/favorites?myVehicleId=${vehicleId}`)
+      .then((list) => alive && setSaved(list.some((f) => String(f.partId) === String(partId))))
+      .catch(() => alive && setSaved(null))
+    return () => {
+      alive = false
+    }
+  }, [partId, vehicleId])
+
+  // 저장 = 나중에 보려고 이 차량에 모아두기(장착/구매와 별개). 기존 즐겨찾기 API를 그대로 쓴다.
+  const toggleSave = async () => {
+    setSaving(true)
+    try {
+      if (saved) await api.del(`/api/me/favorites/${partId}?myVehicleId=${vehicleId}`)
+      else await api.post('/api/me/favorites', { partId: Number(partId), myVehicleId: Number(vehicleId) })
+      setSaved(!saved)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>
   if (error) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-danger">에러: {error}</p>
@@ -145,10 +175,17 @@ function PartDetail() {
             </div>
           )}
 
-          <p className="text-2xl font-bold text-ridefit-text">{part.price.toLocaleString()}원</p>
+          {/* RIDEFIT 판매 가격 = RIDEFIT에서 실제로 결제하는 가격(서버가 결제 금액 계산에 쓰는 값).
+              외부 판매처 가격은 참고용이라 결제 금액으로 쓰지 않는다 - 둘을 다른 줄/다른 이름으로 구분한다. */}
+          <div data-testid="part-price">
+            <p className="text-[11px] font-medium text-ridefit-text-secondary">RIDEFIT 판매 가격</p>
+            <p className="text-2xl font-bold text-ridefit-text">{part.price.toLocaleString()}원</p>
+          </div>
           {/* 예시 판매처/가격 미확인 판매처는 서버에서 제외된 값이다(PartPopularityService). */}
-          {stats.lowestPrice != null && stats.lowestPrice < part.price && (
-            <p className="text-sm text-ridefit-primary">판매처 확인 가격 {stats.lowestPrice.toLocaleString()}원부터</p>
+          {stats.lowestPrice != null && (
+            <p className="text-xs text-ridefit-text-secondary" data-testid="part-seller-price-hint">
+              외부 판매처 참고 가격 {stats.lowestPrice.toLocaleString()}원부터 · 실시간 조회 아님 · RIDEFIT 결제 금액 아님
+            </p>
           )}
 
           {/* 외부 판매량은 확인 가능한 데이터가 있을 때만 표시 - 지금은 항상 없음(구조만 존재) */}
@@ -166,28 +203,74 @@ function PartDetail() {
               className={`mt-2 rounded-lg border px-3 py-2 text-sm font-medium ${
                 checkResult.proceedAllowed
                   ? 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success'
-                  : 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger'
+                  : checkResult.status === '호환불가'
+                    ? 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger'
+                    : 'border-ridefit-border bg-ridefit-card text-ridefit-text-secondary'
               }`}
+              data-testid="part-compat"
+              data-status={checkResult.status}
             >
-              {/* 판정은 기존 /check(CompatibilityCheckService) 결과를 그대로 쓴다. 차량 이름만 덧붙인다. */}
-              {checkResult.proceedAllowed ? <Ico as={Check} className="mr-1" /> : <Ico as={TriangleAlert} className="mr-1" />}
-              {myVehicle ? `내 차량(${myVehicle.nickname || myVehicle.modelYearLabel})` : '내 차량'}
-              {checkResult.proceedAllowed ? `과 호환됩니다 (${checkResult.status})` : '과 호환이 확인되지 않았어요'}
+              {/* 판정은 기존 /check(CompatibilityCheckService = DB compatibility) 결과를 그대로 쓴다. 데이터가 없으면 "호환"이라고 하지 않는다. */}
+              {checkResult.proceedAllowed ? (
+                <>
+                  <Ico as={Check} className="mr-1" />
+                  장착 가능 · {myVehicle ? myVehicle.nickname || myVehicle.modelYearLabel : '내 차량'}
+                  {checkResult.status === '브라켓필요' && ' (브라켓 필요)'}
+                </>
+              ) : checkResult.status === '호환불가' ? (
+                <>
+                  <Ico as={TriangleAlert} className="mr-1" />
+                  현재 차량{myVehicle ? `(${myVehicle.nickname || myVehicle.modelYearLabel})` : ''}과 호환되지 않습니다.
+                </>
+              ) : (
+                <>
+                  <Ico as={CircleHelp} className="mr-1" />
+                  현재 차량{myVehicle ? `(${myVehicle.nickname || myVehicle.modelYearLabel})` : ''}과의 호환 정보가 아직 없어요.
+                </>
+              )}
             </div>
           )}
 
-          <div className="mt-2 flex flex-wrap items-start gap-2">
+          {/* RIDEFIT 핵심 기능: 내 차량 -> 이 부품 -> 장착 결과. 구매보다 먼저, 가장 크게 둔다. */}
+          <div className="mt-2 flex flex-col gap-2">
             {/* 보고 있는 차량과 호환되면 그 차량의 FitRoom으로 바로, 아니면(차량 미지정/비호환) 내 차량 중에서 고른다. */}
             {vehicleId && checkResult?.proceedAllowed ? (
               <Link
                 to={fitRoomPath(vehicleId, part.id)}
-                className="rounded-lg bg-ridefit-primary px-3 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                className="flex flex-col items-center rounded-xl bg-ridefit-primary px-4 py-3 text-white shadow-lg shadow-ridefit-primary/25 transition hover:brightness-110"
                 data-testid={`fit-try-${part.id}`}
               >
-                내 차에 장착해보기
+                <span className="text-base font-bold"><Ico as={Wrench} className="mr-1.5" />장착해보기</span>
+                <span className="text-[11px] text-white/85">내 차량 → 이 부품 → 장착 결과 확인</span>
               </Link>
             ) : (
-              <FitVehiclePicker partId={part.id} currentVehicleId={vehicleId} className="w-full sm:w-auto" />
+              <FitVehiclePicker partId={part.id} currentVehicleId={vehicleId} className="w-full" />
+            )}
+            <Link
+              to={`/checkout?partId=${part.id}&qty=1${vehicleId ? `&vehicleId=${vehicleId}` : ''}`}
+              className="rounded-lg border border-ridefit-border px-3 py-2 text-center text-sm font-semibold text-ridefit-text transition hover:border-ridefit-primary hover:text-ridefit-primary"
+              data-testid="part-buy"
+            >
+              <Ico as={ShoppingCart} className="mr-1" />구매하기 · {part.price.toLocaleString()}원
+            </Link>
+            {vehicleId && saved !== null && (
+              <button
+                type="button"
+                onClick={toggleSave}
+                disabled={saving}
+                aria-pressed={saved}
+                title={saved ? '저장됨 - 눌러서 저장 해제' : '내 차고에 이 차량용으로 저장'}
+                className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold transition disabled:opacity-50 ${
+                  saved
+                    ? 'border-ridefit-warning/60 bg-ridefit-warning-bg text-ridefit-warning'
+                    : 'border-ridefit-border text-ridefit-text hover:border-ridefit-warning hover:text-ridefit-warning'
+                }`}
+                data-testid="part-save"
+              >
+                <Ico as={Heart} className="mr-1" filled={saved} />
+                {saved ? '저장됨' : '저장하기'}
+                <span className="ml-1 text-xs font-normal opacity-80">· {myVehicle ? myVehicle.nickname || myVehicle.modelYearLabel : '이 차량'}</span>
+              </button>
             )}
             {!vehicleId && (
               <Link
@@ -240,7 +323,7 @@ function PartDetail() {
       </div>
 
       <div className="mt-6 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg">
-        <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">등록된 판매처 가격 비교</h2>
+        <h2 className="mb-3 text-sm font-semibold text-ridefit-text-secondary">외부 판매처 참고 가격 (RIDEFIT 결제 금액 아님)</h2>
         <SellerListings partId={part.id} />
       </div>
 

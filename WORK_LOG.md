@@ -4,6 +4,72 @@
 
 ---
 
+## 14차 - Hero 자동 반복 쇼케이스, 사이드백 비율 유지 오버레이(FitRoom=Hero), 저장된 장착 모습 개별 삭제 (2026-10-06, main, 커밋+push)
+
+- **Hero**: 클릭/hover 없이 자동 반복. 순정(1.4초) -> 머플러 선(0.9초) -> 장착 -> 유지(1.7초) -> 앞바구니 선 -> 장착 -> 유지 -> 사이드백 선 -> 장착
+  -> 완성 유지(3.2초) -> 부품/선이 함께 1.1초 페이드 -> 순정 -> 반복. 다음 선은 앞 부품 장착 뒤에만, 이미 장착한 부품은 끝까지 유지.
+  부품 이미지는 처음부터 모두 불러두고 opacity만 바꿈(깜빡임 없음). prefers-reduced-motion이면 완성 상태 고정. "처음부터 다시" 버튼 제거.
+- **사이드백**: 사용자 제공 이미지(AI #26, c74c65e1) 기준 측면 가방을 **균등 배율(0.9541)**로만 옮겨 `parts/overlay/saddlebag-pair-lace-side.png`
+  222x181(비율 1.2263 -> 1.2265, 중심 498,450)로 교체 - 이전 225x179는 가로/세로 배율이 달라 눌려 보였음. Super Cub 레이아웃 width 222.
+  Hero 사이드백은 별도 레이어 대신 같은 오버레이를 같은 배치로 사용(`heroBuild.js` overlayPartImage) -> FitRoom과 Hero가 항상 같은 모습.
+  다른 차량에는 사이드백 배치가 없어 적용되지 않음. `hero/layers/super-cub-110-sidebag.png`는 이제 쓰지 않음(삭제는 안 함). AI 호출 0회.
+- **저장된 장착 모습 삭제**: `DELETE /api/ai-fit/results/{id}`(로그인 필수, 본인 결과만 403, 없으면 404, 성공 204).
+  DB 행 삭제 후 같은 이미지를 쓰는 다른 결과가 없을 때만 커밋 뒤 `uploads/ai-fit/` 안의 파일 삭제(경로 검증 - 그 밖의 파일/부품·차량 원본/Hero 이미지는 못 지움).
+  내 차고 "저장된 장착 모습" 카드와 FitRoom 목록에 휴지통 버튼 + 확인 창(ConfirmDialog, "저장된 장착 모습을 삭제할까요? / 이 합성 결과 이미지를 삭제합니다.", 취소/삭제).
+  FitRoom에서 보고 있던 결과를 지우면 기본 화면으로 돌아가고 AI 패널이 캐시 상태를 다시 확인(refreshKey). 부품 저장(즐겨찾기)은 영향 없음.
+- **테스트**: 백엔드 37(+AiFitResultDeleteTest: 401/403/404, 본인 삭제, 공유 파일은 마지막 삭제 때만 정리, 즐겨찾기 불변), 프론트 build/lint 0 error.
+  브라우저(8081 + Vite 5174, 1280/390): Hero 순서/유지/완성 3초/반복, 사이드백 비율(Hero·FitRoom), 삭제 흐름(테스트용 행 2개+복사 파일로 확인 후 모두 정리) 32/33
+  (실패 1 = 크게 보기 이미지 로드 대기 타이밍, 첫 실행은 통과), 흐름 A 39/39, 화면 34/34, 최종 56 통과 + 지도 4 실패(5174 도메인 미등록 - 예상).
+  5173 지도 타일 정상. 테스트로 오른 조회수/장착 집계(부품 2, 40, 121, 122, 글 14) 원복. AI 생성 0회.
+
+## 13차 - Hero 3단계 장착, 저장/장착 가능 구분, 사이드백 측면 이미지, Guide 아이콘, Community 커스텀 카드, 지도 원인 (2026-10-06, main, 커밋 안 함)
+
+- **Hero**: 머플러 -> 앞바구니 -> 사이드백 순서로 사용자가 직접 하나씩 장착. 처음엔 머플러 선/노드만, 장착해야 다음 선이 한 번 그려지며 노드 등장
+  (자동 진행/hover 장착/반복 애니메이션 없음, 장착 상태 유지, 완성 후 "처음부터 다시"). 앞바구니 레이어 `hero/layers/super-cub-110-basket.png`:
+  AI 결과 #8(f3be4626, 머플러 합성본 + 앞바구니 118)을 대표 사진 좌표로 맞춰(외곽 박스 기준, 바구니 밖 평균 차이 16) 바구니 주변 변화 픽셀만 - 새 AI 호출 없음.
+  HERO_BUILD에 앞바구니 다시 포함(?build=hero도 3개). index.css에 hero-line-draw/hero-node-in(1회) 추가.
+- **저장 vs 장착 가능**: /garage = 저장한 부품(차량별 즐겨찾기) - 빈 상태에 "부품 찾아보고 저장하기 / 장착 가능한 부품 보기", 카드에 장착해보기(호환 부품만)+저장 해제.
+  /garage/:id/fit = 장착 가능한 부품(호환 전체) - 기존 안내 유지, 버튼 문구 "저장하기/저장됨". 부품 상세(?vehicleId)에 저장 토글(기존 favorites API).
+- **사이드백**: 사용자 제작 이미지 uploads/ai-fit/c74c65e1-...png(AI 결과 #26, 투명 1254x1254, 짐받이 아래 측면 장착)에서 가방만 잘라
+  대표 사진 좌표로 옮긴 `parts/overlay/saddlebag-pair-lace-side.png`(225x179, 중심 498,450) -> FitRoom 위치 미리보기 오버레이(부품 121).
+  AI 생성은 사이드백 카테고리 USE_2D_IMAGE로 막음(짐받이 위 탑케이스로 그린 결과 4회: #5 #6 #20 #24). 기존 결과 파일/행은 그대로.
+- **Guide**: Community 섹션 카드와 같은 모양(아이콘+글 수+이름+설명)으로 분류 선택, 글마다 주제 Lucide 아이콘(GuideIcon slug 매핑, 15종). Home/GuideArticle도 같은 아이콘.
+- **Community**: 시드 글 "제 바이크 이렇게 만들려고 하는데 어떤가요?"(뉴비 질문공간/부품 호환 질문, 이미지 = hero/supercub-ai-muffler-sidebag-basket.png = AI #9 사본).
+  RIDEFIT 장착 이미지는 카드에서 contain + "RIDEFIT 장착 미리보기" 배지 + "Super Cub 110 · 스테인리스 머플러 · 앞바구니 · 사이드백"(constants/rideBuilds.js).
+  글 상세 이미지: /uploads만 백엔드 주소를 붙이도록 수정(/assets 이미지가 깨지던 문제).
+- **지도**: 코드/키 문제 아님. 5173은 정상(타일 로드). 5174에서 카카오가 401 `AccessDeniedError: domain mismatched! caller=http://localhost:5174`
+  -> 카카오 개발자 콘솔 앱 > 플랫폼 > Web 사이트 도메인에 http://localhost:5174 추가 필요(코드 변경 없음).
+- **테스트**: 백엔드 36, 프론트 build/lint 0 error. 브라우저 최종 89/89(1280/390), 흐름 A 39/39, 360/크기 34/34. AI 생성 0회.
+  테스트로 바뀐 조회수/저장은 원복. 이전 Hero 테스트(e2e-hero, 노드 2개 기준)는 3단계 Hero에 맞지 않아 이번엔 final.cjs로 대체.
+
+## 12차 - 360/장착 모습 크기 통일, PNG 정리, Toss Payments 테스트 결제, 전체 사용자 흐름 점검 (2026-10-06, main, 커밋 안 함)
+
+- **360/위치 미리보기/장착 모습 크기**: 대표 사진이 차량에 딱 맞게 잘려 있어(Super Cub 높이 99.7%) 무대를 꽉 채워 확대돼 보였음 ->
+  `vehicleFitPositions.js` 레이아웃에 실측 `vehicleBounds` + `getStageScale()`(차량 높이 최대 86%), VehicleFitStage는 inset, Vehicle360Viewer는
+  `fillScale`(차량+레이어 함께 scale)로 같은 비율 적용. AI 결과("장착 모습")는 더 넓은 칸(col-span-2, max-w-4xl)에 꽉 채워 약 2배로 보였음 ->
+  같은 카드/같은 무대(종횡비) 안에 object-contain(absolute로 넣어 그리드 폭을 밀지 않게). 1280에서 세 보기 모두 453x213.
+- **AI Fit**: 프롬프트 v7(PRESERVE_VEHICLE - 바퀴/차체/재디자인/확대·축소 금지, 차량 전체 보이게, 부품 과대 금지). 캐시 키는 CACHE_VERSION=v6 유지(v6 정상 결과 재사용).
+  저장 결과 재사용은 이미지 파일이 실제로 있을 때만. 오늘 생성 4회(#22 머플러 32, #23 캐리어 2, #24 사이드백 121, #25 윈드스크린 119, 각 5 credits) -
+  윈드스크린 A, 캐리어 B/D(조금 김), 머플러 D(순정 그대로 - 4번째), 사이드백 D/C(짐받이 위 탑케이스로 그림 - 3번째). 재실행 시 4건 모두 재사용(Magic Hour 0회).
+- **PNG**: 알파 채널 전수 검사 - 문제 2개만 수정(배경과 연결된 밝은 무채색 잔여물만 제거): parts/pcx-old-exhaust.png(파이프 밑 흰 조각),
+  parts/pcx-topbox-carrier.png(바깥 테두리/슬롯 안 흰 조각). 나머지는 손대지 않음.
+- **부품 상세**: 호환 표시(DB /check 그대로: 장착 가능 / 호환되지 않습니다 / 호환 정보가 아직 없어요), 장착해보기 큰 버튼, 구매하기,
+  "RIDEFIT 판매 가격" vs "외부 판매처 참고 가격(결제 금액 아님)". 기존 버그: 차량과 호환 등록이 없는 부품 상세가 stats=null로 빈 화면 -> soloStats로 대체(PartController).
+- **Garage**: "현재 구성"(FitRoom에서 켠 부품, 차량별 localStorage `ridefit-fit-build-v1-{id}`, lib/fitBuild.js) - 장착해보기로 들어오면 현재 구성에 추가
+  (같은 자리는 교체), FitRoom 재방문 시 복원, 로딩 중엔 "불러오는 중". 저장한 부품 카드에 "저장 해제".
+- **Toss Payments(테스트 전용)**: Payment / PurchaseOrder / PurchaseOrderItem(ddl-auto로 생성), PaymentStatus READY/PAID/FAILED/CANCELED,
+  PaymentOrderType PART/OIL/SERVICE/RESERVATION, Reservation CONFIRMED 추가(결제 승인 시에만). API: GET /api/payments/quote/part,
+  POST /api/payments/checkout/parts|reservation, POST /api/payments/confirm|fail, GET /api/me/payments(/{orderId}).
+  금액은 서버가 DB 가격으로 계산 + 승인 직전 재계산, 요청 금액이 다르면 Toss 호출 없이 FAILED. 같은 주문 동시 승인은 inFlight로 1건만,
+  승인 후 저장 실패면 Toss 취소. 라이브 키(test_ 아님)는 서버/프론트 모두 거절. ReservationPricing으로 예약 생성/결제 금액 규칙 공유.
+  프론트: /checkout, /payments/success, /payments/fail, /payments(헤더 "내 결제"), 내 예약 "결제하기", 예약 완료 "결제하고 예약 확정하기".
+- **키**: 클라이언트 키 frontend/.env `VITE_TOSS_CLIENT_KEY`, 시크릿 키 application-local.properties `TOSS_SECRET_KEY`(둘 다 gitignore).
+  추적 파일(application.properties, .example)에 들어가 있던 실제 테스트 키는 커밋 전에 위 두 파일로 옮기고 추적 파일은 플레이스홀더로 되돌림.
+- **테스트**: 백엔드 36(신규 PaymentFlowTest 4 - Toss 목). 브라우저: 결제/예약 35/35(실제 Toss 샌드박스 + 실제 승인 API: 가짜 paymentKey는
+  "결제 시간이 만료되어…"로 거절 = 키 인증 정상), 흐름 A 39/39, 360/크기 34/34, 회귀 87(1건은 동시 실행 타이밍 - 단독 재확인 정상).
+  **승인 성공 단계는 자동화 불가**: 샌드박스 결제창이 실제 카드사/간편결제 인증(신한 vbv, 카카오페이 QR)으로 넘어가 사람이 직접 인증해야 함(테스트라 실제 청구 없음).
+  테스트로 생긴 결제/주문 기록(CANCELED/FAILED/READY)과 예약 RF-00007(80,000원, 결제 대기)은 남겨둠(수동 승인 테스트용). 바뀐 조회수는 원복.
+
 ## 11차 - 내 차고 저장 결과 / Hero 노드 장착 인터랙션 (2026-10-06, main)
 
 - **내 차고 "저장된 장착 모습"**: 기존 `/api/ai-fit/results?myVehicleId=` 그대로 사용(조회만, AI 호출 없음). 최신 4개 + 부품명/저장 시각 +

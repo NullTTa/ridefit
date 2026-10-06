@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import GuideIcon from '../components/GuideIcon'
-import { Ico } from '../components/Icon'
+import { GUIDE_TYPE_ICON, Ico } from '../components/Icon'
 import { api } from '../lib/api'
 import { formatAppliesTo, GUIDE_TYPE_LABEL } from '../lib/guide'
 
@@ -20,7 +20,7 @@ function GuideCard({ article }) {
       className="group flex h-full flex-col rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg transition hover:-translate-y-1 hover:border-ridefit-primary/60"
     >
       <div className="flex items-start justify-between gap-3">
-        <GuideIcon type={article.type} className="h-8 w-8 text-ridefit-primary" />
+        <GuideIcon type={article.type} slug={article.slug} className="h-8 w-8 text-ridefit-primary" />
         <div className="flex flex-wrap justify-end gap-1.5">
           {formatAppliesTo(article.appliesTo).map((label) => (
             <span
@@ -67,7 +67,6 @@ function Guide() {
   }, [])
 
   const visible = articles.filter((a) => a.type === tab)
-  const activeTab = TABS.find((t) => t.type === tab)
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14">
@@ -83,23 +82,32 @@ function Guide() {
         </p>
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-2" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.type}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.type}
-            onClick={() => setSearchParams({ tab: t.type })}
-            className={`rounded-full px-5 py-2 text-sm font-medium transition ${
-              tab === t.type ? 'bg-ridefit-primary text-white' : 'bg-ridefit-card text-ridefit-text-secondary hover:bg-ridefit-border'
-            }`}
-          >
-            {GUIDE_TYPE_LABEL[t.type]}
-          </button>
-        ))}
+      {/* 커뮤니티 섹션 카드와 같은 모양(아이콘 + 글 수 + 이름 + 설명)으로 세 분류를 고른다 */}
+      <div className="mb-8 grid gap-3 sm:grid-cols-3" role="tablist" data-testid="guide-sections">
+        {TABS.map((t) => {
+          const active = tab === t.type
+          return (
+            <button
+              key={t.type}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setSearchParams({ tab: t.type })}
+              className={`rounded-xl border p-4 text-left transition ${
+                active ? 'border-ridefit-primary bg-ridefit-primary/10' : 'border-ridefit-border bg-ridefit-card hover:border-ridefit-primary/60'
+              }`}
+              data-testid={`guide-section-${t.type}`}
+            >
+              <div className="flex items-center justify-between">
+                <Ico as={GUIDE_TYPE_ICON[t.type]} className="text-2xl text-ridefit-primary" />
+                <span className="font-mono text-xs text-ridefit-text-secondary">{articles.filter((a) => a.type === t.type).length}개</span>
+              </div>
+              <p className="mt-2 font-bold text-ridefit-text">{GUIDE_TYPE_LABEL[t.type]}</p>
+              <p className="mt-0.5 text-xs text-ridefit-text-secondary">{t.description}</p>
+            </button>
+          )
+        })}
       </div>
-      <p className="mb-8 text-sm text-ridefit-text-secondary">{activeTab.description}</p>
 
       {tab === 'DIY' && (
         <p className="mb-6 rounded-lg border border-ridefit-warning-border bg-ridefit-warning-bg px-4 py-3 text-sm text-ridefit-warning">

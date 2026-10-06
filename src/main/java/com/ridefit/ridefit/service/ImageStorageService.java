@@ -126,6 +126,22 @@ public class ImageStorageService {
     }
 
     // root 밖으로 벗어나는 경로(../)는 거부한다.
+    // 장착 모습(AI 결과) 이미지 파일 삭제. "/uploads/ai-fit/..." 안의 파일만 지운다(부품/차량 원본, /assets 공용 이미지, 다른 폴더는 절대 안 지움).
+    // 지웠으면 true, 대상이 아니거나 이미 없으면 false.
+    public boolean deleteAiFitImage(String uploadsUrl) {
+        String prefix = "/uploads/ai-fit/";
+        if (uploadsUrl == null || !uploadsUrl.startsWith(prefix)) return false;
+        Path base = Path.of(uploadDir, "ai-fit").toAbsolutePath().normalize();
+        Path target = base.resolve(uploadsUrl.substring(prefix.length())).normalize();
+        if (!target.startsWith(base) || target.equals(base)) return false;
+        try {
+            return Files.deleteIfExists(target);
+        } catch (IOException e) {
+            log.warn("장착 모습 이미지 파일 삭제 실패: {} ({})", uploadsUrl, e.getMessage());
+            return false;
+        }
+    }
+
     private byte[] readInside(Path root, String relative) throws IOException {
         Path base = root.toAbsolutePath().normalize();
         Path target = base.resolve(relative).normalize();

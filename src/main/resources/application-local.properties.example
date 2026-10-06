@@ -35,3 +35,5 @@ jwt.expiration-ms=86400000
 # AI_FIT_PROVIDER=magichour
 # MAGICHOUR_IMAGE_MODEL=flux-2-klein
 # MAGICHOUR_IMAGE_RESOLUTION=640px
+
+# Toss Payments 테스트 시크릿 키(test_sk_... 또는 test_gsk_...). 라이브 키 금지.

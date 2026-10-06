@@ -11,7 +11,7 @@ import VehicleFitStage from '../components/VehicleFitStage'
 import VehicleYearBadge, { ModelImageNotice } from '../components/VehicleYearBadge'
 import { displayImageUrl } from '../constants/productImages'
 import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
-import { getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
+import { getStageScale, getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 import { formatFitmentYears } from '../lib/fitment'
 import { loadPartCategorySlugs } from '../lib/guide'
@@ -34,12 +34,13 @@ const hostOf = (url) => {
 }
 
 // 카드 안 가격 영역: "판매처 가격"(등록된 실제 판매처의 등록/확인 가격, 실시간 조회 아님, 최대 3곳) /
-// "확인된 가격 중 최저"(가격 확인 판매처 2곳 이상일 때만) / "RIDEFIT 등록가"(판매처 가격과 별개)를 섞지 않고 따로 보여준다.
+// "확인된 가격 중 최저"(가격 확인 판매처 2곳 이상일 때만) / "RIDEFIT 판매 가격"(RIDEFIT에서 실제 결제하는 가격 - 판매처 가격과 별개)를
+// 섞지 않고 따로 보여준다. 결제 금액은 항상 RIDEFIT 판매 가격(서버 계산)이고, 외부 판매처 가격은 참고용이다.
 // 상품 주소가 저장된 판매처만 외부 링크(새 탭)로 연결한다(주소를 만들지 않는다).
 function PricePreview({ part, summary, detailTo }) {
   const registered = part.price != null ? (
     <p className="mt-1.5 text-xs text-ridefit-text-secondary" data-testid={`registered-price-${part.partId}`}>
-      RIDEFIT 등록가 <span className="font-semibold text-ridefit-text">{part.price.toLocaleString()}원</span>
+      RIDEFIT 판매 가격 <span className="font-semibold text-ridefit-text">{part.price.toLocaleString()}원</span>
     </p>
   ) : null
   if (!summary) {
@@ -62,7 +63,7 @@ function PricePreview({ part, summary, detailTo }) {
     <div className="mt-3" data-testid={`price-preview-${part.partId}`}>
       <div className="rounded-lg border border-ridefit-border bg-ridefit-bg/60 px-3 py-2.5">
         <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 text-[11px] text-ridefit-text-secondary">
-          <span className="font-semibold text-ridefit-text">판매처 가격</span>
+          <span className="font-semibold text-ridefit-text">외부 판매처 참고 가격</span>
           {summary.latestCheckedAt && <span>가격 확인일 {formatDay(summary.latestCheckedAt)} · 실시간 조회 아님</span>}
         </div>
         <ul className="flex flex-col gap-1">
@@ -435,6 +436,7 @@ function PartsSearch() {
                     alt={vehicle?.nickname || vehicle?.modelYearLabel}
                     className="mx-auto w-full max-w-2xl"
                     style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
+                    fillScale={getStageScale(vehicle)}
                     startIndex={getVehicle360StartIndex(vehicle?.modelImageUrl)}
                     normalizeTo={vehicle?.modelImageUrl}
                   />
@@ -629,7 +631,7 @@ function PartsSearch() {
                           </div>
                         </div>
 
-                        {/* 2) 가격: 판매처 가격 / 확인된 최저 / RIDEFIT 등록가를 구분해서 */}
+                        {/* 2) 가격: 외부 판매처 참고 가격 / 확인된 최저 / RIDEFIT 판매 가격을 구분해서 */}
                         <PricePreview
                           part={part}
                           summary={listingSummaries[part.partId]}
@@ -664,7 +666,7 @@ function PartsSearch() {
                                 : 'border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-warning hover:text-ridefit-warning'
                             }`}
                           >
-                            <Ico as={Heart} className="mr-1" filled={favoritePartIds.has(part.partId)} />{favoritePartIds.has(part.partId) ? '저장됨' : '저장'}
+                            <Ico as={Heart} className="mr-1" filled={favoritePartIds.has(part.partId)} />{favoritePartIds.has(part.partId) ? '저장됨' : '저장하기'}
                           </button>
                           <Link
                             to={`/parts/${part.partId}?vehicleId=${vehicleId}`}

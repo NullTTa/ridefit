@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import LegacyReservationBadge from '../components/LegacyReservationBadge'
 import { api } from '../lib/api'
 
-const STATUS_LABEL = { REQUESTED: '예약 신청됨', CANCELED: '취소됨' }
+// REQUESTED = 신청됨(결제 전), CONFIRMED = Toss 테스트 결제 승인으로 확정, CANCELED = 취소
+const STATUS_LABEL = { REQUESTED: '예약 신청됨 · 결제 대기', CONFIRMED: '예약 확정 · 결제 완료', CANCELED: '취소됨' }
 
 function formatDateTime(iso) {
   if (!iso) return ''
@@ -62,7 +63,11 @@ function Reservations() {
               <p className="font-semibold text-ridefit-text">{r.shopName}</p>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  r.status === 'CANCELED' ? 'bg-ridefit-bg text-ridefit-text-secondary' : 'bg-ridefit-success-bg text-ridefit-success'
+                  r.status === 'CANCELED'
+                    ? 'bg-ridefit-bg text-ridefit-text-secondary'
+                    : r.status === 'REQUESTED'
+                      ? 'bg-ridefit-warning-bg text-ridefit-warning'
+                      : 'bg-ridefit-success-bg text-ridefit-success'
                 }`}
               >
                 {STATUS_LABEL[r.status] ?? r.status}
@@ -88,7 +93,17 @@ function Reservations() {
             {r.memo && <p className="mt-1 text-xs text-ridefit-text-secondary">요청: {r.memo}</p>}
             <div className="mt-3 flex items-center justify-between">
               <span className="font-mono text-xs text-ridefit-text-secondary">RF-{String(r.id).padStart(5, '0')}</span>
-              {r.status !== 'CANCELED' && (
+              {/* 결제 가능한 예약(서비스 항목 + 서버 확정 금액이 있는 신청 상태)만 결제 버튼. 결제가 끝나면 CONFIRMED가 된다. */}
+              {r.status === 'REQUESTED' && r.items.length > 0 && r.totalPrice != null && (
+                <Link
+                  to={`/checkout?reservationId=${r.id}`}
+                  className="ml-auto mr-3 rounded-lg bg-ridefit-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
+                  data-testid={`reservation-pay-${r.id}`}
+                >
+                  결제하기 · {r.totalPrice.toLocaleString()}원
+                </Link>
+              )}
+              {r.status === 'REQUESTED' && (
                 <button
                   type="button"
                   onClick={() => cancel(r.id)}

@@ -622,6 +622,18 @@ public class ContentSeeder implements CommandLineRunner {
         comment(q4, riderMin, "출발 전에 타이어 공기압, 체인 상태, 오일량, 브레이크 정도는 꼭 보세요. 정보 메뉴의 DIY 가이드에 점검 방법이 있어요.");
         like(q4, List.of(user, scooterFan));
 
+        // RIDEFIT 부품 입혀보기로 만든 구성을 올리고 의견을 묻는 글(이미지는 실제 RIDEFIT 장착 결과 - AI 결과 #9의 사본).
+        Post q5 = post(newbiePark, PostCategory.NEWBIE, "부품 호환 질문", 0, 6,
+                "제 바이크 이렇게 만들려고 하는데 어떤가요?",
+                "RIDEFIT 부품 입혀보기로 슈퍼커브 110에 스테인리스 머플러, 앞바구니, 사이드백을 달아봤어요.\n"
+                        + "출퇴근하면서 장도 보려고 하는데, 바구니랑 사이드백을 같이 달면 너무 무거워 보일까요? 실제로 달아보신 분들 의견 궁금해요.", 19);
+        if (q5 != SKIP) {
+            q5.setImageUrl("/assets/hero/supercub-ai-muffler-sidebag-basket.png");
+            postRepository.save(q5);
+        }
+        comment(q5, commuterKim, "출퇴근용이면 괜찮은 조합 같아요. 사이드백은 한 쌍이면 좌우 무게만 비슷하게 맞춰 주세요.");
+        like(q5, List.of(user, riderMin));
+
         // --- 자유게시판
         Post f1 = post(user, PostCategory.FREE, "사진", 7, 4,
                 "퇴근길 노을 사진 한 장",

@@ -230,7 +230,7 @@ function Home() {
                   to={`/guide/${g.slug}`}
                   className="flex h-full flex-col items-center gap-2 rounded-xl border border-ridefit-border bg-ridefit-card px-3 py-5 text-center transition hover:-translate-y-1 hover:border-ridefit-primary/60"
                 >
-                  <GuideIcon type={g.type} className="h-7 w-7 text-ridefit-primary" />
+                  <GuideIcon type={g.type} slug={g.slug} className="h-7 w-7 text-ridefit-primary" />
                   <span className="text-sm font-semibold text-ridefit-text">{g.partCategory}</span>
                   <span className="text-xs text-ridefit-text-secondary">알아보기</span>
                 </Link>
@@ -376,7 +376,7 @@ function Home() {
             {featuredGuides.map((g, i) => (
               <Reveal key={g.slug} delay={i * 0.06}>
                 <Link to={`/guide/${g.slug}`} className="flex h-full gap-4 rounded-xl border border-ridefit-border bg-ridefit-card p-5 transition hover:-translate-y-1 hover:border-ridefit-primary/60">
-                  <GuideIcon type={g.type} className="h-7 w-7 shrink-0 text-ridefit-primary" />
+                  <GuideIcon type={g.type} slug={g.slug} className="h-7 w-7 shrink-0 text-ridefit-primary" />
                   <div>
                     <p className="text-xs font-medium text-ridefit-primary">{{ PART: '부품 정보', CONSUMABLE: '소모품 정보', DIY: 'DIY 가이드' }[g.type]}</p>
                     <p className="mt-0.5 font-semibold text-ridefit-text">{g.title}</p>

@@ -37,6 +37,9 @@ import GuideArticle from './pages/GuideArticle'
 import Services from './pages/Services'
 import ServiceDetail from './pages/ServiceDetail'
 import Reservations from './pages/Reservations'
+import Checkout from './pages/Checkout'
+import Payments from './pages/Payments'
+import { PaymentFail, PaymentSuccess } from './pages/PaymentResult'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -134,6 +137,39 @@ function App() {
             element={
               <RequireAuth>
                 <Reservations />
+              </RequireAuth>
+            }
+          />
+          {/* Toss Payments 테스트 결제: 주문 확인 -> 결제창 -> 성공/실패 -> 내 결제 */}
+          <Route
+            path="/checkout"
+            element={
+              <RequireAuth>
+                <Checkout />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/payments/success"
+            element={
+              <RequireAuth>
+                <PaymentSuccess />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/payments/fail"
+            element={
+              <RequireAuth>
+                <PaymentFail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <RequireAuth>
+                <Payments />
               </RequireAuth>
             }
           />
