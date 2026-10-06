@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import LegacyReservationBadge from '../components/LegacyReservationBadge'
 import { api } from '../lib/api'
 
 const STATUS_LABEL = { REQUESTED: '예약 신청됨', CANCELED: '취소됨' }
@@ -76,7 +77,10 @@ function Reservations() {
                   {r.totalPrice != null && ` · ${r.totalPrice.toLocaleString()}원`} ·{' '}
                 </>
               ) : (
-                '서비스 정보 없음 · '
+                <>
+                  <LegacyReservationBadge />
+                  서비스 정보 없음 ·{' '}
+                </>
               )}
               {formatDateTime(r.preferredAt)}
               {r.vehicleLabel && ` · ${r.vehicleLabel}`}

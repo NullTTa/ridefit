@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import LegacyReservationBadge from '../components/LegacyReservationBadge'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 
@@ -224,7 +225,15 @@ function MyPage() {
                 <span className="text-ridefit-text-secondary">
                   {' '}
                   {/* 리팩터링 이전 예약은 items가 비어있을 수 있어, 빈칸 대신 안내 문구로 대신한다. */}
-                  · {r.items.length > 0 ? `${r.items.map((item) => item.serviceName).join(', ')} · ` : '서비스 정보 없음 · '}
+                  ·{' '}
+                  {r.items.length > 0 ? (
+                    `${r.items.map((item) => item.serviceName).join(', ')} · `
+                  ) : (
+                    <>
+                      <LegacyReservationBadge />
+                      서비스 정보 없음 ·{' '}
+                    </>
+                  )}
                   {r.preferredAt?.slice(0, 16).replace('T', ' ')}
                   {r.status === 'CANCELED' && ' · 취소됨'}
                 </span>
