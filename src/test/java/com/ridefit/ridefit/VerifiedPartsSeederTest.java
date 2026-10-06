@@ -39,7 +39,7 @@ class VerifiedPartsSeederTest {
         assertThat(kitaco.getPartNumber()).isEqualTo("80-539-11530");
         assertThat(kitaco.getBrand()).isEqualTo("KITACO");
         assertThat(kitaco.getPartType()).isEqualTo(PartType.AFTERMARKET);
-        assertThat(kitaco.getImageUrl()).isEqualTo("/assets/parts/kitaco-rear-carrier.png");
+        assertThat(kitaco.getImageUrl()).isEqualTo("/assets/parts/kitaco-80-539-11530.jpg");
 
         Part screen = partRepository.findByName("H2C 슈퍼커브 110 순정 윈드스크린 (18년~) [APK76LJ-88210TA]").orElseThrow();
         assertThat(screen.getPartType()).isEqualTo(PartType.OEM);
