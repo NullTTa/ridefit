@@ -54,7 +54,9 @@ public class AiFitService {
     // v4: 가운데 framing으로 되돌리고, 크기 기준을 "빈 공간"이 아니라 차량 자체(장착부/핸들/헤드라이트 폭)로 잡도록 중립 문구로 바꿈(실제 호출 안 함).
     // v5: framing을 "위 여백 15% + 좌우로만 패딩(16:9)"으로 바꿔 차량 위 빈 공간 자체를 줄이고, 윈드스크린 위치 문구의
     //     "rising above the headlight"(위로 키우는 쪽 유도)를 헤드라이트/핸들 기준 문구로 바꿈. 크기 기준 문장을 구체화.
-    private static final String PROMPT_VERSION = "v5";
+    // v6: 사이드백 장착 설명을 구체화(짐받이 위 탑케이스처럼 그려지던 문제, 2026-10-02 resultId=5) - "짐받이 아래 옆면에 세로로 매달림,
+    //     한 쌍이면 끈은 짐받이를 가로지르고 측면 사진에서는 앞쪽 가방만 보임, 짐받이 위에 올리지 말 것".
+    private static final String PROMPT_VERSION = "v6";
     // 부품 크기를 "빈 공간"이 아니라 실제 차량(헤드라이트/핸들바 폭, 장착 위치) 기준으로 정하게 하는 공통 문장(두 프롬프트에 들어간다).
     private static final String KEEP_REAL_SIZE = "Use the motorcycle's headlight diameter and handlebar width as the scale references, "
             + "and size the product by its real-world dimensions on this motorcycle, keeping the proportions shown in its product photo. "
@@ -75,8 +77,11 @@ public class AiFitService {
                     "on the left and right ends of the handlebars", true)),
             Map.entry("리어백", new Placement("rear bag",
                     "strapped on top of the rear carrier or pillion seat behind the rider seat", false)),
-            Map.entry("사이드백", new Placement("side bag",
-                    "hanging on the side of the rear section beside the rear wheel, attached to the rear carrier/seat rail", false)),
+            Map.entry("사이드백", new Placement("saddlebag (side bag)",
+                    "hanging vertically on the side of the rear section, below the rear carrier and above/beside the rear wheel; "
+                            + "if the product is a pair joined by a strap, the strap lies across the rear carrier and one bag hangs on "
+                            + "each side - in this side view only the near-side bag is visible. It is not a top case: do not place a bag "
+                            + "on top of the rear carrier", false)),
             Map.entry("캐리어", new Placement("rear carrier rack",
                     "behind the seat, above the rear fender", true)),
             Map.entry("프론트캐리어", new Placement("front carrier rack",
@@ -241,9 +246,12 @@ public class AiFitService {
             }
 
             // 부품이 1개일 때만(예전과 같게) 대표 이미지가 참조 이미지와 다른 파일이면 "같은 제품의 다른 사진"으로 함께 넣는다.
+            // 단, AI reference가 배경 정리본(/assets/parts/clean/...)이면 대표 이미지는 그 원본(체커 무늬가 박힌 사진)이라 보내지 않는다.
             String productImagePath = null;
             Part first = inputs.get(0).part();
-            if (inputs.size() == 1 && first.getImageUrl() != null && !first.getImageUrl().equals(first.getAiReferenceImageUrl())) {
+            boolean referenceIsCleanedCopy = first.getAiReferenceImageUrl() != null && first.getAiReferenceImageUrl().contains("/clean/");
+            if (inputs.size() == 1 && !referenceIsCleanedCopy
+                    && first.getImageUrl() != null && !first.getImageUrl().equals(first.getAiReferenceImageUrl())) {
                 Optional<ImageStorageService.StoredImage> product = imageStorageService.read(first.getImageUrl());
                 if (product.isPresent()) {
                     productImagePath = first.getImageUrl();

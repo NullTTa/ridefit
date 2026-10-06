@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { api } from '../lib/api'
 import { FOREIGN_TEXT_WARNING, hasForeignText } from '../lib/foreignText'
+import { Ico } from './Icon'
 import SafeImage from './SafeImage'
 
 const inputClass =
@@ -172,7 +174,7 @@ function SellerListings({ partId }) {
                     rel="noreferrer noopener"
                     className="text-xs font-medium text-ridefit-primary hover:underline"
                   >
-                    상품 보기 →
+                    상품 보기 <Ico as={ArrowRight} />
                   </a>
                 )}
               </div>

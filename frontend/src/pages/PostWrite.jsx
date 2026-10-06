@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Star } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { API_BASE, api } from '../lib/api'
 
@@ -206,7 +207,7 @@ function PostWrite() {
                   aria-label={`${n}점`}
                   className={n <= rating ? 'text-ridefit-warning' : 'text-ridefit-text-secondary/40'}
                 >
-                  ★
+                  <Star aria-hidden="true" className="h-7 w-7" fill="currentColor" strokeWidth={1.5} />
                 </button>
               ))}
             </div>

@@ -1,3 +1,5 @@
+import { Package, TriangleAlert, Wrench } from 'lucide-react'
+import { Ico } from './Icon'
 // 정보 글 본문(JSON)을 섹션 단위로 그린다. 새 글은 서버의 guide-articles.json에 같은 구조로 추가하면 된다:
 //   { lead, tools[], materials[], sections: [{ title, body, items[], steps[], table{headers,rows}, note, tone }] }
 function Section({ section }) {
@@ -10,7 +12,7 @@ function Section({ section }) {
     >
       {section.title && (
         <h2 className={`mb-3 text-lg font-bold ${warn ? 'text-ridefit-warning' : 'text-ridefit-text'}`}>
-          {warn && <span aria-hidden="true">⚠️ </span>}
+          {warn && <Ico as={TriangleAlert} className="mr-1.5" />}
           {section.title}
         </h2>
       )}
@@ -90,7 +92,7 @@ function GuideBody({ body }) {
         <div className="grid gap-5 md:grid-cols-2">
           {body.tools?.length > 0 && (
             <div className="rounded-xl border border-ridefit-border bg-ridefit-card p-5">
-              <h2 className="mb-3 text-lg font-bold text-ridefit-text">🧰 필요한 공구</h2>
+              <h2 className="mb-3 text-lg font-bold text-ridefit-text"><Ico as={Wrench} className="mr-1.5 text-ridefit-primary" />필요한 공구</h2>
               <ul className="flex flex-col gap-1.5 text-sm text-ridefit-text-secondary">
                 {body.tools.map((t) => (
                   <li key={t}>· {t}</li>
@@ -100,7 +102,7 @@ function GuideBody({ body }) {
           )}
           {body.materials?.length > 0 && (
             <div className="rounded-xl border border-ridefit-border bg-ridefit-card p-5">
-              <h2 className="mb-3 text-lg font-bold text-ridefit-text">📦 준비물</h2>
+              <h2 className="mb-3 text-lg font-bold text-ridefit-text"><Ico as={Package} className="mr-1.5 text-ridefit-primary" />준비물</h2>
               <ul className="flex flex-col gap-1.5 text-sm text-ridefit-text-secondary">
                 {body.materials.map((m) => (
                   <li key={m}>· {m}</li>

@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Eye, ImageIcon, MessageCircle, Sprout, ThumbsUp, Trophy } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Ico } from '../components/Icon'
+import SafeImage from '../components/SafeImage'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 
-const SECTION_EMOJI = { VETERAN: '🏆', NEWBIE: '🌱', FREE: '💬' }
+const SECTION_ICON = { VETERAN: Trophy, NEWBIE: Sprout, FREE: MessageCircle }
 const BADGE_STYLE = {
   VETERAN: 'border-amber-800 bg-amber-950 text-amber-300',
   NEWBIE: 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success',
@@ -101,9 +104,7 @@ function Community() {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-2xl" aria-hidden="true">
-                  {SECTION_EMOJI[section.code]}
-                </span>
+                {SECTION_ICON[section.code] && <Ico as={SECTION_ICON[section.code]} className="text-2xl text-ridefit-primary" />}
                 <span className="font-mono text-xs text-ridefit-text-secondary">{section.postCount}개</span>
               </div>
               <p className="mt-2 font-bold text-ridefit-text">{section.label}</p>
@@ -185,35 +186,58 @@ function Community() {
       )}
 
       {!loading && data && data.content.length > 0 && (
-        <ul className="flex flex-col gap-2">
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="community-grid">
           {data.content.map((post) => (
-            <li key={post.id}>
+            <li key={post.id} className="min-w-0">
+              {/* 카드 전체가 링크. 썸네일은 실제 첨부 사진이 있을 때만, 본문은 싣지 않는다(제목/작성자/날짜/실제 카운터만). */}
               <Link
                 to={`/community/${post.id}`}
-                className="flex items-center justify-between gap-4 rounded-lg border border-ridefit-border bg-ridefit-card px-4 py-3 transition hover:border-ridefit-primary"
+                className="group flex h-full flex-col overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card transition hover:-translate-y-0.5 hover:border-ridefit-primary/60"
+                data-testid={`community-card-${post.id}`}
               >
-                <div className="min-w-0">
-                  <div className="mb-1 flex flex-wrap items-center gap-1.5 text-xs">
+                {post.imageUrl && (
+                  <div className="aspect-[16/9] w-full overflow-hidden bg-ridefit-bg">
+                    <SafeImage
+                      src={post.imageUrl}
+                      alt=""
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                      fallbackClassName="h-full w-full text-xs"
+                      fallbackText="사진을 불러오지 못했어요"
+                    />
+                  </div>
+                )}
+                <div className="flex flex-1 flex-col p-4">
+                  <div className="mb-2 flex flex-wrap items-center gap-1.5 text-xs">
                     <span className={`rounded-full border px-2 py-0.5 font-medium ${BADGE_STYLE[post.category] ?? BADGE_STYLE.FREE}`}>
                       {post.categoryLabel}
                     </span>
-                    {post.topic && <span className="text-ridefit-text-secondary">{post.topic}</span>}
-                    {post.hasImage && <span aria-label="사진 첨부">🖼️</span>}
+                    {post.topic && <span className="truncate text-ridefit-text-secondary">{post.topic}</span>}
+                    {post.hasImage && !post.imageUrl && (
+                      <span className="text-ridefit-text-secondary" title="사진 첨부">
+                        <Ico as={ImageIcon} />
+                      </span>
+                    )}
                   </div>
-                  <p className="truncate font-medium text-ridefit-text">
-                    {post.title}
-                    {post.commentCount > 0 && <span className="ml-1.5 text-sm font-semibold text-ridefit-primary">[{post.commentCount}]</span>}
-                  </p>
-                  <p className="mt-1 text-xs text-ridefit-text-secondary">
-                    {post.authorName} · {formatDate(post.createdAt)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-ridefit-text-secondary sm:flex-row sm:gap-4">
-                  <span title="조회수">👁 {post.viewCount}</span>
-                  <span title="추천수">👍 {post.likeCount}</span>
-                  <span title="댓글수" className="hidden sm:inline">
-                    💬 {post.commentCount}
-                  </span>
+                  <p className="line-clamp-2 font-semibold leading-snug text-ridefit-text group-hover:text-ridefit-primary">{post.title}</p>
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-ridefit-text-secondary">
+                    <span className="min-w-0 truncate">
+                      {post.authorName} · {formatDate(post.createdAt)}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-3">
+                      <span title="조회수" aria-label={`조회수 ${post.viewCount}`}>
+                        <Ico as={Eye} className="mr-1" />
+                        {post.viewCount}
+                      </span>
+                      <span title="추천수" aria-label={`추천수 ${post.likeCount}`}>
+                        <Ico as={ThumbsUp} className="mr-1" />
+                        {post.likeCount}
+                      </span>
+                      <span title="댓글수" aria-label={`댓글수 ${post.commentCount}`}>
+                        <Ico as={MessageCircle} className="mr-1" />
+                        {post.commentCount}
+                      </span>
+                    </span>
+                  </div>
                 </div>
               </Link>
             </li>

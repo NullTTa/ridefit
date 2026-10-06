@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { ArrowRight, Heart } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
-import SafeImage from '../components/SafeImage'
+import { Ico } from '../components/Icon'
+import ProductImage from '../components/ProductImage'
 import SimilarVehicles from '../components/SimilarVehicles'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
@@ -9,7 +11,9 @@ import { api } from '../lib/api'
 
 const formatPrice = (price) => (price != null ? `${price.toLocaleString()}원` : '가격 정보 없음')
 
-// 내 차고 = "내가 등록한 차량" + "내가 즐겨찾기한 부품" + 아래쪽 "추천 상품".
+// 내 차고 = "내가 등록한 차량" + "그 차량에 저장한 부품" + 아래쪽 "추천 상품".
+// 저장한 부품은 차량별(favorite.my_vehicle_id)이다 - 다른 차량에 저장한 부품은 섞이지 않는다.
+// 차량 구분이 생기기 전에 저장한 예전 즐겨찾기(차량 미지정)는 어느 차량인지 추측하지 않고 따로 보여준다.
 // 이 차량의 호환 부품 전체 목록은 여기서 보여주지 않는다(내가 가진/저장한 부품으로 착각하게 되므로) -
 // 호환 부품은 부품 입혀보기(/garage/:id/fit)와 부품 찾아보기에서 고른다.
 function Garage() {
@@ -19,6 +23,8 @@ function Garage() {
   const [error, setError] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [favorites, setFavorites] = useState(null)
+  const [unassigned, setUnassigned] = useState([])
+  const [savingPartId, setSavingPartId] = useState(null)
   // 선택 차량 기준: 즐겨찾기 부품의 호환 여부 표시용 호환 부품 id(상태) / 추천 상품
   const [compatStatusById, setCompatStatusById] = useState(null)
   const [recommended, setRecommended] = useState(null)
@@ -30,9 +36,9 @@ function Garage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
     api
-      .get('/api/me/favorites')
-      .then(setFavorites)
-      .catch(() => setFavorites([]))
+      .get('/api/me/favorites?unassigned=true')
+      .then(setUnassigned)
+      .catch(() => setUnassigned([]))
   }, [])
 
   const selectedId = searchParams.get('v')
@@ -43,6 +49,11 @@ function Garage() {
     let alive = true
     setCompatStatusById(null)
     setRecommended(null)
+    setFavorites(null)
+    api
+      .get(`/api/me/favorites?myVehicleId=${vehicle.id}`)
+      .then((data) => alive && setFavorites(data))
+      .catch(() => alive && setFavorites([]))
     api
       .get(`/api/my-vehicles/${vehicle.id}/compatible-parts`)
       .then((data) => alive && setCompatStatusById(new Map(data.map((p) => [p.partId, p.status]))))
@@ -55,6 +66,19 @@ function Garage() {
       alive = false
     }
   }, [vehicle?.id])
+
+  // 차량 미지정 저장 부품은 사용자가 직접 "이 차량에 저장"을 누를 때만 이 차량에 연결한다(자동 연결 없음).
+  const saveToVehicle = async (partId) => {
+    setSavingPartId(partId)
+    try {
+      await api.post('/api/me/favorites', { partId, myVehicleId: vehicle.id })
+      setFavorites(await api.get(`/api/me/favorites?myVehicleId=${vehicle.id}`))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSavingPartId(null)
+    }
+  }
 
   const handleDelete = async (id) => {
     if (!window.confirm('이 차량을 차고에서 삭제할까요?')) return
@@ -137,24 +161,25 @@ function Garage() {
                 showControls={false}
               />
               <div className="p-5">
-                <p className="text-xs font-medium text-ridefit-primary">🏍️ {vehicle.manufacturerName}</p>
+                <p className="text-xs font-medium text-ridefit-primary">{vehicle.manufacturerName}</p>
                 <p className="mt-1 text-xl font-semibold text-ridefit-text">{vehicleName}</p>
                 {vehicle.nickname && <p className="text-sm text-ridefit-text-secondary">{vehicle.modelYearLabel}</p>}
 
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Link
-                    to={`/garage/${vehicle.id}/edit`}
-                    className="rounded-lg border border-ridefit-border px-3 py-2 text-center text-sm font-semibold text-ridefit-text transition hover:border-ridefit-primary"
-                  >
-                    차량 관리
-                  </Link>
-                  <Link
-                    to={`/garage/${vehicle.id}/fit`}
-                    className="rounded-lg bg-ridefit-primary px-3 py-2 text-center text-sm font-semibold text-white transition hover:brightness-110"
-                  >
-                    부품 입혀보기
-                  </Link>
-                </div>
+                {/* 핵심 기능이라 가장 크게: 1) 부품 입혀보기 2) 차량 관리 */}
+                <Link
+                  to={`/garage/${vehicle.id}/fit`}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-ridefit-primary px-4 py-3.5 text-base font-bold text-white shadow-lg shadow-ridefit-primary/25 transition hover:brightness-110"
+                  data-testid="garage-fit-cta"
+                >
+                  부품 입혀보기
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                </Link>
+                <Link
+                  to={`/garage/${vehicle.id}/edit`}
+                  className="mt-2 block w-full rounded-lg border border-ridefit-border px-3 py-2.5 text-center text-sm font-semibold text-ridefit-text transition hover:border-ridefit-primary"
+                >
+                  차량 관리
+                </Link>
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                   <Link to={`/parts?vehicleId=${vehicle.id}`} className="font-medium text-ridefit-primary hover:underline">
@@ -185,13 +210,16 @@ function Garage() {
             >
               <div className="mb-3 flex items-baseline justify-between gap-2">
                 <h2 className="text-base font-semibold text-ridefit-text">
-                  ⭐ 내가 저장한 부품{favorites ? ` (${favorites.length})` : ''}
+                  <Ico as={Heart} className="mr-1.5 text-ridefit-warning" filled />이 차량에 저장한 부품{favorites ? ` (${favorites.length})` : ''}
                 </h2>
                 <Link to={`/parts?vehicleId=${vehicle.id}`} className="text-xs font-medium text-ridefit-primary hover:underline">
-                  부품 찾아보기 →
+                  부품 찾아보기 <Ico as={ArrowRight} />
                 </Link>
               </div>
 
+              <p className="-mt-1 mb-3 text-xs text-ridefit-text-secondary">
+                {vehicleName}에 저장한 부품만 보여요. 다른 차량에 저장한 부품은 그 차량을 고르면 보여요.
+              </p>
               {favorites === null && <p className="text-sm text-ridefit-text-secondary">불러오는 중...</p>}
 
               {favorites?.length === 0 && (
@@ -200,7 +228,7 @@ function Garage() {
                   data-testid="garage-favorites-empty"
                 >
                   <p className="text-sm text-ridefit-text">아직 저장한 부품이 없어요.</p>
-                  <p className="text-xs text-ridefit-text-secondary">마음에 드는 부품을 저장해보세요. 부품 찾아보기에서 ☆를 누르면 여기에 모여요.</p>
+                  <p className="text-xs text-ridefit-text-secondary">마음에 드는 부품을 저장해보세요. 이 차량으로 부품 찾아보기에서 [저장]을 누르면 여기에 모여요.</p>
                 </div>
               )}
 
@@ -215,12 +243,7 @@ function Garage() {
                           className="block overflow-hidden rounded-lg border border-ridefit-border bg-ridefit-bg transition hover:border-ridefit-primary"
                           data-testid={`garage-favorite-${f.partId}`}
                         >
-                          <SafeImage
-                            src={f.imageUrl}
-                            alt={f.name}
-                            className="aspect-[4/3] w-full bg-white/5 object-contain"
-                            fallbackClassName="aspect-[4/3] w-full text-[10px]"
-                          />
+                          <ProductImage src={f.imageUrl} alt={f.name} />
                           <div className="p-2">
                             <p className="line-clamp-2 text-xs font-medium text-ridefit-text" title={f.name}>
                               {f.name}
@@ -250,6 +273,35 @@ function Garage() {
                   })}
                 </ul>
               )}
+
+              {/* 차량 구분 없이 저장한 예전 즐겨찾기: 어느 차량인지 알 수 없어 자동으로 넣지 않는다 */}
+              {unassigned.length > 0 && (
+                <details className="mt-4 rounded-lg border border-dashed border-ridefit-border px-3 py-2" data-testid="garage-unassigned">
+                  <summary className="cursor-pointer text-xs font-medium text-ridefit-text-secondary">
+                    차량을 정하지 않고 저장한 부품 ({unassigned.length}) · 예전에 저장한 부품이에요
+                  </summary>
+                  <ul className="mt-2 flex flex-col gap-1.5">
+                    {unassigned.map((f) => {
+                      const already = favorites?.some((x) => x.partId === f.partId)
+                      return (
+                        <li key={f.partId} className="flex items-center justify-between gap-2 text-xs">
+                          <Link to={`/parts/${f.partId}?vehicleId=${vehicle.id}`} className="min-w-0 truncate text-ridefit-text hover:underline">
+                            {f.name}
+                          </Link>
+                          <button
+                            type="button"
+                            disabled={already || savingPartId === f.partId}
+                            onClick={() => saveToVehicle(f.partId)}
+                            className="shrink-0 rounded-full border border-ridefit-border px-2 py-0.5 text-ridefit-primary transition hover:border-ridefit-primary disabled:opacity-50"
+                          >
+                            {already ? '이 차량에 저장됨' : '이 차량에 저장'}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </details>
+              )}
             </section>
           </div>
 
@@ -272,7 +324,7 @@ function Garage() {
                   to={`/parts?vehicleId=${vehicle.id}`}
                   className="mt-2 inline-block text-sm font-medium text-ridefit-primary hover:underline"
                 >
-                  이 차량의 호환 부품 전체 보기 →
+                  이 차량의 호환 부품 전체 보기 <Ico as={ArrowRight} />
                 </Link>
               </div>
             )}
@@ -294,12 +346,7 @@ function Garage() {
                         className="block h-full overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card transition hover:border-ridefit-primary"
                         data-testid={`garage-recommended-${p.partId}`}
                       >
-                        <SafeImage
-                          src={p.imageUrl}
-                          alt={p.name}
-                          className="aspect-[4/3] w-full bg-white/5 object-contain"
-                          fallbackClassName="aspect-[4/3] w-full text-[10px]"
-                        />
+                        <ProductImage src={p.imageUrl} alt={p.name} />
                         <div className="p-3">
                           <p className="text-[11px] text-ridefit-text-secondary">
                             {p.category} ·{' '}
@@ -309,6 +356,12 @@ function Garage() {
                             {p.name}
                           </p>
                           <p className="mt-1 text-sm font-semibold text-ridefit-text">{formatPrice(p.price)}</p>
+                          {/* 등록된 실제 판매처 기준(실시간 아님). 판매처가 없으면 표시하지 않는다. */}
+                          {s.sellerCount > 0 && (
+                            <p className="text-[11px] text-ridefit-primary">
+                              판매처 {s.sellerCount}곳{s.lowestPrice != null ? ` · 확인된 가격 ${s.lowestPrice.toLocaleString()}원부터` : ''}
+                            </p>
+                          )}
                           <p className="mt-1 text-[11px] text-ridefit-text-secondary">{reasons.join(' · ')}</p>
                         </div>
                       </Link>

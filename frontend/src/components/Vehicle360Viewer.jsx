@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { MoveHorizontal, Pause, Play } from 'lucide-react'
+import { Ico } from './Icon'
 
 // 이미지 시퀀스 기반 360도 차량 뷰어. 실제 3D 모델/Three.js가 아니라 "각도별 사진을 순서대로
 // 갈아끼우는" 방식이다. 프레임이 1장뿐이면(아직 여러 각도 사진이 없는 차종) 정지 이미지처럼
@@ -79,6 +81,8 @@ function normalizeTransform(cur, ref, box, natural) {
 // pxPerFrame: 프레임 하나 넘어가는 데 필요한 드래그 픽셀 거리(작을수록 민감).
 // showControls: 재생/멈춤 버튼과 드래그 안내 문구 표시 여부 - 차고 카드처럼 작은 썸네일에서는
 //   버튼이 화면을 가리므로 false로 끄고, 자동 회전 자체는 그대로 동작한다.
+// layers: 장착한 부품 레이어 [{ key, frames }] - frames[i]는 i번째 차량 프레임과 같은 캔버스 크기의 투명 PNG(null = 그 각도에선
+//   안 보임). 차량 프레임과 같은 index, 같은 보정(transform), 같은 object-contain 박스로 겹쳐서 각도가 절대 어긋나지 않는다.
 function Vehicle360Viewer({
   frames,
   alt = '차량',
@@ -88,6 +92,7 @@ function Vehicle360Viewer({
   showControls = true,
   startIndex = 0,
   normalizeTo,
+  layers = [],
 }) {
   const [index, setIndex] = useState(() => (Number.isInteger(startIndex) && startIndex >= 0 ? startIndex : 0))
   // 프레임(및 기준 이미지)별 차량 영역. normalizeTo가 있을 때만 잰다.
@@ -148,11 +153,15 @@ function Vehicle360Viewer({
       ref.onload = () => measure(normalizeTo, ref)
       ref.src = normalizeTo
     }
+    // 부품 레이어도 미리 받아둔다 - 회전 중 매 프레임마다 내려받느라 깜빡이지 않게.
+    layers.forEach((layer) => layer.frames.forEach((src) => {
+      if (src) new Image().src = src
+    }))
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validFrames.join('|'), normalizeTo])
+  }, [validFrames.join('|'), normalizeTo, layers.map((l) => l.frames.join(',')).join('|')])
 
   // 크기 보정 계산에 필요한 <img> 박스 크기 - 화면 크기가 바뀌면 다시 잰다.
   useLayoutEffect(() => {
@@ -186,6 +195,8 @@ function Vehicle360Viewer({
 
   const handlePointerDown = (e) => {
     if (!interactive) return
+    // 재생/멈춤 버튼 위에서는 드래그를 시작하지 않는다 - 여기서 포인터를 캡처하면 click이 버튼 대신 이 div로 가서 버튼이 안 눌린다.
+    if (e.target.closest('button')) return
     e.currentTarget.setPointerCapture(e.pointerId)
     dragState.current = { pointerId: e.pointerId, startX: e.clientX, lastX: e.clientX, moved: false }
     clearTimeout(resumeTimerRef.current)
@@ -243,9 +254,28 @@ function Vehicle360Viewer({
         }}
         onError={() => setFailedFrames((prev) => new Set(prev).add(currentIndex))}
       />
+      {/* 부품 레이어: 각도별 8장을 모두 올려두고 현재 각도만 보이게 한다(src를 바꾸면 회전 첫 바퀴에 새 이미지를
+          받는 동안 부품이 잠깐 사라지므로). 차량 프레임과 같은 currentIndex/보정 style을 쓴다. */}
+      {layers.map((layer) =>
+        layer.frames.map((src, i) =>
+          src ? (
+            <img
+              key={`${layer.key}-${i}`}
+              src={src}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
+              style={{ ...(normalizeStyle ?? {}), visibility: i === currentIndex ? 'visible' : 'hidden' }}
+              data-testid={i === currentIndex ? `vehicle-360-layer-${layer.key}` : undefined}
+              data-frame-index={i}
+            />
+          ) : null,
+        ),
+      )}
       {interactive && showControls && !hasInteracted && (
         <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-ridefit-border bg-ridefit-bg/85 px-3 py-1 text-xs text-ridefit-text-secondary backdrop-blur">
-          ↔ 드래그해서 차량을 돌려보세요
+          <Ico as={MoveHorizontal} className="mr-1" />드래그해서 차량을 돌려보세요
         </span>
       )}
       {interactive && showControls && (
@@ -264,7 +294,7 @@ function Vehicle360Viewer({
               : 'border-ridefit-border bg-ridefit-bg/85 text-ridefit-text-secondary hover:border-ridefit-primary hover:text-ridefit-primary'
           }`}
         >
-          <span aria-hidden="true">{autoRotate ? '❚❚' : '▶'}</span>
+          {autoRotate ? <Pause aria-hidden="true" className="h-3.5 w-3.5" /> : <Play aria-hidden="true" className="h-3.5 w-3.5" />}
           {autoRotate ? '자동 회전' : '멈춤'}
         </button>
       )}

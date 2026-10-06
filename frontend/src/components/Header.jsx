@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { Menu } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
 import { RIDEFIT_LOGO_IMAGE } from '../constants/images'
+import { useAuth } from '../context/AuthContext'
 
 const NAV_ITEMS = [
   { to: '/', label: '홈' },
@@ -18,6 +19,16 @@ function navLinkClass({ isActive }) {
     isActive
       ? 'text-ridefit-primary after:w-full after:bg-ridefit-primary'
       : 'text-ridefit-text-secondary after:w-0 hover:text-ridefit-primary hover:after:w-full hover:after:bg-ridefit-primary/40'
+  }`
+}
+
+// 모바일 세로 메뉴용. 데스크톱 navLinkClass의 밑줄(::after, 헤더 하단선 위치에 맞춘 -bottom-[21px] + w-full)을 그대로 쓰면
+// 세로 목록에서는 밑줄이 메뉴 폭 전체로 늘어나 다음 항목 글자 위를 지나간다 -> 모바일은 밑줄 없이 배경/글자색으로 활성 표시.
+function mobileNavLinkClass({ isActive }) {
+  return `block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+    isActive
+      ? 'bg-ridefit-primary/10 text-ridefit-primary'
+      : 'text-ridefit-text-secondary hover:bg-ridefit-card hover:text-ridefit-primary'
   }`
 }
 
@@ -125,27 +136,27 @@ function Header() {
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
           aria-label="메뉴 열기"
-          className="rounded-md p-2 text-xl text-ridefit-text lg:hidden"
+          className="rounded-md p-2 text-ridefit-text lg:hidden"
         >
-          ☰
+          <Menu aria-hidden="true" className="h-6 w-6" />
         </button>
       </div>
 
       {menuOpen && (
-        <nav className="flex flex-col gap-2 border-t border-ridefit-border bg-ridefit-bg px-4 py-3 lg:hidden">
+        <nav className="flex flex-col gap-1 border-t border-ridefit-border bg-ridefit-bg px-4 py-3 lg:hidden">
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/'}
               onClick={() => setMenuOpen(false)}
-              className={navLinkClass}
+              className={mobileNavLinkClass}
             >
               {item.label}
             </NavLink>
           ))}
           {isAuthenticated && (
-            <NavLink to="/mypage" onClick={() => setMenuOpen(false)} className={navLinkClass}>
+            <NavLink to="/mypage" onClick={() => setMenuOpen(false)} className={mobileNavLinkClass}>
               마이페이지
             </NavLink>
           )}
@@ -167,12 +178,12 @@ function Header() {
             </NavLink>
           )}
           {isAuthenticated && (
-            <NavLink to="/reservations" onClick={() => setMenuOpen(false)} className={navLinkClass}>
+            <NavLink to="/reservations" onClick={() => setMenuOpen(false)} className={mobileNavLinkClass}>
               내 예약
             </NavLink>
           )}
           {isAdmin && (
-            <NavLink to="/admin" onClick={() => setMenuOpen(false)} className={navLinkClass}>
+            <NavLink to="/admin" onClick={() => setMenuOpen(false)} className={mobileNavLinkClass}>
               관리자
             </NavLink>
           )}
@@ -183,10 +194,10 @@ function Header() {
             </button>
           ) : (
             <div className="mt-2 flex gap-4">
-              <NavLink to="/login" onClick={() => setMenuOpen(false)} className={navLinkClass}>
+              <NavLink to="/login" onClick={() => setMenuOpen(false)} className={mobileNavLinkClass}>
                 로그인
               </NavLink>
-              <NavLink to="/signup" onClick={() => setMenuOpen(false)} className={navLinkClass}>
+              <NavLink to="/signup" onClick={() => setMenuOpen(false)} className={mobileNavLinkClass}>
                 회원가입
               </NavLink>
             </div>

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { ArrowLeft, Check, Heart } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Ico } from '../components/Icon'
 import VehicleImage from '../components/VehicleImage'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
@@ -126,7 +128,7 @@ function Finder() {
               </span>
               {step > 0 && (
                 <button type="button" onClick={() => setStep(step - 1)} className="hover:text-ridefit-primary">
-                  ← 이전 질문
+                  <Ico as={ArrowLeft} className="mr-1" />이전 질문
                 </button>
               )}
             </div>
@@ -237,9 +239,7 @@ function Finder() {
                         <ul className="flex flex-col gap-1 text-sm text-ridefit-text-secondary">
                           {rec.reasons.map((r) => (
                             <li key={r} className="flex gap-2">
-                              <span className="text-ridefit-primary" aria-hidden="true">
-                                ✓
-                              </span>
+                              <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ridefit-primary" />
                               {r}
                             </li>
                           ))}
@@ -300,7 +300,7 @@ function Finder() {
                                 : 'border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-primary hover:text-ridefit-primary'
                             }`}
                           >
-                            {interestIds.has(rec.vehicle.id) ? '♥ 관심 차량' : '♡ 관심 차량 등록'}
+                            <Ico as={Heart} className="mr-1" filled={interestIds.has(rec.vehicle.id)} />{interestIds.has(rec.vehicle.id) ? '관심 차량' : '관심 차량 등록'}
                           </button>
                         ) : (
                           <Link

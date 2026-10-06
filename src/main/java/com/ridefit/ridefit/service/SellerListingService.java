@@ -10,8 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,6 +39,48 @@ public class SellerListingService {
                         .thenComparing(l -> l.getPrice() == null ? Integer.MAX_VALUE : l.getPrice()))
                 .map(l -> SellerListingResponse.from(l, lowestIds.contains(l.getId())))
                 .toList();
+    }
+
+    // 부품 카드용 판매처 가격 요약(여러 부품을 한 번에). 실제 판매처만(예시 .test 제외), 가격 확인된 것 먼저 가격 오름차순,
+    // 최대 maxSellers곳 + 나머지 개수. lowestPrice는 상세와 같은 규칙(가격 확인된 실제 판매처 2곳 이상)일 때만 채운다.
+    // 등록/확인된 가격이며 실시간 조회 값이 아니다(checkedAt = 마지막 확인 시각).
+    public Map<Long, ListingSummary> summaries(Collection<Long> partIds, int maxSellers) {
+        Map<Long, ListingSummary> result = new LinkedHashMap<>();
+        for (Long partId : partIds) {
+            List<SellerListing> real = sellerListingRepository.findByPartIdOrderByPriceAsc(partId).stream()
+                    .filter(l -> !l.isSample())
+                    .sorted(Comparator.comparing((SellerListing l) -> l.getPrice() == null)
+                            .thenComparing(l -> l.getPrice() == null ? Integer.MAX_VALUE : l.getPrice()))
+                    .toList();
+            List<SellerListing> priced = real.stream().filter(l -> l.getPrice() != null).toList();
+            Integer lowest = priced.size() >= 2 ? priced.get(0).getPrice() : null;
+            LocalDateTime latestChecked = real.stream().map(SellerListing::getCheckedAt).filter(java.util.Objects::nonNull)
+                    .max(Comparator.naturalOrder()).orElse(null);
+            List<ListingSummary.Seller> top = real.stream().limit(maxSellers)
+                    .map(l -> new ListingSummary.Seller(l.getSellerName(), l.getPrice(), productUrl(l.getSourceUrl()), l.getCheckedAt()))
+                    .toList();
+            result.put(partId, new ListingSummary(partId, real.size(), priced.size(), lowest, latestChecked, top,
+                    Math.max(0, real.size() - top.size())));
+        }
+        return result;
+    }
+
+    // 실제로 열 수 있는 http/https 주소만 링크로 돌려준다(없거나 형식이 다르면 null - 주소를 만들지 않는다).
+    private static String productUrl(String sourceUrl) {
+        if (sourceUrl == null || sourceUrl.isBlank()) return null;
+        try {
+            java.net.URI u = java.net.URI.create(sourceUrl.trim());
+            return ("http".equalsIgnoreCase(u.getScheme()) || "https".equalsIgnoreCase(u.getScheme())) && u.getHost() != null
+                    ? u.toString() : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    public record ListingSummary(Long partId, int sellerCount, int pricedCount, Integer lowestPrice,
+                                 LocalDateTime latestCheckedAt, List<Seller> sellers, int moreSellers) {
+        public record Seller(String sellerName, Integer price, String productUrl, LocalDateTime checkedAt) {
+        }
     }
 
     private Set<Long> lowestIds(List<SellerListing> listings) {

@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ArrowRight, Check, ExternalLink, Heart, Star } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import FitVehiclePicker from '../components/FitVehiclePicker'
+import { Ico } from '../components/Icon'
 import PartBadges from '../components/PartBadges'
 import SafeImage from '../components/SafeImage'
 import SellerListings from '../components/SellerListings'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
 import VehicleYearBadge, { ModelImageNotice } from '../components/VehicleYearBadge'
+import { displayImageUrl } from '../constants/productImages'
 import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
 import { getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
@@ -19,7 +22,126 @@ const STATUS_STYLE = {
   호환불가: 'text-ridefit-danger',
 }
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 12
+
+const formatDay = (iso) => (iso ? iso.slice(0, 10).replaceAll('-', '.') : null)
+const hostOf = (url) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return null
+  }
+}
+
+// 카드 안 가격 영역: "판매처 가격"(등록된 실제 판매처의 등록/확인 가격, 실시간 조회 아님, 최대 3곳) /
+// "확인된 가격 중 최저"(가격 확인 판매처 2곳 이상일 때만) / "RIDEFIT 등록가"(판매처 가격과 별개)를 섞지 않고 따로 보여준다.
+// 상품 주소가 저장된 판매처만 외부 링크(새 탭)로 연결한다(주소를 만들지 않는다).
+function PricePreview({ part, summary, detailTo }) {
+  const registered = part.price != null ? (
+    <p className="mt-1.5 text-xs text-ridefit-text-secondary" data-testid={`registered-price-${part.partId}`}>
+      RIDEFIT 등록가 <span className="font-semibold text-ridefit-text">{part.price.toLocaleString()}원</span>
+    </p>
+  ) : null
+  if (!summary) {
+    return (
+      <div className="mt-3">
+        <p className="text-xs text-ridefit-text-secondary">판매처 가격 불러오는 중...</p>
+        {registered}
+      </div>
+    )
+  }
+  if (summary.sellerCount === 0) {
+    return (
+      <div className="mt-3" data-testid={`price-preview-${part.partId}`}>
+        <p className="rounded-lg border border-dashed border-ridefit-border px-3 py-2 text-xs text-ridefit-text-secondary">등록된 판매처 가격 없음</p>
+        {registered}
+      </div>
+    )
+  }
+  return (
+    <div className="mt-3" data-testid={`price-preview-${part.partId}`}>
+      <div className="rounded-lg border border-ridefit-border bg-ridefit-bg/60 px-3 py-2.5">
+        <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 text-[11px] text-ridefit-text-secondary">
+          <span className="font-semibold text-ridefit-text">판매처 가격</span>
+          {summary.latestCheckedAt && <span>가격 확인일 {formatDay(summary.latestCheckedAt)} · 실시간 조회 아님</span>}
+        </div>
+        <ul className="flex flex-col gap-1">
+          {summary.sellers.map((s, i) => {
+            const host = s.productUrl ? hostOf(s.productUrl) : null
+            const row = (
+              <>
+                <span className="min-w-0 truncate">{s.sellerName}</span>
+                <span className="shrink-0 font-semibold text-ridefit-text">
+                  {s.price != null ? `${s.price.toLocaleString()}원` : '가격 확인 필요'}
+                  {s.productUrl && <Ico as={ExternalLink} className="ml-1 text-ridefit-text-secondary" />}
+                </span>
+              </>
+            )
+            return (
+              <li key={i} className="text-sm text-ridefit-text-secondary">
+                {s.productUrl ? (
+                  <a
+                    href={s.productUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    title={`${host ?? '판매처'} 상품 페이지로 이동(외부 사이트, 새 탭)`}
+                    className="flex items-center justify-between gap-2 rounded hover:text-ridefit-primary"
+                  >
+                    {row}
+                  </a>
+                ) : (
+                  <span className="flex items-center justify-between gap-2">{row}</span>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+        {(summary.lowestPrice != null || summary.moreSellers > 0) && (
+          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 border-t border-ridefit-border pt-1.5 text-xs">
+            {summary.lowestPrice != null ? (
+              <span className="font-semibold text-ridefit-primary">확인된 가격 중 최저 {summary.lowestPrice.toLocaleString()}원</span>
+            ) : (
+              <span />
+            )}
+            {summary.moreSellers > 0 && (
+              <Link to={detailTo} className="text-ridefit-primary hover:underline">
+                + {summary.moreSellers}개 판매처
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+      {registered}
+    </div>
+  )
+}
+
+// 예전 서버처럼 /api/parts/listings-summary 가 없을 때: 판매처가 있는 부품만 /api/parts/{id}/listings 로 같은 요약을 만든다.
+const summarizeListings = (partId, listings) => {
+  const real = listings
+    .filter((l) => !l.sample)
+    .sort((a, b) => (a.price == null) - (b.price == null) || (a.price ?? 0) - (b.price ?? 0))
+  const priced = real.filter((l) => l.price != null)
+  const validUrl = (u) => {
+    try {
+      const x = new URL(u)
+      return x.protocol === 'http:' || x.protocol === 'https:' ? u : null
+    } catch {
+      return null
+    }
+  }
+  const checked = real.map((l) => l.checkedAt).filter(Boolean).sort()
+  const top = real.slice(0, 3)
+  return {
+    partId,
+    sellerCount: real.length,
+    pricedCount: priced.length,
+    lowestPrice: priced.length >= 2 ? priced[0].price : null,
+    latestCheckedAt: checked.length ? checked[checked.length - 1] : null,
+    sellers: top.map((l) => ({ sellerName: l.sellerName, price: l.price, productUrl: validUrl(l.sourceUrl), checkedAt: l.checkedAt })),
+    moreSellers: Math.max(0, real.length - top.length),
+  }
+}
 
 // "부품 찾아보기": 내 차량 이미지를 중심에 두고, 부품을 켜고 끄면서 조합을 맞춰보는 커스터마이징 화면.
 // 상품을 나열해서 파는 화면이 아니라 FitRoom과 같은 "장착 시뮬레이션" 언어를 그대로 쓴다.
@@ -28,6 +150,10 @@ function PartsSearch() {
   const [vehicles, setVehicles] = useState([])
   const [vehiclesLoading, setVehiclesLoading] = useState(true)
   const [parts, setParts] = useState([])
+  // 이 차량에 "호환불가"로 확인된 부품(목록에서는 빼고 개수/이름만 안내)
+  const [incompatibleParts, setIncompatibleParts] = useState([])
+  // partId -> 등록된 판매처 가격 요약(/api/parts/listings-summary). 실시간 조회가 아닌 등록/확인 가격.
+  const [listingSummaries, setListingSummaries] = useState({})
   const [categories, setCategories] = useState([])
   const [category, setCategory] = useState(null)
   // 부품명/카테고리 검색어(현재 차량의 호환 부품 안에서만 거른다).
@@ -50,11 +176,23 @@ function PartsSearch() {
     loadPartCategorySlugs().then(setCategorySlugs)
   }, [])
 
+  // 저장(즐겨찾기)은 "지금 고른 차량"에 저장된다 - 차량을 바꾸면 그 차량에 저장한 부품 표시로 바뀐다.
   useEffect(() => {
+    if (!vehicleId) return
+    setFavoritePartIds(new Set())
     api
-      .get('/api/me/favorites')
+      .get(`/api/me/favorites?myVehicleId=${vehicleId}`)
       .then((data) => setFavoritePartIds(new Set(data.map((f) => f.partId))))
       .catch(() => {})
+  }, [vehicleId])
+
+  // 지금 차량에 검색/카테고리 결과가 없을 때 "내 다른 차량에는 호환 부품이 있다"를 실제 호환 데이터로만 알려준다.
+  const [otherVehicleSummary, setOtherVehicleSummary] = useState(null)
+  useEffect(() => {
+    api
+      .get('/api/my-vehicles/compatible-summary')
+      .then(setOtherVehicleSummary)
+      .catch(() => setOtherVehicleSummary([]))
   }, [])
 
   const toggleFavorite = (e, partId) => {
@@ -66,7 +204,10 @@ function PartsSearch() {
       isFavorite ? next.delete(partId) : next.add(partId)
       return next
     })
-    ;(isFavorite ? api.del(`/api/me/favorites/${partId}`) : api.post('/api/me/favorites', { partId })).catch(() => {
+    ;(isFavorite
+      ? api.del(`/api/me/favorites/${partId}?myVehicleId=${vehicleId}`)
+      : api.post('/api/me/favorites', { partId, myVehicleId: Number(vehicleId) })
+    ).catch(() => {
       setFavoritePartIds((prev) => {
         const next = new Set(prev)
         isFavorite ? next.add(partId) : next.delete(partId)
@@ -98,8 +239,32 @@ function PartsSearch() {
     api
       .get(`/api/my-vehicles/${vehicleId}/compatible-parts`)
       .then((data) => {
-        setParts(data)
-        setCategories([...new Set(data.map((p) => p.category))])
+        // 목록에는 장착 가능한(호환가능/브라켓필요) 부품만. 호환불가로 확인된 부품은 숨기지 않고 따로 알려준다.
+        const fit = data.filter((p) => p.status === '호환가능' || p.status === '브라켓필요')
+        setParts(fit)
+        setIncompatibleParts(data.filter((p) => !fit.includes(p)))
+        setCategories([...new Set(fit.map((p) => p.category))])
+        setListingSummaries({})
+        if (fit.length > 0) {
+          api
+            .get(`/api/parts/listings-summary?partIds=${fit.map((p) => p.partId).join(',')}`, { auth: false })
+            .then((rows) => setListingSummaries(Object.fromEntries(rows.map((r) => [r.partId, r]))))
+            .catch(async () => {
+              // 판매처가 있는 부품(stats.sellerCount > 0)만 개별 조회, 나머지는 "판매처 없음"
+              const entries = await Promise.all(
+                fit.map(async (p) => {
+                  if (!(p.stats?.sellerCount > 0)) return [p.partId, summarizeListings(p.partId, [])]
+                  try {
+                    const listings = await api.get(`/api/parts/${p.partId}/listings`, { auth: false })
+                    return [p.partId, summarizeListings(p.partId, listings)]
+                  } catch {
+                    return [p.partId, null]
+                  }
+                }),
+              )
+              setListingSummaries(Object.fromEntries(entries.filter(([, v]) => v)))
+            })
+        }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -109,7 +274,9 @@ function PartsSearch() {
   const vehicle360Frames = getVehicle360Frames(vehicle)
 
   const handleVehicleChange = (id) => {
-    setCategory(null)
+    if (category && !(otherVehicleSummary ?? []).find((v) => String(v.myVehicleId) === String(id))?.parts.some((p) => p.category === category)) {
+      setCategory(null)
+    }
     setSelectedPartIds([])
     setConflicts(null)
     setVisibleCount(PAGE_SIZE)
@@ -155,6 +322,20 @@ function PartsSearch() {
     )
   }, [parts, category, keyword])
   const visibleParts = filteredParts.slice(0, visibleCount)
+  const vehicleName = vehicle ? vehicle.nickname || vehicle.modelYearLabel : '내 차량'
+  const otherMatches = useMemo(() => {
+    const q = keyword.trim().toLowerCase()
+    if (!q && !category) return []
+    return (otherVehicleSummary ?? [])
+      .filter((v) => String(v.myVehicleId) !== String(vehicleId))
+      .map((v) => ({
+        ...v,
+        count: v.parts.filter(
+          (p) => (!category || p.category === category) && (!q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)),
+        ).length,
+      }))
+      .filter((v) => v.count > 0)
+  }, [otherVehicleSummary, vehicleId, keyword, category])
   const hasMoreParts = filteredParts.length > visibleParts.length
   const activeConflictPairs = (conflicts ?? []).filter(
     (c) => selectedPartIds.includes(c.partAId) && selectedPartIds.includes(c.partBId),
@@ -197,7 +378,10 @@ function PartsSearch() {
       {!vehiclesLoading && vehicles.length > 0 && (
         <>
           <div className="mb-6 flex flex-wrap items-center gap-3">
+            <span className="text-sm font-semibold text-ridefit-text">부품을 찾는 차량</span>
             <select
+              aria-label="부품을 찾는 차량"
+              data-testid="parts-vehicle-select"
               value={vehicleId ?? ''}
               onChange={(e) => handleVehicleChange(e.target.value)}
               className="rounded-lg border border-ridefit-border bg-ridefit-card px-3 py-2 text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary"
@@ -209,13 +393,14 @@ function PartsSearch() {
               ))}
             </select>
             <Link to="/garage" className="text-sm font-medium text-ridefit-primary hover:underline">
-              내 차고에서 관리하기 →
+              내 차고에서 관리하기 <Ico as={ArrowRight} />
             </Link>
           </div>
 
-          <div className="grid min-w-0 gap-8 lg:grid-cols-[1.1fr_1fr]">
+          {/* 위: 선택 차량 + 위치 미리보기 / 아래: 검색·카테고리 + 부품 카드 그리드 */}
+          <div className="flex min-w-0 flex-col gap-8">
             {/* 현재 차량 + 선택한 부품 위치 미리보기 */}
-            <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
+            <div className="mx-auto w-full min-w-0 max-w-3xl" data-testid="parts-vehicle-stage">
               <div className="relative overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6">
                 {vehicle360Frames && (
                   <div className="mb-4 flex justify-center gap-2" role="group" aria-label="차량 보기 방식">
@@ -264,7 +449,7 @@ function PartsSearch() {
                 </p>
                 {viewMode === 'fit' && selectedParts.length === 0 && (
                   <p className="mt-1 text-center text-xs text-ridefit-text-secondary">
-                    오른쪽에서 부품을 장착하면 차량 위에 표시돼요.
+                    아래 목록에서 [위치 미리보기]를 누르면 차량 위에 표시돼요.
                   </p>
                 )}
               </div>
@@ -347,58 +532,93 @@ function PartsSearch() {
               {error && <p className="text-ridefit-danger">에러: {error}</p>}
 
               {!loading && !error && visibleParts.length === 0 && (
-                <p className="text-ridefit-text-secondary">
-                  {keyword.trim() || category
-                    ? '조건에 맞는 호환 부품이 없어요. 검색어나 카테고리를 바꿔보세요.'
-                    : '아직 이 차량에 대해 호환이 확인된 부품이 없어요.'}
+                <div className="rounded-xl border border-dashed border-ridefit-border bg-ridefit-card px-4 py-5 text-sm" data-testid="parts-empty">
+                  <p className="text-ridefit-text">
+                    {keyword.trim() || category
+                      ? `현재 선택한 ${vehicleName}에는 확인된 호환 ${keyword.trim() || category} 부품이 없습니다.`
+                      : `아직 ${vehicleName}에 대해 호환이 확인된 부품이 없어요.`}
+                  </p>
+                  {otherMatches.length > 0 && (
+                    <div className="mt-3" data-testid="parts-other-vehicles">
+                      <p className="text-xs text-ridefit-text-secondary">내 다른 차량에는 호환이 확인된 부품이 있어요.</p>
+                      <ul className="mt-2 flex flex-col gap-1.5">
+                        {otherMatches.map((m) => (
+                          <li key={m.myVehicleId} className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 truncate text-xs text-ridefit-text">
+                              {m.label} · {m.count}개
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleVehicleChange(String(m.myVehicleId))}
+                              className="shrink-0 rounded-full border border-ridefit-primary px-2.5 py-0.5 text-xs font-medium text-ridefit-primary transition hover:bg-ridefit-primary/10"
+                            >
+                              이 차량으로 보기
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!loading && !error && incompatibleParts.length > 0 && (
+                <p className="mb-3 rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-xs text-ridefit-text-secondary" data-testid="parts-incompatible-note">
+                  {vehicleName}에는 맞지 않는 것으로 확인된 부품 {incompatibleParts.length}개는 목록에서 뺐어요:{' '}
+                  {incompatibleParts.map((p) => (
+                    <Link key={p.partId} to={`/parts/${p.partId}?vehicleId=${vehicleId}`} className="mr-2 text-ridefit-text hover:underline">
+                      {p.name}
+                    </Link>
+                  ))}
                 </p>
               )}
 
               {!loading && !error && visibleParts.length > 0 && (
-                <div className="flex flex-col gap-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="parts-grid">
                   {visibleParts.map((part) => {
                     const isActive = selectedPartIds.includes(part.partId)
                     return (
                       <div
                         key={part.partId}
-                        className={`rounded-xl border p-3 transition ${
+                        className={`flex min-w-0 flex-col rounded-xl border p-4 transition ${
                           isActive ? 'border-ridefit-primary bg-ridefit-primary/5' : 'border-ridefit-border bg-ridefit-card'
                         }`}
+                        data-testid={`parts-card-${part.partId}`}
                       >
-                        <div className="flex items-center gap-3">
-                          <SafeImage
-                            src={part.imageUrl}
-                            alt={part.name}
-                            className="h-16 w-16 shrink-0 rounded-lg border border-ridefit-border bg-white object-contain p-1"
-                            fallbackClassName="h-16 w-16 shrink-0 rounded-lg border border-ridefit-border text-[10px]"
-                          />
-
+                        {/* 1) 상품명 + 호환 + 이미지 */}
+                        <div className="flex gap-3">
+                          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-ridefit-border bg-white">
+                            <SafeImage
+                              src={displayImageUrl(part.imageUrl)}
+                              alt={part.name}
+                              className="h-full w-full object-contain p-1.5"
+                              fallbackText="이미지 준비 중"
+                              fallbackClassName="h-full w-full !bg-white text-[10px] !text-slate-400"
+                            />
+                          </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <Link
-                                to={`/parts/${part.partId}?vehicleId=${vehicleId}`}
-                                className="truncate text-sm font-semibold text-ridefit-text hover:underline"
-                              >
-                                {part.name}
-                              </Link>
-                              <button
-                                type="button"
-                                onClick={(e) => toggleFavorite(e, part.partId)}
-                                aria-label="즐겨찾기"
-                                className={`shrink-0 text-lg leading-none ${
-                                  favoritePartIds.has(part.partId) ? 'text-ridefit-warning' : 'text-ridefit-text-secondary/40 hover:text-ridefit-warning'
-                                }`}
-                              >
-                                {favoritePartIds.has(part.partId) ? '★' : '☆'}
-                              </button>
-                            </div>
-                            <p className={`text-xs font-medium ${STATUS_STYLE[part.status] ?? 'text-ridefit-text-secondary'}`}>
-                              {part.category} · {part.status}
+                            <Link
+                              to={`/parts/${part.partId}?vehicleId=${vehicleId}`}
+                              className="line-clamp-2 text-[15px] font-semibold leading-snug text-ridefit-text hover:underline"
+                              title={part.name}
+                            >
+                              {part.name}
+                            </Link>
+                            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                              <span className={`font-semibold ${STATUS_STYLE[part.status] ?? 'text-ridefit-text-secondary'}`}>
+                                {vehicle?.vehicleModelName ?? '내 차량'} {part.status}
+                              </span>
+                              <span className="text-ridefit-text-secondary">{part.category}</span>
+                              {part.stats?.ratingCount > 0 && (
+                                <span className="text-ridefit-text-secondary">
+                                  <Ico as={Star} className="text-ridefit-warning" filled /> {part.stats.avgRating.toFixed(1)} ({part.stats.ratingCount})
+                                </span>
+                              )}
                             </p>
-                            {part.stats?.ratingCount > 0 && (
-                              <p className="mt-0.5 text-xs text-ridefit-text-secondary">
-                                <span className="text-ridefit-warning">★</span> {part.stats.avgRating.toFixed(1)}{' '}
-                                <span className="text-ridefit-text-secondary/70">({part.stats.ratingCount}개 후기)</span>
+                            {/* 이 차종에서 이 부품이 장착 가능한 연식(compatibility 기준). 상세는 부품 상세의 "호환 차량". */}
+                            {formatFitmentYears(part.sameModelFitments) && (
+                              <p className="mt-0.5 truncate text-[11px] text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>
+                                적용 연식: {formatFitmentYears(part.sameModelFitments)}
                               </p>
                             )}
                             {part.stats?.badges?.length > 0 && (
@@ -406,65 +626,49 @@ function PartsSearch() {
                                 <PartBadges badges={part.stats.badges} />
                               </div>
                             )}
-                            <p className="mt-1 text-sm font-semibold text-ridefit-text">
-                              {part.price.toLocaleString()}원
-                              {part.stats?.lowestPrice != null && part.stats.lowestPrice < part.price && (
-                                <span className="ml-2 text-xs font-normal text-ridefit-primary">
-                                  확인된 판매처 가격 {part.stats.lowestPrice.toLocaleString()}원부터
-                                </span>
-                              )}
-                            </p>
-                            {/* 이 차종에서 이 부품이 장착 가능한 연식(compatibility 기준). 상세는 부품 상세의 "호환 차량". */}
-                            {formatFitmentYears(part.sameModelFitments) && (
-                              <p className="mt-0.5 truncate text-xs text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>
-                                적용: {vehicle?.vehicleModelName} {formatFitmentYears(part.sameModelFitments)}
-                              </p>
-                            )}
                           </div>
+                        </div>
 
+                        {/* 2) 가격: 판매처 가격 / 확인된 최저 / RIDEFIT 등록가를 구분해서 */}
+                        <PricePreview
+                          part={part}
+                          summary={listingSummaries[part.partId]}
+                          detailTo={`/parts/${part.partId}?vehicleId=${vehicleId}`}
+                        />
+
+                        {/* 3) 행동: 위치 미리보기(이 화면) / 저장(이 차량) / 상세 / 부품 입혀보기(FitRoom) - 카드 높이가 달라도 아래에 맞춘다 */}
+                        <div className="mt-auto flex min-w-0 flex-wrap items-center gap-2 pt-3">
                           <button
                             type="button"
                             onClick={() => togglePartSelection(part.partId)}
-                            className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                            aria-pressed={isActive}
+                            data-testid={`parts-preview-${part.partId}`}
+                            className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                               isActive
-                                ? 'border border-ridefit-border bg-ridefit-bg-alt text-ridefit-text hover:border-ridefit-primary'
+                                ? 'border border-ridefit-primary bg-ridefit-primary/15 text-ridefit-primary'
                                 : 'bg-ridefit-primary text-white hover:brightness-110'
                             }`}
                           >
-                            {isActive ? '장착 해제' : '장착'}
+                            {isActive ? <><Ico as={Check} className="mr-1" />위치 미리보기 중</> : '위치 미리보기'}
                           </button>
-                        </div>
-
-                        <div className="mt-2 flex items-center gap-3 pl-[76px]">
                           <button
                             type="button"
-                            onClick={() => setExpandedPartId((prev) => (prev === part.partId ? null : part.partId))}
-                            className="text-xs font-medium text-ridefit-primary hover:underline"
+                            onClick={(e) => toggleFavorite(e, part.partId)}
+                            aria-label="즐겨찾기"
+                            aria-pressed={favoritePartIds.has(part.partId)}
+                            title={`${vehicleName}에 ${favoritePartIds.has(part.partId) ? '저장됨 (눌러서 해제)' : '저장'}`}
+                            data-testid={`parts-save-${part.partId}`}
+                            className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                              favoritePartIds.has(part.partId)
+                                ? 'border-ridefit-warning/60 bg-ridefit-warning/10 text-ridefit-warning'
+                                : 'border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-warning hover:text-ridefit-warning'
+                            }`}
                           >
-                            {expandedPartId === part.partId ? '판매처 비교 닫기' : '판매처 비교'}
+                            <Ico as={Heart} className="mr-1" filled={favoritePartIds.has(part.partId)} />{favoritePartIds.has(part.partId) ? '저장됨' : '저장'}
                           </button>
-                          {part.installVideoUrl && (
-                            <a
-                              href={part.installVideoUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-xs font-medium text-ridefit-primary hover:underline"
-                            >
-                              설치 영상
-                            </a>
-                          )}
-                        </div>
-                        {expandedPartId === part.partId && (
-                          <div className="mt-2 sm:pl-[76px]">
-                            <SellerListings partId={part.partId} />
-                          </div>
-                        )}
-
-                        {/* 위의 "장착"은 이 화면 안에서의 빠른 위치 미리보기, 여기는 FitRoom(장착한 모습 포함)으로 넘어가는 진입점. */}
-                        <div className="mt-3 flex min-w-0 flex-wrap items-start gap-2 sm:pl-[76px]">
                           <Link
                             to={`/parts/${part.partId}?vehicleId=${vehicleId}`}
-                            className="rounded-lg border border-ridefit-border px-3 py-1.5 text-xs font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary"
+                            className="rounded-lg border border-ridefit-border px-3 py-2 text-xs font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary"
                           >
                             상세보기
                           </Link>
@@ -472,10 +676,29 @@ function PartsSearch() {
                             partId={part.partId}
                             vehicles={vehicles}
                             currentVehicleId={vehicleId}
-                            className="min-w-0 flex-1"
-                            buttonClassName="rounded-lg bg-ridefit-primary/10 px-3 py-1.5 text-xs font-semibold text-ridefit-primary transition hover:bg-ridefit-primary/20 disabled:opacity-50"
+                            className="min-w-0"
+                            buttonClassName="rounded-lg bg-ridefit-primary/10 px-3 py-2 text-xs font-semibold text-ridefit-primary transition hover:bg-ridefit-primary/20 disabled:opacity-50"
                           />
                         </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedPartId((prev) => (prev === part.partId ? null : part.partId))}
+                            className="text-[11px] font-medium text-ridefit-text-secondary hover:text-ridefit-primary hover:underline"
+                          >
+                            {expandedPartId === part.partId ? '판매처 상세 닫기' : '판매처 상세 · 판매처 추가'}
+                          </button>
+                          {part.installVideoUrl && (
+                            <a href={part.installVideoUrl} target="_blank" rel="noreferrer" className="text-[11px] font-medium text-ridefit-text-secondary hover:text-ridefit-primary hover:underline">
+                              설치 영상 <Ico as={ExternalLink} />
+                            </a>
+                          )}
+                        </div>
+                        {expandedPartId === part.partId && (
+                          <div className="mt-2">
+                            <SellerListings partId={part.partId} />
+                          </div>
+                        )}
                       </div>
                     )
                   })}
@@ -483,7 +706,7 @@ function PartsSearch() {
                     <button
                       type="button"
                       onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
-                      className="rounded-lg border border-ridefit-border py-2 text-sm font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary"
+                      className="col-span-full rounded-lg border border-ridefit-border py-2 text-sm font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary"
                     >
                       더보기 ({filteredParts.length - visibleParts.length}개 더 있음)
                     </button>

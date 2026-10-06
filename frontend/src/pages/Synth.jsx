@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Ico } from '../components/Icon'
 import { API_BASE, api } from '../lib/api'
 
 // 예전 AI 합성 화면(/api/synth). 비용이 드는 호출이라 페이지를 열 때 자동으로 만들지 않고, 버튼을 눌렀을 때만 요청한다.
@@ -45,7 +47,7 @@ function Synth() {
             장착 모습 만들기
           </button>
           <Link to={`/garage/${vehicleId}/fit`} className="text-xs text-ridefit-text-secondary hover:text-ridefit-primary hover:underline">
-            부품 입혀보기에서 장착해보기 →
+            부품 입혀보기에서 장착해보기 <Ico as={ArrowRight} />
           </Link>
         </div>
       )}

@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ArrowRight, Check, Heart, Star } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import AiFitPanel from '../components/AiFitPanel'
+import { Ico } from '../components/Icon'
 import PartBadges from '../components/PartBadges'
+import ProductImage from '../components/ProductImage'
 import SafeImage from '../components/SafeImage'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
 import VehicleYearBadge, { ModelImageNotice } from '../components/VehicleYearBadge'
 import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
+import { get360PartLayer } from '../constants/vehicle360Parts'
+import { HERO_BUILD } from '../constants/heroBuild'
 import { getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 import { formatFitmentYears } from '../lib/fitment'
@@ -22,8 +27,12 @@ function FitRoom() {
   // 숫자가 아닌 값은 무시한다(호환 목록과 비교할 수 없음).
   const rawPartId = searchParams.get('partId')
   const requestedPartId = rawPartId && /^\d+$/.test(rawPartId) ? String(Number(rawPartId)) : null
+  // ?build=hero : 홈 Hero에 보여준 구성(부품 이름 기준 - DB마다 id가 다를 수 있어 이름으로 맞춘다)을 켠 상태로 연다.
+  const requestedBuild = searchParams.get('build') === 'hero' ? HERO_BUILD.map((b) => b.partName) : null
   // URL로 요청된 부품의 자동 선택 결과: null(요청 없음) | { ok, name }
   const [preselect, setPreselect] = useState(null)
+  // 같은 자리(같은 카테고리) 부품을 바꿔 끼웠을 때 안내: { category, from, to } | null
+  const [replaced, setReplaced] = useState(null)
 
   const [vehicle, setVehicle] = useState(null)
   const [parts, setParts] = useState([])
@@ -40,6 +49,38 @@ function FitRoom() {
   const [savedResults, setSavedResults] = useState([])
   // "크게 보기"(전체 화면)로 연 장착 결과. null이면 닫힘.
   const [zoomed, setZoomed] = useState(null)
+  // 목록 카테고리 필터(null = 전체). 장착 상태와 무관 - 다른 카테고리에서 장착한 부품은 그대로 장착돼 있다.
+  const [categoryFilter, setCategoryFilter] = useState(null)
+  // true면 "이 차량에 저장한 부품"만 목록에 보인다(장착 상태와 무관).
+  const [savedOnly, setSavedOnly] = useState(false)
+  // 이 차량에 저장한(즐겨찾기) 부품 id. "장착해보기"와는 별개의 행동이다(하나를 눌러도 다른 쪽은 바뀌지 않음).
+  const [savedPartIds, setSavedPartIds] = useState(new Set())
+
+  useEffect(() => {
+    setSavedPartIds(new Set())
+    api
+      .get(`/api/me/favorites?myVehicleId=${myVehicleId}`)
+      .then((data) => setSavedPartIds(new Set(data.map((f) => f.partId))))
+      .catch(() => {})
+  }, [myVehicleId])
+
+  const toggleSaved = (partId) => {
+    const saved = savedPartIds.has(partId)
+    const flip = (prev) => {
+      const next = new Set(prev)
+      saved ? next.delete(partId) : next.add(partId)
+      return next
+    }
+    setSavedPartIds(flip)
+    ;(saved
+      ? api.del(`/api/me/favorites/${partId}?myVehicleId=${myVehicleId}`)
+      : api.post('/api/me/favorites', { partId, myVehicleId: Number(myVehicleId) })
+    ).catch(() => setSavedPartIds((prev) => {
+      const next = new Set(prev)
+      saved ? next.add(partId) : next.delete(partId)
+      return next
+    }))
+  }
 
   useEffect(() => {
     if (!zoomed) return
@@ -74,7 +115,20 @@ function FitRoom() {
         // ?partId= 로 들어오면(부품 찾아보기/상세의 "내 차에 장착해보기") 그 부품을 켠 상태로 연다.
         // 이 차량의 호환 후보 안에 있을 때만 켠다 - URL로 호환성 검사를 건너뛸 수 없다.
         // 사용자가 직접 켠 것이 아니므로 fit-selections(장착 시도 집계)는 기록하지 않는다.
-        if (requestedPartId != null) {
+        if (requestedBuild) {
+          // 호환 후보 안에 있는 것만, 같은 카테고리는 하나만 켠다(URL로 호환성 검사를 건너뛸 수 없다).
+          const picked = []
+          for (const name of requestedBuild) {
+            const match = candidates.find((p) => p.name === name)
+            if (match && !picked.some((x) => x.category === match.category)) picked.push(match)
+          }
+          if (picked.length > 0) {
+            setActivePartIds(new Set(picked.map((p) => p.partId)))
+            setPreselect({ ok: true, name: picked.map((p) => p.name).join(', '), build: true })
+          } else {
+            setPreselect({ ok: false, name: null, build: true })
+          }
+        } else if (requestedPartId != null) {
           const match = candidates.find((p) => String(p.partId) === requestedPartId)
           if (match) {
             setActivePartIds(new Set([match.partId]))
@@ -87,7 +141,8 @@ function FitRoom() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [myVehicleId, requestedPartId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myVehicleId, requestedPartId, requestedBuild?.join('|')])
 
   const categories = useMemo(() => {
     const map = new Map()
@@ -100,6 +155,14 @@ function FitRoom() {
 
   const activeParts = useMemo(() => parts.filter((p) => activePartIds.has(p.partId)), [parts, activePartIds])
   const vehicle360Frames = getVehicle360Frames(vehicle)
+  // 360 보기: 장착한 부품 중 8개 각도 레이어가 완성된 것만 레이어로 겹치고, 나머지는 "360° 장착 이미지 준비 중"으로 알린다.
+  // (장착 상태는 위치 미리보기/360/장착 모습 만들기가 모두 같은 activePartIds 하나를 쓴다)
+  const layers360 = vehicle360Frames
+    ? activeParts
+        .map((p) => ({ key: p.partId, frames: get360PartLayer(vehicle.modelImageUrl, p.name, vehicle360Frames.length) }))
+        .filter((l) => l.frames)
+    : []
+  const pending360 = vehicle360Frames ? activeParts.filter((p) => !layers360.some((l) => l.key === p.partId)) : []
 
   const checkConflicts = async (nextIds) => {
     if (nextIds.size < 2) {
@@ -119,11 +182,18 @@ function FitRoom() {
 
   // 서버 호출(충돌 확인/장착 시도 집계)은 setState 업데이트 함수 밖에서 한 번만 한다.
   // 업데이트 함수 안에 두면 React StrictMode(개발 모드)가 함수를 두 번 실행해 집계가 2배로 쌓인다.
+  // 같은 자리(같은 카테고리, 예: 사이드백 121과 122)에는 하나만 장착된다 - 새로 켜면 기존 것을 빼고 바꿔 끼운 것을 알린다.
   const togglePart = (partId) => {
     const next = new Set(activePartIds)
     const turningOn = !next.has(partId)
-    if (turningOn) next.add(partId)
-    else next.delete(partId)
+    setReplaced(null)
+    if (turningOn) {
+      const part = parts.find((p) => p.partId === partId)
+      const sameSlot = parts.filter((p) => p.partId !== partId && next.has(p.partId) && p.category === part?.category)
+      sameSlot.forEach((p) => next.delete(p.partId))
+      if (sameSlot.length > 0) setReplaced({ category: part.category, from: sameSlot.map((p) => p.name).join(', '), to: part.name })
+      next.add(partId)
+    } else next.delete(partId)
     setActivePartIds(next)
     checkConflicts(next)
     if (turningOn) {
@@ -143,7 +213,7 @@ function FitRoom() {
       <div className="mx-auto max-w-5xl px-4 py-16">
         <p className="text-ridefit-danger">{error ? `에러: ${error}` : '존재하지 않는 차량이에요.'}</p>
         <Link to="/garage" className="mt-3 inline-block text-sm font-medium text-ridefit-primary hover:underline">
-          내 차고로 돌아가기 →
+          내 차고로 돌아가기 <Ico as={ArrowRight} />
         </Link>
       </div>
     )
@@ -177,10 +247,12 @@ function FitRoom() {
         </div>
       )}
 
-      <h1 className="mb-1 text-2xl font-bold text-ridefit-text">부품 입혀보기</h1>
-      <p className="mb-8 text-sm text-ridefit-text-secondary">
-        {vehicle.nickname || vehicle.modelYearLabel} — 호환되는 부품을 켜고 끄면서 조합을 비교해보세요.
-      </p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-ridefit-primary">부품 입혀보기</p>
+      <h1 className="mt-1 text-2xl font-bold text-ridefit-text" data-testid="fit-vehicle-title">
+        {vehicle.nickname ? `${vehicle.nickname} · ` : ''}
+        {vehicle.manufacturerName} {vehicle.modelYearLabel}
+      </h1>
+      <p className="mb-8 mt-1 text-sm text-ridefit-text-secondary">이 차량에 장착 가능한 부품을 골라 직접 장착해보세요.</p>
 
       {preselect && (
         <div
@@ -191,11 +263,15 @@ function FitRoom() {
           }`}
           data-testid="fit-preselect-notice"
         >
-          {preselect.ok
+          {preselect.build
+            ? preselect.ok
+              ? `홈에서 본 구성 중 이 차량에 호환되는 부품(${preselect.name})을 장착한 상태로 열었어요. [360° 보기]로 돌려보거나 하나씩 빼볼 수 있어요.`
+              : `홈에서 본 구성은 ${vehicle.nickname || vehicle.modelYearLabel}과(와) 호환이 확인되지 않아 장착하지 않았어요. 부품 목록의 호환 부품으로 직접 장착해보세요.`
+            : preselect.ok
             ? `'${preselect.name}'을(를) 장착한 상태로 열었어요. 아래 "장착한 모습 만들기"에서 장착한 모습도 확인할 수 있어요.`
             : `${preselect.name ? `'${preselect.name}'은(는) ` : '선택한 부품은 '}${
                 vehicle.nickname || vehicle.modelYearLabel
-              }과(와) 호환이 확인되지 않아 자동으로 장착하지 않았어요. 오른쪽 목록의 호환 부품은 그대로 사용할 수 있어요.`}
+              }과(와) 호환이 확인되지 않아 자동으로 장착하지 않았어요. 부품 목록의 호환 부품은 그대로 사용할 수 있어요.`}
         </div>
       )}
 
@@ -285,6 +361,7 @@ function FitRoom() {
               style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
               startIndex={getVehicle360StartIndex(vehicle.modelImageUrl)}
               normalizeTo={vehicle.modelImageUrl}
+              layers={layers360}
             />
           ) : (
             <VehicleFitStage vehicle={vehicle} parts={activeParts} conflictPartIds={conflictPartIds} />
@@ -292,9 +369,21 @@ function FitRoom() {
           </div>
           <ModelImageNotice vehicle={vehicle} className="mt-2" />
 
+          {viewMode === '360' && pending360.length > 0 && (
+            <p className="mt-3 rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-center text-xs text-ridefit-text-secondary" data-testid="fit-360-pending">
+              360° 장착 이미지 준비 중: {pending360.map((p) => p.name).join(', ')}
+              <span className="mt-0.5 block">장착 상태는 그대로예요. [위치 미리보기]나 [장착한 모습 만들기]에서 확인할 수 있어요.</span>
+            </p>
+          )}
+          {replaced && (
+            <p className="mt-3 rounded-lg border border-ridefit-primary/40 bg-ridefit-primary/10 px-3 py-2 text-center text-xs text-ridefit-text" data-testid="fit-replaced">
+              {replaced.category}는 한 자리에 하나만 장착돼요 - {replaced.from} 대신 {replaced.to}(으)로 바꿨어요.
+            </p>
+          )}
+
           {viewMode === 'fit' && activeParts.length === 0 && (
             <p className="mt-4 text-center text-sm text-ridefit-text-secondary">
-              오른쪽 목록에서 부품을 켜면 차량 위에 표시돼요.
+              부품 목록에서 [장착해보기]를 누르면 차량 위에 표시돼요.
             </p>
           )}
 
@@ -352,14 +441,52 @@ function FitRoom() {
           )}
         </div>
 
-        {/* 카테고리별 부품 토글 목록 - "이 차량에 장착 가능한(호환) 부품" 전체. 체크는 화면 안의 임시 선택일 뿐 저장되지 않는다. */}
+        {/* 카테고리별 부품 토글 목록 - "이 차량에 장착 가능한(호환) 부품" 전체. [장착해보기]는 화면 안의 임시 선택일 뿐 저장되지 않는다([♡ 저장]만 차량별 즐겨찾기로 저장). */}
         <div className="flex flex-col gap-6">
           {parts.length > 0 && (
             <div data-testid="fit-candidates-heading">
-              <h2 className="text-base font-semibold text-ridefit-text">이 차량에 호환되는 부품 ({parts.length}개)</h2>
+              <h2 className="text-lg font-semibold text-ridefit-text">
+                {vehicle.nickname || vehicle.modelYearLabel}에 장착 가능한 부품 ({parts.length}개)
+              </h2>
               <p className="mt-1 text-xs text-ridefit-text-secondary">
-                장착 가능한 부품 목록이에요. 내가 장착했거나 저장한 부품이 아니에요. 체크한 부품은 미리보기와 장착해보기에만 쓰이고, 기록으로 남지 않아요.
+                이 차량과 호환되는 부품만 보여드려요. 저장한 부품 목록이 아니에요 - [장착해보기]는 이 화면에서만 붙여보는 것이고,
+                [저장]을 누른 부품만 내 차고에 남아요.
               </p>
+              {/* 세 가지를 구분해서 보여준다: 호환(이 목록 전체) / 저장(♥) / 지금 입혀보는 중(✓) */}
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs" data-testid="fit-summary">
+                <span className="rounded-full border border-ridefit-border px-2.5 py-1 text-ridefit-text-secondary">호환 {parts.length}개</span>
+                <span className="rounded-full border border-ridefit-primary/50 bg-ridefit-primary/10 px-2.5 py-1 font-medium text-ridefit-primary" data-testid="fit-summary-active">
+                  <Ico as={Check} className="mr-1" />입혀보는 중 {activePartIds.size}개
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSavedOnly((v) => !v)}
+                  aria-pressed={savedOnly}
+                  data-testid="fit-saved-only"
+                  className={`rounded-full border px-2.5 py-1 font-medium transition ${
+                    savedOnly
+                      ? 'border-ridefit-warning bg-ridefit-warning/15 text-ridefit-warning'
+                      : 'border-ridefit-warning/50 text-ridefit-warning hover:bg-ridefit-warning/10'
+                  }`}
+                >
+                  <Ico as={Heart} className="mr-1" filled />저장한 부품 {parts.filter((p) => savedPartIds.has(p.partId)).length}개{savedOnly ? ' · 전체 보기' : ' 만 보기'}
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="부품 카테고리">
+                {[null, ...categories.map(([c]) => c)].map((c) => (
+                  <button
+                    key={c ?? 'all'}
+                    type="button"
+                    onClick={() => setCategoryFilter(c)}
+                    aria-pressed={categoryFilter === c}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                      categoryFilter === c ? 'bg-ridefit-primary text-white' : 'bg-ridefit-card text-ridefit-text-secondary hover:bg-ridefit-bg-alt'
+                    }`}
+                  >
+                    {c ?? '전체'}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {parts.length === 0 && (
@@ -371,64 +498,93 @@ function FitRoom() {
             </p>
           )}
 
-          {categories.map(([category, categoryParts]) => (
+          {savedOnly && !parts.some((p) => savedPartIds.has(p.partId)) && (
+            <p className="rounded-lg border border-dashed border-ridefit-border px-3 py-3 text-sm text-ridefit-text-secondary" data-testid="fit-saved-empty">
+              아직 이 차량에 저장한 부품이 없어요. 마음에 드는 부품의 [저장]을 눌러보세요.
+            </p>
+          )}
+
+          {categories
+            .filter(([category]) => categoryFilter === null || category === categoryFilter)
+            .map(([category, allParts]) => [category, savedOnly ? allParts.filter((p) => savedPartIds.has(p.partId)) : allParts])
+            .filter(([, categoryParts]) => categoryParts.length > 0)
+            .map(([category, categoryParts]) => (
             <div key={category}>
-              <h2 className="mb-2 text-sm font-semibold text-ridefit-text-secondary">{category}</h2>
+              <h3 className="mb-2 text-sm font-semibold text-ridefit-text-secondary">{category}</h3>
               <div className="flex flex-col gap-2">
                 {categoryParts.map((part) => {
                   const isActive = activePartIds.has(part.partId)
+                  const isSaved = savedPartIds.has(part.partId)
                   return (
-                    <label
+                    <div
                       key={part.partId}
-                      className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2 transition ${
+                      className={`flex items-start gap-3 rounded-xl border px-3 py-3 transition ${
                         isActive
                           ? (STATUS_STYLE[part.status] ?? 'border-ridefit-primary bg-ridefit-primary/10')
-                          : 'border-ridefit-border bg-ridefit-card hover:border-ridefit-primary/50'
+                          : 'border-ridefit-border bg-ridefit-card'
                       }`}
+                      data-testid={`fit-part-${part.partId}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={isActive}
-                          onChange={() => togglePart(part.partId)}
-                          className="h-4 w-4 shrink-0 accent-ridefit-primary"
-                        />
-                        <SafeImage
-                          src={part.imageUrl}
-                          alt=""
-                          className="h-12 w-12 shrink-0 rounded-md border border-ridefit-border bg-white object-contain p-0.5"
-                          fallbackClassName="h-12 w-12 shrink-0 rounded-md border border-ridefit-border text-[9px] leading-tight"
-                        />
-                        <div>
-                          <Link
-                            to={`/parts/${part.partId}?vehicleId=${myVehicleId}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-sm font-medium text-ridefit-text hover:underline"
-                          >
-                            {part.name}
-                          </Link>
-                          <p className="text-xs text-ridefit-text-secondary">
-                            {part.price.toLocaleString()}원 · {part.status}
+                      <div className="w-16 shrink-0 overflow-hidden rounded-lg border border-ridefit-border">
+                        <ProductImage src={part.imageUrl} alt="" className="!aspect-square" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          to={`/parts/${part.partId}?vehicleId=${myVehicleId}`}
+                          className="text-sm font-medium text-ridefit-text hover:underline"
+                        >
+                          {part.name}
+                        </Link>
+                        <p className="text-xs text-ridefit-text-secondary">
+                          {part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 없음'} · {part.status}
+                        </p>
+                        {formatFitmentYears(part.sameModelFitments) && (
+                          <p className="text-[11px] text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>
+                            적용: {formatFitmentYears(part.sameModelFitments)}
                           </p>
-                          {formatFitmentYears(part.sameModelFitments) && (
-                            <p className="text-[11px] text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>
-                              적용: {formatFitmentYears(part.sameModelFitments)}
-                            </p>
-                          )}
-                          {part.stats?.ratingCount > 0 && (
-                            <p className="text-xs text-ridefit-text-secondary">
-                              <span className="text-ridefit-warning">★</span> {part.stats.avgRating.toFixed(1)}{' '}
-                              <span className="text-ridefit-text-secondary/70">({part.stats.ratingCount}개 후기)</span>
-                            </p>
-                          )}
-                          {part.stats?.badges?.length > 0 && (
-                            <div className="mt-1">
-                              <PartBadges badges={part.stats.badges} />
-                            </div>
-                          )}
+                        )}
+                        {part.stats?.ratingCount > 0 && (
+                          <p className="text-xs text-ridefit-text-secondary">
+                            <Ico as={Star} className="text-ridefit-warning" filled /> {part.stats.avgRating.toFixed(1)}{' '}
+                            <span className="text-ridefit-text-secondary/70">({part.stats.ratingCount}개 후기)</span>
+                          </p>
+                        )}
+                        {part.stats?.badges?.length > 0 && (
+                          <div className="mt-1">
+                            <PartBadges badges={part.stats.badges} />
+                          </div>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => togglePart(part.partId)}
+                            aria-pressed={isActive}
+                            data-testid={`fit-toggle-${part.partId}`}
+                            className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition sm:px-3 sm:py-1.5 sm:text-xs ${
+                              isActive
+                                ? 'border border-ridefit-primary bg-ridefit-primary/15 text-ridefit-primary hover:bg-ridefit-primary/25'
+                                : 'bg-ridefit-primary text-white hover:brightness-110'
+                            }`}
+                          >
+                            {isActive ? <><Ico as={Check} className="mr-1" />장착 중 · 빼기</> : '장착해보기'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleSaved(part.partId)}
+                            aria-pressed={isSaved}
+                            title={`${vehicle.nickname || vehicle.modelYearLabel}에 ${isSaved ? '저장됨 (눌러서 해제)' : '저장'}`}
+                            data-testid={`fit-save-${part.partId}`}
+                            className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition sm:px-3 sm:py-1.5 sm:text-xs ${
+                              isSaved
+                                ? 'border-ridefit-warning/60 bg-ridefit-warning/10 text-ridefit-warning'
+                                : 'border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-warning hover:text-ridefit-warning'
+                            }`}
+                          >
+                            <Ico as={Heart} className="mr-1" filled={isSaved} />{isSaved ? '저장됨' : '저장'}
+                          </button>
                         </div>
                       </div>
-                    </label>
+                    </div>
                   )
                 })}
               </div>

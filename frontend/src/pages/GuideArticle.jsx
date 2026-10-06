@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Car, Info, OctagonAlert } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import GuideBody from '../components/GuideBody'
+import GuideIcon from '../components/GuideIcon'
+import { Ico } from '../components/Icon'
 import VehicleImage from '../components/VehicleImage'
 import { api } from '../lib/api'
 import { formatAppliesTo, GUIDE_TYPE_LABEL } from '../lib/guide'
@@ -44,9 +47,7 @@ function GuideArticle() {
 
       <header className="mb-8">
         <div className="flex items-center gap-3">
-          <span className="text-4xl" aria-hidden="true">
-            {article.emoji ?? '📘'}
-          </span>
+          <GuideIcon type={article.type} className="h-10 w-10 shrink-0 text-ridefit-primary" />
           <h1 className="text-3xl font-bold text-ridefit-text">{article.title}</h1>
         </div>
         <p className="mt-3 text-ridefit-text-secondary">{article.summary}</p>
@@ -77,13 +78,13 @@ function GuideArticle() {
               carOnly ? 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning' : 'border-ridefit-primary/30 bg-ridefit-primary/10 text-ridefit-text-secondary'
             }`}
           >
-            {carOnly ? '🚗 ' : 'ℹ️ '}
+            {carOnly ? <Ico as={Car} className="mr-1.5" /> : <Ico as={Info} className="mr-1.5" />}
             {article.applicabilityNote}
           </p>
         )}
         {article.professionalRecommended && (
           <p className="mt-3 rounded-lg border border-ridefit-danger-border bg-ridefit-danger-bg px-4 py-3 text-sm text-ridefit-danger">
-            🛑 안전과 직결된 작업이에요. 이 가이드는 점검까지만 안내하며, 교체·분해는 전문가 점검을 권장해요.
+            <Ico as={OctagonAlert} className="mr-1.5" />안전과 직결된 작업이에요. 이 가이드는 점검까지만 안내하며, 교체·분해는 전문가 점검을 권장해요.
           </p>
         )}
       </header>
@@ -150,7 +151,8 @@ function GuideArticle() {
               >
                 <p className="text-xs text-ridefit-primary">{GUIDE_TYPE_LABEL[r.type]}</p>
                 <p className="mt-1 font-semibold text-ridefit-text">
-                  {r.emoji} {r.title}
+                  <GuideIcon type={r.type} className="mr-1.5 inline-block h-4 w-4 align-[-0.125em] text-ridefit-primary" />
+                  {r.title}
                 </p>
               </Link>
             ))}

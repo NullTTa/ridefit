@@ -71,10 +71,11 @@ function MyPage() {
     }
   }
 
-  const handleRemoveFavorite = async (partId) => {
+  // 저장은 차량별이라(같은 부품을 두 차량에 저장할 수 있음) 그 행의 차량까지 지정해서 해제한다.
+  const handleRemoveFavorite = async (fav) => {
     try {
-      await api.del(`/api/me/favorites/${partId}`)
-      setFavorites((prev) => prev.filter((f) => f.partId !== partId))
+      await api.del(`/api/me/favorites/${fav.partId}${fav.myVehicleId ? `?myVehicleId=${fav.myVehicleId}` : ''}`)
+      setFavorites((prev) => prev.filter((f) => !(f.partId === fav.partId && f.myVehicleId === fav.myVehicleId)))
     } catch (err) {
       setError(err.message)
     }
@@ -234,27 +235,28 @@ function MyPage() {
       </section>
 
       <section className="mb-10">
-        <h2 className="mb-3 text-lg font-semibold text-ridefit-text">즐겨찾기한 부품</h2>
+        <h2 className="mb-3 text-lg font-semibold text-ridefit-text">저장한 부품</h2>
         {favoritesLoading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
         {!favoritesLoading && favorites.length === 0 && (
-          <p className="text-ridefit-text-secondary">즐겨찾기한 부품이 없어요.</p>
+          <p className="text-ridefit-text-secondary">저장한 부품이 없어요.</p>
         )}
         {!favoritesLoading && favorites.length > 0 && (
           <ul className="grid gap-2 sm:grid-cols-2">
             {favorites.map((f) => (
               <li
-                key={f.partId}
+                key={`${f.partId}-${f.myVehicleId ?? 'none'}`}
                 className="flex items-center justify-between rounded-lg border border-ridefit-border bg-ridefit-card px-4 py-3"
               >
                 <div>
                   <p className="font-medium text-ridefit-text">{f.name}</p>
                   <p className="text-xs text-ridefit-text-secondary">
-                    {f.category} · {f.price.toLocaleString()}원
+                    {f.category} · {f.price != null ? `${f.price.toLocaleString()}원` : '가격 정보 없음'}
                   </p>
+                  <p className="text-[11px] text-ridefit-text-secondary">{f.myVehicleLabel ? `${f.myVehicleLabel}에 저장` : '차량 미지정(예전에 저장)'}</p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleRemoveFavorite(f.partId)}
+                  onClick={() => handleRemoveFavorite(f)}
                   className="text-xs text-ridefit-text-secondary hover:text-ridefit-danger"
                 >
                   해제

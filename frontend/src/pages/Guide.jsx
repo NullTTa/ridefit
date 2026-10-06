@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
+import { TriangleAlert } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { formatAppliesTo, GUIDE_TYPE_LABEL } from '../lib/guide'
+import GuideIcon from '../components/GuideIcon'
+import { Ico } from '../components/Icon'
 import { api } from '../lib/api'
+import { formatAppliesTo, GUIDE_TYPE_LABEL } from '../lib/guide'
 
 const TABS = [
   { type: 'PART', description: '핸들 댐퍼, 머플러, 브레이크처럼 차량에 다는 부품이 무엇이고 왜 쓰는지 알아봐요.' },
@@ -17,9 +20,7 @@ function GuideCard({ article }) {
       className="group flex h-full flex-col rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg transition hover:-translate-y-1 hover:border-ridefit-primary/60"
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="text-3xl" aria-hidden="true">
-          {article.emoji ?? '📘'}
-        </span>
+        <GuideIcon type={article.type} className="h-8 w-8 text-ridefit-primary" />
         <div className="flex flex-wrap justify-end gap-1.5">
           {formatAppliesTo(article.appliesTo).map((label) => (
             <span
@@ -102,7 +103,7 @@ function Guide() {
 
       {tab === 'DIY' && (
         <p className="mb-6 rounded-lg border border-ridefit-warning-border bg-ridefit-warning-bg px-4 py-3 text-sm text-ridefit-warning">
-          ⚠️ 브레이크·조향·서스펜션처럼 안전과 직결된 작업은 전문가 점검이 필요해요. 자신이 없는 작업은 정비소에 맡기세요.
+          <Ico as={TriangleAlert} className="mr-1.5" />브레이크·조향·서스펜션처럼 안전과 직결된 작업은 전문가 점검이 필요해요. 자신이 없는 작업은 정비소에 맡기세요.
         </p>
       )}
 

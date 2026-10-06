@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import VehicleImage from './VehicleImage'
 
@@ -35,9 +36,7 @@ function VehicleCard({ vehicle, badge, reasons, footer }) {
           <ul className="mt-3 flex flex-col gap-1 text-xs text-ridefit-text-secondary">
             {reasons.map((reason) => (
               <li key={reason} className="flex gap-1.5">
-                <span className="text-ridefit-primary" aria-hidden="true">
-                  ✓
-                </span>
+                <Check aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ridefit-primary" />
                 <span>{reason}</span>
               </li>
             ))}

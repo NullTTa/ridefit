@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { CircleCheck } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
@@ -129,9 +130,7 @@ function ServiceDetail() {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <div className="rounded-2xl border border-ridefit-success-border bg-ridefit-success-bg px-6 py-10">
-          <p className="text-4xl" aria-hidden="true">
-            ✅
-          </p>
+          <CircleCheck aria-hidden="true" className="mx-auto h-12 w-12 text-ridefit-success" strokeWidth={1.75} />
           <h1 className="mt-3 text-2xl font-bold text-ridefit-text">예약 신청이 완료됐어요</h1>
           <p className="mt-1 text-sm text-ridefit-success">방문 예정일에 맞춰 매장에서 서비스를 받아보세요.</p>
 

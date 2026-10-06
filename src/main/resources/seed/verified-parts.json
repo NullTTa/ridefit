@@ -96,7 +96,8 @@
       "name": "혼다 슈퍼커브110 2021년이상 아사히 챔피온 사이드백 가방",
       "category": "사이드백",
       "price": 400000,
-      "imageUrl": "https://bike007.co.kr/web/product/big/202107/a153728e2e53bc01bd3b6f77c9ab574a.jpg",
+      "imageUrl": "/assets/parts/bike007-cub110-asahi-champion-sidebag.jpg",
+      "imageSourceUrl": "https://bike007.co.kr/web/product/big/202107/a153728e2e53bc01bd3b6f77c9ab574a.jpg",
       "sourceUrl": "https://bike007.co.kr/product/%ED%98%BC%EB%8B%A4-%EC%8A%88%ED%8D%BC%EC%BB%A4%EB%B8%8C110-2021%EB%85%84%EC%9D%B4%EC%83%81-%EC%95%84%EC%82%AC%ED%9E%88-%EC%B1%94%ED%94%BC%EC%98%A8-%EC%82%AC%EC%9D%B4%EB%93%9C%EB%B0%B1-%EA%B0%80%EB%B0%A9/13954/",
       "_dbId": 77,
       "compatibilities": [
@@ -129,6 +130,7 @@
       "category": "프론트바구니",
       "price": 24800,
       "imageUrl": "/assets/parts/h2c-cub110-front-basket.png",
+      "aiReferenceImageUrl": "/assets/parts/clean/h2c-cub110-front-basket-ref.png",
       "partNumber": "APK1MAL61000TA",
       "brand": "H2C",
       "partType": "OEM",
@@ -336,6 +338,14 @@
           "chassisCode": "JA59",
           "status": "브라켓필요",
           "note": "범용 새들백(전기자전거/오토바이 겸용) - 짐받이에 걸쳐 끈으로 고정, 차종 전용품 아님"
+        },
+        {
+          "manufacturer": "Honda",
+          "vehicleModel": "Super Cub 110",
+          "year": 2025,
+          "chassisCode": "JA59",
+          "status": "브라켓필요",
+          "note": "범용 새들백(전기자전거/오토바이 겸용) - 짐받이에 걸쳐 끈으로 고정, 차종 전용품 아님 (2025년식은 사용자 요청으로 추가, 2023 JA59와 같은 짐받이 고정 방식)"
         }
       ],
       "sellerListings": [
@@ -398,6 +408,14 @@
           "chassisCode": "JA59",
           "status": "브라켓필요",
           "note": "범용 새들백(컵홀더 포함) - 짐받이에 걸쳐 고정, 차종 전용품 아님"
+        },
+        {
+          "manufacturer": "Honda",
+          "vehicleModel": "Super Cub 110",
+          "year": 2025,
+          "chassisCode": "JA59",
+          "status": "브라켓필요",
+          "note": "범용 새들백(컵홀더 포함) - 짐받이에 걸쳐 고정, 차종 전용품 아님 (2025년식은 사용자 요청으로 추가, 2023 JA59와 같은 짐받이 고정 방식)"
         }
       ],
       "sellerListings": [

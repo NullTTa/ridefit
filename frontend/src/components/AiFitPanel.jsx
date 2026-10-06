@@ -95,12 +95,12 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
     <div className="mt-6 rounded-lg border border-ridefit-border bg-ridefit-bg p-4 text-left" data-testid="ai-fit-panel">
       <p className="mb-1 text-sm font-semibold text-ridefit-text">장착한 모습 만들기</p>
       <p className="mb-3 text-xs text-ridefit-text-secondary">
-        오른쪽에서 체크한 부품들을 내 차량 사진에 함께 장착한 이미지 한 장으로 만들어요.
+        부품 목록에서 [장착해보기]로 고른 부품들을 내 차량 사진에 함께 장착한 이미지 한 장으로 만들어요.
       </p>
 
       {activeParts.length === 0 ? (
         <p className="text-xs text-ridefit-text-secondary" data-testid="ai-fit-empty">
-          부품을 하나 이상 체크하면 장착해볼 수 있어요.
+          부품 목록에서 하나 이상 [장착해보기]로 고르면 만들 수 있어요.
         </p>
       ) : (
         <ul className="mb-3 flex flex-col gap-1.5" data-testid="ai-fit-parts">

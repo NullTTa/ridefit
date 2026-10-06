@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
+import { ArrowRight, Check, Heart } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Ico } from '../components/Icon'
 import SimilarVehicles from '../components/SimilarVehicles'
 import TraitBars from '../components/TraitBars'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleImage from '../components/VehicleImage'
-import { useAuth } from '../context/AuthContext'
 import { getVehicle360StartIndex, VEHICLE_360_FRAMES } from '../constants/vehicle360'
+import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 import { loadPartCategorySlugs } from '../lib/guide'
 import { addRecentVehicle } from '../lib/recentVehicles'
@@ -165,7 +167,7 @@ function VehicleDetail() {
                       : 'border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-primary hover:text-ridefit-primary'
                   }`}
                 >
-                  {interested ? '♥ 관심 차량 등록됨' : '♡ 관심 차량으로 등록'}
+                  <Ico as={Heart} className="mr-1" filled={interested} />{interested ? '관심 차량 등록됨' : '관심 차량으로 등록'}
                 </button>
 
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -222,9 +224,7 @@ function VehicleDetail() {
             <ul className="flex flex-col gap-2 text-sm text-ridefit-text-secondary">
               {pros.map((p) => (
                 <li key={p} className="flex gap-2">
-                  <span className="text-ridefit-success" aria-hidden="true">
-                    ✓
-                  </span>
+                  <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ridefit-success" />
                   {p}
                 </li>
               ))}
@@ -337,7 +337,7 @@ function VehicleDetail() {
                   <h3 className="font-semibold text-ridefit-text">{category}</h3>
                   {categorySlugs[category] && (
                     <Link to={`/guide/${categorySlugs[category]}`} className="text-xs font-medium text-ridefit-primary hover:underline">
-                      {category} 알아보기 →
+                      {category} 알아보기 <Ico as={ArrowRight} />
                     </Link>
                   )}
                 </div>

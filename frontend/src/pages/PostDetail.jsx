@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Eye, MessageCircle, Star, ThumbsUp } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import { Ico } from '../components/Icon'
 import YoutubeEmbed from '../components/YoutubeEmbed'
 import { useAuth } from '../context/AuthContext'
 import { API_BASE, api } from '../lib/api'
@@ -92,9 +94,9 @@ function PostDetail() {
         <span>
           {post.authorName} · {formatDate(post.createdAt)}
         </span>
-        <span title="조회수">👁 {post.viewCount}</span>
-        <span title="추천수">👍 {post.likeCount}</span>
-        <span title="댓글수">💬 {post.comments.length}</span>
+        <span title="조회수"><Ico as={Eye} className="mr-1" />{post.viewCount}</span>
+        <span title="추천수"><Ico as={ThumbsUp} className="mr-1" />{post.likeCount}</span>
+        <span title="댓글수"><Ico as={MessageCircle} className="mr-1" />{post.comments.length}</span>
       </p>
 
       {post.installedPartName && (
@@ -103,7 +105,11 @@ function PostDetail() {
           <Link to={`/parts/${post.installedPartId}`} className="font-medium text-ridefit-primary hover:underline">
             {post.installedPartName}
           </Link>
-          {post.rating != null && <span className="text-ridefit-warning">{'★'.repeat(post.rating)}</span>}
+          {post.rating != null && (
+          <span className="inline-flex text-ridefit-warning" aria-label={`평점 ${post.rating}점`}>
+            {Array.from({ length: post.rating }, (_, i) => <Ico key={i} as={Star} filled />)}
+          </span>
+        )}
           {post.compatibleFeedback && (
             <span className="ml-auto font-semibold">{FEEDBACK_LABEL[post.compatibleFeedback] ?? post.compatibleFeedback}</span>
           )}
@@ -152,7 +158,7 @@ function PostDetail() {
                 : 'border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-primary hover:text-ridefit-primary'
             }`}
           >
-            👍 {post.liked ? '추천 취소' : '추천'} · {post.likeCount}
+            <Ico as={ThumbsUp} className="mr-1" filled={post.liked} />{post.liked ? '추천 취소' : '추천'} · {post.likeCount}
           </button>
         ) : (
           <Link to="/login" className="text-sm text-ridefit-text-secondary hover:text-ridefit-primary">

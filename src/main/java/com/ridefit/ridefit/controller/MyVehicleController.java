@@ -43,6 +43,7 @@ public class MyVehicleController {
     private final CompatibilityRepository compatibilityRepository;
     private final CurrentMember currentMember;
     private final PartPopularityService partPopularityService;
+    private final com.ridefit.ridefit.repository.FavoriteRepository favoriteRepository;
     private final com.ridefit.ridefit.repository.ReservationRepository reservationRepository;
 
     @GetMapping("/api/my-vehicles")
@@ -99,6 +100,8 @@ public class MyVehicleController {
         MyVehicle myVehicle = requireOwnedVehicle(myVehicleId);
         // 이 차량으로 만든 가상 예약은 예약 기록만 남기고 차량 연결만 끊는다.
         reservationRepository.findByMyVehicleId(myVehicleId).forEach(r -> r.setMyVehicle(null));
+        // 이 차량에 저장한 부품(즐겨찾기)은 차량과 함께 지운다(다른 차량/차량 미지정 저장은 그대로).
+        favoriteRepository.deleteByMyVehicleId(myVehicleId);
         myVehicleRepository.delete(myVehicle);
         return ResponseEntity.noContent().build();
     }
@@ -151,6 +154,27 @@ public class MyVehicleController {
                 .toList();
 
         return ResponseEntity.ok(result);
+    }
+
+    // 내 차량 전체의 "장착 가능(호환가능/브라켓필요)" 부품 요약(이름/카테고리만, 통계 없음).
+    // 부품 찾아보기에서 지금 차량에 검색 결과가 없을 때 "내 다른 차량에는 있다"를 실제 호환 데이터로만 알려주는 용도.
+    @GetMapping("/api/my-vehicles/compatible-summary")
+    public List<VehicleCompatibleSummary> getCompatibleSummary() {
+        return myVehicleRepository.findByMemberId(currentMember.id()).stream()
+                .map(v -> new VehicleCompatibleSummary(v.getId(),
+                        v.getNickname() != null && !v.getNickname().isBlank() ? v.getNickname() : com.ridefit.ridefit.dto.ModelYearLabel.of(v.getModelYear()),
+                        compatibilityRepository.findByModelYearId(v.getModelYear().getId()).stream()
+                                .filter(c -> CompatibilityCheckService.isProceedStatus(c.getStatus()))
+                                .map(c -> new SummaryPart(c.getPart().getId(), c.getPart().getName(), c.getPart().getCategory()))
+                                .distinct()
+                                .toList()))
+                .toList();
+    }
+
+    public record VehicleCompatibleSummary(Long myVehicleId, String label, List<SummaryPart> parts) {
+    }
+
+    public record SummaryPart(Long partId, String name, String category) {
     }
 
     // 내 차고 "추천 상품": 이 차량에 장착 가능한(호환가능/브라켓필요) 부품 중 RIDEFIT 안에서 실제로 쌓인 신호

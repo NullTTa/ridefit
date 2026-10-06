@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
+import { CircleDot, Droplet, Hammer, MapPin, Motorbike, ShowerHead, SprayCan, TriangleAlert, Wrench } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Ico } from '../components/Icon'
 import KakaoServiceMap from '../components/KakaoServiceMap'
 import { api } from '../lib/api'
 
-const TYPE_EMOJI = {
-  REPAIR: '🔧',
-  OIL: '🛢️',
-  TIRE: '⚫',
-  WASH: '🧽',
-  SELF_WASH: '🚿',
-  SELF_REPAIR: '🛠️',
-  SPECIALTY: '🏍️',
+// 매장 유형 아이콘(Lucide). 이모지 대신 같은 선 스타일의 SVG를 쓴다.
+const TYPE_ICON = {
+  REPAIR: Wrench,
+  OIL: Droplet,
+  TIRE: CircleDot,
+  WASH: SprayCan,
+  SELF_WASH: ShowerHead,
+  SELF_REPAIR: Hammer,
+  SPECIALTY: Motorbike,
 }
 
 // 주변 정비·세차 서비스: Kakao Map으로 8개 매장을 역 기준 위치에 표시 + 기존 목록/필터. 매장은 개발용 샘플이며, 예약은 RIDEFIT 안에서만 동작하는 가상 예약이다.
@@ -50,7 +53,7 @@ function Services() {
       </div>
 
       <p className="mb-6 rounded-lg border border-ridefit-warning-border bg-ridefit-warning-bg px-4 py-3 text-sm text-ridefit-warning">
-        ⚠️ 지금 보이는 매장은 개발용 <strong>샘플 데이터</strong>예요. 실제 방문 전에는 매장에 미리 확인해주세요.
+        <Ico as={TriangleAlert} className="mr-1.5" />지금 보이는 매장은 개발용 <strong>샘플 데이터</strong>예요. 실제 방문 전에는 매장에 미리 확인해주세요.
         실제 업체에 전달되거나 결제가 발생하지 않아요.
       </p>
 
@@ -72,7 +75,7 @@ function Services() {
                       : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
                   }`}
                 >
-                  📍 {shop.address?.replace(/^.*\s(\S+역)\s인근$/, '$1') ?? shop.region}
+                  <Ico as={MapPin} className="mr-1" />{shop.address?.replace(/^.*\s(\S+역)\s인근$/, '$1') ?? shop.region}
                 </button>
               ))}
             </div>
@@ -80,10 +83,10 @@ function Services() {
             {selectedShop ? (
               <div className="flex flex-1 flex-col rounded-xl border border-ridefit-primary/40 bg-ridefit-card p-4">
                 <span className="text-xs text-ridefit-text-secondary">
-                  {TYPE_EMOJI[selectedShop.type]} {selectedShop.typeLabel}
+                  {TYPE_ICON[selectedShop.type] && <Ico as={TYPE_ICON[selectedShop.type]} className="mr-1" />}{selectedShop.typeLabel}
                 </span>
                 <h3 className="mt-1 text-lg font-bold text-ridefit-text">{selectedShop.name}</h3>
-                <p className="mt-1 text-sm text-ridefit-text-secondary">📍 {selectedShop.address}</p>
+                <p className="mt-1 text-sm text-ridefit-text-secondary"><Ico as={MapPin} className="mr-1" />{selectedShop.address}</p>
                 <p className="mt-2 flex-1 text-xs text-ridefit-text-secondary">{selectedShop.menus.slice(0, 3).join(' · ')}</p>
                 <Link
                   to={`/services/${selectedShop.id}`}
@@ -120,7 +123,7 @@ function Services() {
               type === t.code ? 'bg-ridefit-primary text-white' : 'bg-ridefit-card text-ridefit-text-secondary hover:bg-ridefit-border'
             }`}
           >
-            {TYPE_EMOJI[t.code]} {t.label}
+            {TYPE_ICON[t.code] && <Ico as={TYPE_ICON[t.code]} className="mr-1" />}{t.label}
           </button>
         ))}
       </div>
@@ -138,7 +141,7 @@ function Services() {
           >
             <div className="flex items-center justify-between">
               <span className="rounded-full border border-ridefit-border px-2.5 py-0.5 text-xs text-ridefit-text-secondary">
-                {TYPE_EMOJI[shop.type]} {shop.typeLabel}
+                {TYPE_ICON[shop.type] && <Ico as={TYPE_ICON[shop.type]} className="mr-1" />}{shop.typeLabel}
               </span>
               {shop.sample && <span className="rounded-full bg-ridefit-warning-bg px-2 py-0.5 text-xs text-ridefit-warning">샘플</span>}
             </div>

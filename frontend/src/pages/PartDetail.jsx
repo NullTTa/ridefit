@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
+import { ArrowRight, Check, Star, TriangleAlert } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import FitVehiclePicker from '../components/FitVehiclePicker'
+import { Ico } from '../components/Icon'
 import PartBadges from '../components/PartBadges'
 import SafeImage from '../components/SafeImage'
 import SellerListings from '../components/SellerListings'
 import YoutubeEmbed from '../components/YoutubeEmbed'
 import { api } from '../lib/api'
-import { fitRoomPath } from '../lib/fitRoom'
 import { formatFitment, groupFitmentsByModel } from '../lib/fitment'
+import { fitRoomPath } from '../lib/fitRoom'
 import { loadPartCategorySlugs } from '../lib/guide'
 
 const FEEDBACK_LABEL = { MATCHED: '맞았어요', NOT_MATCHED: '안 맞았어요' }
@@ -99,7 +101,7 @@ function PartDetail() {
             {part.category}
             {categorySlugs[part.category] && (
               <Link to={`/guide/${categorySlugs[part.category]}`} className="ml-2 text-ridefit-text-secondary hover:text-ridefit-primary hover:underline">
-                {part.category}이(가) 뭔가요? →
+                {part.category}이(가) 뭔가요? <Ico as={ArrowRight} />
               </Link>
             )}
           </p>
@@ -126,7 +128,7 @@ function PartDetail() {
             <div className="flex flex-col gap-1 text-sm text-ridefit-text-secondary">
               {stats.externalRating != null && (
                 <p>
-                  <span className="font-semibold text-ridefit-text">★ {stats.externalRating.toFixed(1)}</span>{' '}
+                  <span className="font-semibold text-ridefit-text"><Ico as={Star} className="mr-0.5 text-ridefit-warning" filled />{stats.externalRating.toFixed(1)}</span>{' '}
                   {stats.externalRatingSource ?? '외부'}
                   {stats.externalRatingCount != null && ` · ${stats.externalRatingCount.toLocaleString()}개 리뷰`}
                 </p>
@@ -134,7 +136,7 @@ function PartDetail() {
               {stats.reviewCount > 0 && (
                 <p>
                   {stats.avgRating != null && (
-                    <span className="font-semibold text-ridefit-text">★ {stats.avgRating.toFixed(1)}</span>
+                    <span className="font-semibold text-ridefit-text"><Ico as={Star} className="mr-0.5 text-ridefit-warning" filled />{stats.avgRating.toFixed(1)}</span>
                   )}
                   {stats.avgRating != null && ' '}
                   RIDEFIT · 후기 {stats.reviewCount}개
@@ -168,7 +170,7 @@ function PartDetail() {
               }`}
             >
               {/* 판정은 기존 /check(CompatibilityCheckService) 결과를 그대로 쓴다. 차량 이름만 덧붙인다. */}
-              {checkResult.proceedAllowed ? '✓ ' : '⚠ '}
+              {checkResult.proceedAllowed ? <Ico as={Check} className="mr-1" /> : <Ico as={TriangleAlert} className="mr-1" />}
               {myVehicle ? `내 차량(${myVehicle.nickname || myVehicle.modelYearLabel})` : '내 차량'}
               {checkResult.proceedAllowed ? `과 호환됩니다 (${checkResult.status})` : '과 호환이 확인되지 않았어요'}
             </div>
@@ -272,7 +274,7 @@ function PartDetail() {
               <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ridefit-text-secondary">
                 <span>{r.authorName}</span>
                 <span>· {formatDate(r.createdAt)}</span>
-                {r.rating != null && <span>· ★ {r.rating}</span>}
+                {r.rating != null && <span>· <Ico as={Star} className="text-ridefit-warning" filled /> {r.rating}</span>}
                 {r.compatibleFeedback && <span>· {FEEDBACK_LABEL[r.compatibleFeedback] ?? r.compatibleFeedback}</span>}
               </p>
             </li>

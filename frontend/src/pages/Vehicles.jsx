@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Ico } from '../components/Icon'
 import VehicleCard from '../components/VehicleCard'
 import { api } from '../lib/api'
 
@@ -46,7 +48,7 @@ function Vehicles() {
           to="/finder"
           className="rounded-lg bg-ridefit-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
         >
-          성향으로 나의 오토바이 찾기 →
+          성향으로 나의 오토바이 찾기 <Ico as={ArrowRight} />
         </Link>
       </div>
 
