@@ -1,7 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api, setUnauthorizedHandler, TOKEN_KEY, USER_KEY } from '../lib/api'
-
-const AuthContext = createContext(null)
+import { AuthContext } from './useAuth'
 
 function readStoredUser() {
   try {
@@ -85,10 +84,3 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth는 AuthProvider 내부에서만 사용할 수 있습니다.')
-  }
-  return context
-}

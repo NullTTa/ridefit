@@ -31,13 +31,25 @@ function PostWrite() {
     api.get('/api/my-vehicles').then(setVehicles).catch(() => setVehicles([]))
   }, [])
 
-  useEffect(() => {
+  // 차량을 바꾸면 그 차량 기준 입력(장착 부품/호환 후기/별점)을 비운다 - 선택한 순간(이벤트)에 처리한다.
+  const changeVehicle = (id) => {
+    setMyVehicleId(id)
     setParts([])
     setInstalledPartId('')
     setCompatibleFeedback('')
     setRating(0)
+  }
+
+  useEffect(() => {
     if (!myVehicleId) return
-    api.get(`/api/my-vehicles/${myVehicleId}/compatible-parts`).then(setParts).catch(() => setParts([]))
+    let cancelled = false
+    api
+      .get(`/api/my-vehicles/${myVehicleId}/compatible-parts`)
+      .then((list) => !cancelled && setParts(list))
+      .catch(() => !cancelled && setParts([]))
+    return () => {
+      cancelled = true
+    }
   }, [myVehicleId])
 
   const handleFileChange = async (e) => {
@@ -146,7 +158,7 @@ function PostWrite() {
 
         <label className="flex flex-col gap-1 text-sm font-medium text-ridefit-text-secondary">
           장착한 차량 (선택)
-          <select value={myVehicleId} onChange={(e) => setMyVehicleId(e.target.value)} className={inputClass}>
+          <select value={myVehicleId} onChange={(e) => changeVehicle(e.target.value)} className={inputClass}>
             <option value="">선택 안 함</option>
             {vehicles.map((v) => (
               <option key={v.id} value={v.id}>

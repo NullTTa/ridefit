@@ -3,7 +3,7 @@ import { ArrowLeft, Check, Heart } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Ico } from '../components/Icon'
 import VehicleImage from '../components/VehicleImage'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { api } from '../lib/api'
 
 // "성향으로 알아보는 나의 오토바이": 질문 9개 -> 나의 라이딩 성향 + DB의 차량 프로필과 비교한 추천 결과.
@@ -86,7 +86,8 @@ function Finder() {
       }
       setInterestIds((prev) => {
         const next = new Set(prev)
-        has ? next.delete(vehicleId) : next.add(vehicleId)
+        if (has) next.delete(vehicleId)
+        else next.add(vehicleId)
         return next
       })
     } catch (err) {

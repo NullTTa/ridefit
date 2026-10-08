@@ -29,7 +29,9 @@ function productLink(sourceUrl) {
 //  - 예약 도메인(.test)의 예시 판매처는 링크 없이 "예시 데이터"로 구분한다.
 function SellerListings({ partId }) {
   const [listings, setListings] = useState([])
-  const [loading, setLoading] = useState(true)
+  // 목록이 어느 부품(partId)의 것인지 저장한다 - 부품이 바뀌면 새 응답이 올 때까지 '불러오는 중'.
+  const [loadedPartId, setLoadedPartId] = useState(null)
+  const loading = loadedPartId !== partId
   const [error, setError] = useState(null)
 
   const [url, setUrl] = useState('')
@@ -38,16 +40,19 @@ function SellerListings({ partId }) {
   const [draft, setDraft] = useState(null)
   const [adding, setAdding] = useState(false)
 
-  const load = () => {
-    setLoading(true)
+  const fetchListings = (id) => api.get(`/api/parts/${id}/listings`, { auth: false })
+
+  useEffect(() => {
+    let cancelled = false
     api
       .get(`/api/parts/${partId}/listings`, { auth: false })
-      .then(setListings)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(load, [partId])
+      .then((list) => !cancelled && setListings(list))
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setLoadedPartId(partId))
+    return () => {
+      cancelled = true
+    }
+  }, [partId])
 
   const handleCrawl = async (e) => {
     e.preventDefault()
@@ -91,7 +96,8 @@ function SellerListings({ partId }) {
       setDraft(null)
       setUrl('')
       setCrawlNotice(null)
-      load()
+      // 방금 추가한 판매처까지 다시 받아온다(목록은 그대로 둔 채 교체).
+      fetchListings(partId).then(setListings).catch((err) => setError(err.message))
     } catch (err) {
       setError(err.message)
     } finally {

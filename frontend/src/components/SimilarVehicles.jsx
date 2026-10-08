@@ -6,23 +6,21 @@ import VehicleCard from './VehicleCard'
 // ids: 기준 차종(VehicleModel) id 목록. 서버가 배기량/차체 형태/가격대/성향을 비교해서 이유와 함께 돌려준다.
 // 기준 차량이 없거나 추천할 차량이 없으면 아무것도 그리지 않는다.
 function SimilarVehicles({ ids, title, description, limit = 4, className = '' }) {
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
   const key = ids.join(',')
+  const requestKey = `${key}|${limit}`
+  // 응답이 어느 요청(기준 차량 + 개수)의 것인지 함께 저장한다 - 기준이 바뀌면 새 응답이 올 때까지 '불러오는 중'.
+  const [result, setResult] = useState({ requestKey: null, items: [] })
+  const loading = result.requestKey !== requestKey
+  const items = loading ? [] : result.items
 
   useEffect(() => {
-    if (!key) {
-      setItems([])
-      setLoading(false)
-      return undefined
-    }
+    if (!key) return undefined
     let cancelled = false
-    setLoading(true)
+    const done = (list) => !cancelled && setResult({ requestKey: `${key}|${limit}`, items: list })
     api
       .get(`/api/vehicles/similar?ids=${key}&limit=${limit}`, { auth: false })
-      .then((data) => !cancelled && setItems(data))
-      .catch(() => !cancelled && setItems([]))
-      .finally(() => !cancelled && setLoading(false))
+      .then(done)
+      .catch(() => done([]))
     return () => {
       cancelled = true
     }

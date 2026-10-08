@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Ico } from '../components/Icon'
 import SafeImage from '../components/SafeImage'
 import { rideBuildOf } from '../constants/rideBuilds'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { api } from '../lib/api'
 
 const SECTION_ICON = { VETERAN: Trophy, NEWBIE: Sprout, FREE: MessageCircle }
@@ -36,26 +36,36 @@ function Community() {
   const [sections, setSections] = useState([])
   const [searchText, setSearchText] = useState(q)
   const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  // 목록 요청 조건(query)별로 응답을 구분한다 - 조건이 바뀌면 새 응답이 올 때까지 '불러오는 중'.
+  const [loadedQuery, setLoadedQuery] = useState(null)
+  const [loadError, setError] = useState(null)
+  const listParams = new URLSearchParams({ page: String(page), size: '10', sort })
+  if (category) listParams.set('category', category)
+  if (topic) listParams.set('topic', topic)
+  if (q) listParams.set('q', q)
+  const listQuery = listParams.toString()
+  const loading = loadedQuery !== listQuery
+  const error = loading ? null : loadError
 
   useEffect(() => {
     api.get('/api/posts/categories', { auth: false }).then(setSections).catch(() => setSections([]))
   }, [])
 
   useEffect(() => {
-    setLoading(true)
-    setError(null)
-    const params = new URLSearchParams({ page: String(page), size: '10', sort })
-    if (category) params.set('category', category)
-    if (topic) params.set('topic', topic)
-    if (q) params.set('q', q)
+    let cancelled = false
     api
-      .get(`/api/posts?${params.toString()}`, { auth: false })
-      .then(setData)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [page, category, topic, sort, q])
+      .get(`/api/posts?${listQuery}`, { auth: false })
+      .then((d) => {
+        if (cancelled) return
+        setData(d)
+        setError(null)
+      })
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setLoadedQuery(listQuery))
+    return () => {
+      cancelled = true
+    }
+  }, [listQuery])
 
   // 필터가 바뀌면 항상 첫 페이지부터 보여준다.
   const update = (changes) => {

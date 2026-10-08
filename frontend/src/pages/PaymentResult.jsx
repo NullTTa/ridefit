@@ -11,24 +11,23 @@ import { api } from '../lib/api'
 export function PaymentSuccess() {
   const [searchParams] = useSearchParams()
   const [payment, setPayment] = useState(null)
-  const [error, setError] = useState(null)
+  const [confirmError, setError] = useState(null)
   const sent = useRef(false)
+  const paymentKey = searchParams.get('paymentKey')
+  const orderId = searchParams.get('orderId')
+  const amount = Number(searchParams.get('amount'))
+  const paramsValid = !!paymentKey && !!orderId && Number.isFinite(amount)
+  // 결제창이 돌려준 값이 빠졌으면 승인 요청 없이 바로 안내한다.
+  const error = paramsValid ? confirmError : '결제 정보가 올바르지 않아요.'
 
   useEffect(() => {
-    if (sent.current) return
+    if (sent.current || !paramsValid) return
     sent.current = true
-    const paymentKey = searchParams.get('paymentKey')
-    const orderId = searchParams.get('orderId')
-    const amount = Number(searchParams.get('amount'))
-    if (!paymentKey || !orderId || !Number.isFinite(amount)) {
-      setError('결제 정보가 올바르지 않아요.')
-      return
-    }
     api
       .post('/api/payments/confirm', { paymentKey, orderId, amount })
       .then(setPayment)
       .catch((err) => setError(err.message))
-  }, [searchParams])
+  }, [paramsValid, paymentKey, orderId, amount])
 
   return (
     <div className="mx-auto max-w-xl px-4 py-16">

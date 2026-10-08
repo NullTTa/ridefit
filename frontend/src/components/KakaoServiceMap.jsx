@@ -47,18 +47,18 @@ function loadKakaoMaps(appKey) {
 
 // 정비·세차 서비스 매장 지도. 키가 없거나 SDK 로드에 실패해도 이 영역만 안내 문구로 대체되고
 // 나머지 화면(목록/상세/가상 예약)은 그대로 동작한다.
+const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_KEY
+
 function KakaoServiceMap({ shops, selectedShopId, onSelectShop, className = '' }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markersRef = useRef([])
-  const [status, setStatus] = useState('loading') // loading | ready | error
+  // 키가 없으면 SDK를 부르지 않고 처음부터 안내 문구를 보여준다.
+  const [status, setStatus] = useState(KAKAO_APP_KEY ? 'loading' : 'error') // loading | ready | error
 
   useEffect(() => {
-    const appKey = import.meta.env.VITE_KAKAO_MAP_KEY
-    if (!appKey) {
-      setStatus('error')
-      return
-    }
+    const appKey = KAKAO_APP_KEY
+    if (!appKey) return
 
     let cancelled = false
     loadKakaoMaps(appKey)

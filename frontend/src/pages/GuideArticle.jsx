@@ -11,19 +11,21 @@ import { formatAppliesTo, GUIDE_TYPE_LABEL } from '../lib/guide'
 // 정보 글 한 편. 부품 정보는 DB의 호환 데이터와 카탈로그 부품이 이어져서 "이 부품을 달 수 있는 차량"까지 보여준다.
 function GuideArticle() {
   const { slug } = useParams()
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  // 응답이 어느 글(slug)의 것인지 함께 저장한다 - 다른 글로 이동하면 새 응답이 올 때까지 '불러오는 중'.
+  const [result, setResult] = useState({ slug: null, data: null, error: null })
+  const loading = result.slug !== slug
+  const { data, error } = result
 
   useEffect(() => {
-    setLoading(true)
-    setError(null)
+    let cancelled = false
     api
       .get(`/api/guide/articles/${slug}`, { auth: false })
-      .then(setData)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
+      .then((d) => !cancelled && setResult({ slug, data: d, error: null }))
+      .catch((err) => !cancelled && setResult({ slug, data: null, error: err.message }))
     window.scrollTo(0, 0)
+    return () => {
+      cancelled = true
+    }
   }, [slug])
 
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-16 text-ridefit-text-secondary">불러오는 중...</p>

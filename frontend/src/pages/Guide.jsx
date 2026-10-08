@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import GuideIcon from '../components/GuideIcon'
-import { GUIDE_TYPE_ICON, Ico } from '../components/Icon'
+import { Ico } from '../components/Icon'
 import { api } from '../lib/api'
-import { formatAppliesTo, GUIDE_TYPE_LABEL } from '../lib/guide'
+import { formatAppliesTo, GUIDE_TYPE_ICON, GUIDE_TYPE_LABEL } from '../lib/guide'
 
 const TABS = [
   { type: 'PART', description: '핸들 댐퍼, 머플러, 브레이크처럼 차량에 다는 부품이 무엇이고 왜 쓰는지 알아봐요.' },

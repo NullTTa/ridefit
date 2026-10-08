@@ -24,7 +24,7 @@ import {
   Wrench,
   Zap,
 } from 'lucide-react'
-import { GUIDE_DEFAULT_ICON, GUIDE_TYPE_ICON } from './Icon'
+import { GUIDE_DEFAULT_ICON, GUIDE_TYPE_ICON } from '../lib/guide'
 
 // 가이드 글별 주제 아이콘(Community와 같은 Lucide 아이콘). 등록되지 않은 글은 글 유형(PART/CONSUMABLE/DIY) 아이콘을 쓴다.
 // DB의 article.emoji는 쓰지 않는다(사이트 전체를 Lucide로 통일).

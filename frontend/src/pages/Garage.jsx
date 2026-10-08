@@ -17,6 +17,13 @@ const formatPrice = (price) => (price != null ? `${price.toLocaleString()}원` :
 const formatDateTime = (value) =>
   new Date(value).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
+// 선택 차량별 데이터(저장 부품/호환 상태/추천/저장된 장착 모습)는 차량 id와 함께 보관한다.
+// 다른 차량을 고르면 그 차량의 응답이 올 때까지 각 항목이 null(불러오는 중)이 된다.
+function patchVehicleData(prev, id, field, update) {
+  const base = prev.id === id ? prev : { id }
+  return { ...base, [field]: typeof update === 'function' ? update(base[field] ?? null) : update }
+}
+
 // 내 차고에서는 최근 결과 몇 개만 보여주고, 전체는 FitRoom의 "저장된 장착 모습"에서 본다.
 const SAVED_FIT_PREVIEW = 4
 
@@ -31,16 +38,10 @@ function Garage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
-  const [favorites, setFavorites] = useState(null)
   const [unassigned, setUnassigned] = useState([])
   const [savingPartId, setSavingPartId] = useState(null)
-  // 선택 차량 기준: 즐겨찾기 부품의 호환 여부 표시용 호환 부품 id(상태) / 추천 상품
-  const [compatStatusById, setCompatStatusById] = useState(null)
   // 이 차량의 호환 부품(이름/카테고리) - "현재 구성" 부품 이름을 보여주는 데 쓴다.
   const [compatParts, setCompatParts] = useState([])
-  const [recommended, setRecommended] = useState(null)
-  // 선택 차량으로 만든 저장된 장착 모습(FitRoom과 같은 /api/ai-fit/results - 조회만, 새로 생성하지 않는다)
-  const [savedFits, setSavedFits] = useState(null)
   // 저장된 장착 모습 삭제 확인 창(부품 저장 해제와는 별개 - 합성 결과 이미지만 지운다)
   const [fitToDelete, setFitToDelete] = useState(null)
   const [deletingFit, setDeletingFit] = useState(false)
@@ -76,39 +77,48 @@ function Garage() {
 
   const selectedId = searchParams.get('v')
   const vehicle = vehicles.find((v) => String(v.id) === selectedId) ?? vehicles[0] ?? null
+  const vehicleId = vehicle?.id ?? null
+
+  // 선택 차량 기준: 저장한 부품 / 즐겨찾기 부품의 호환 여부 표시용 호환 부품 id(상태) / 추천 상품 /
+  // 선택 차량으로 만든 저장된 장착 모습(FitRoom과 같은 /api/ai-fit/results - 조회만, 새로 생성하지 않는다)
+  const [vehicleData, setVehicleData] = useState({ id: null })
+  const current = vehicleData.id === vehicleId ? vehicleData : {}
+  const favorites = current.favorites ?? null
+  const compatStatusById = current.compatStatusById ?? null
+  const recommended = current.recommended ?? null
+  const savedFits = current.savedFits ?? null
+  const setFavorites = (update) => setVehicleData((prev) => patchVehicleData(prev, vehicleId, 'favorites', update))
+  const setSavedFits = (update) => setVehicleData((prev) => patchVehicleData(prev, vehicleId, 'savedFits', update))
 
   useEffect(() => {
-    if (!vehicle) return
+    if (vehicleId == null) return
     let alive = true
-    setCompatStatusById(null)
-    setRecommended(null)
-    setFavorites(null)
-    setSavedFits(null)
+    const set = (field) => (value) => alive && setVehicleData((prev) => patchVehicleData(prev, vehicleId, field, value))
     api
-      .get(`/api/ai-fit/results?myVehicleId=${vehicle.id}`)
+      .get(`/api/ai-fit/results?myVehicleId=${vehicleId}`)
       // 이 차량으로 만든 결과만(my_vehicle_id 일치). 차량 구분 전 예전 결과(null)는 같은 차종이어도 내 차고에는 넣지 않는다.
-      .then((data) => alive && setSavedFits(data.filter((r) => r.myVehicleId === vehicle.id)))
-      .catch(() => alive && setSavedFits([]))
+      .then((data) => set('savedFits')(data.filter((r) => r.myVehicleId === vehicleId)))
+      .catch(() => set('savedFits')([]))
     api
-      .get(`/api/me/favorites?myVehicleId=${vehicle.id}`)
-      .then((data) => alive && setFavorites(data))
-      .catch(() => alive && setFavorites([]))
+      .get(`/api/me/favorites?myVehicleId=${vehicleId}`)
+      .then(set('favorites'))
+      .catch(() => set('favorites')([]))
     api
-      .get(`/api/my-vehicles/${vehicle.id}/compatible-parts`)
+      .get(`/api/my-vehicles/${vehicleId}/compatible-parts`)
       .then((data) => {
         if (!alive) return
-        setCompatStatusById(new Map(data.map((p) => [p.partId, p.status])))
+        set('compatStatusById')(new Map(data.map((p) => [p.partId, p.status])))
         setCompatParts(data)
       })
-      .catch(() => alive && setCompatStatusById(new Map()))
+      .catch(() => set('compatStatusById')(new Map()))
     api
-      .get(`/api/my-vehicles/${vehicle.id}/recommended-parts?limit=8`)
-      .then((data) => alive && setRecommended(data))
-      .catch(() => alive && setRecommended([]))
+      .get(`/api/my-vehicles/${vehicleId}/recommended-parts?limit=8`)
+      .then(set('recommended'))
+      .catch(() => set('recommended')([]))
     return () => {
       alive = false
     }
-  }, [vehicle?.id])
+  }, [vehicleId])
 
   // 차량 미지정 저장 부품은 사용자가 직접 "이 차량에 저장"을 누를 때만 이 차량에 연결한다(자동 연결 없음).
   const saveToVehicle = async (partId) => {

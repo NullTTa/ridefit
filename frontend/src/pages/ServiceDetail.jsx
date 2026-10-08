@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CircleCheck } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { api } from '../lib/api'
 
 const TIME_SLOTS = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00']
@@ -32,12 +32,20 @@ function ServiceDetail() {
   const [shop, setShop] = useState(null)
   const [vehicles, setVehicles] = useState([])
   const [oilTypes, setOilTypes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  // 응답이 어느 매장(shopId)의 것인지 저장한다 - 다른 매장으로 이동하면 새 응답이 올 때까지 '불러오는 중'.
+  const [loadedShopId, setLoadedShopId] = useState(null)
+  const [loadError, setError] = useState(null)
+  const loading = loadedShopId !== shopId
+  const error = loading ? null : loadError
 
   const [selectedNames, setSelectedNames] = useState([])
   const [oilType, setOilType] = useState('')
-  const [date, setDate] = useState('')
+  // 예약 날짜 기본값 = 내일(입력 최소값과 같다)
+  const [date, setDate] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return toDateInputValue(d)
+  })
   const [time, setTime] = useState(TIME_SLOTS[1])
   const [myVehicleId, setMyVehicleId] = useState('')
   const [memo, setMemo] = useState('')
@@ -52,14 +60,20 @@ function ServiceDetail() {
   }, [])
 
   useEffect(() => {
-    setLoading(true)
+    let cancelled = false
     api
       .get(`/api/services/shops/${shopId}`, { auth: false })
-      .then((data) => setShop(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-    setDate(tomorrow)
-  }, [shopId, tomorrow])
+      .then((data) => {
+        if (cancelled) return
+        setShop(data)
+        setError(null)
+      })
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setLoadedShopId(shopId))
+    return () => {
+      cancelled = true
+    }
+  }, [shopId])
 
   useEffect(() => {
     api.get('/api/services/engine-oil-types', { auth: false }).then(setOilTypes).catch(() => setOilTypes([]))
@@ -70,7 +84,11 @@ function ServiceDetail() {
     api.get('/api/my-vehicles').then(setVehicles).catch(() => setVehicles([]))
   }, [isAuthenticated])
 
-  const services = shop?.services ?? shop?.menus.map((name) => ({ name, price: null, durationMinutes: null })) ?? []
+  // 매장 응답이 바뀔 때만 다시 만든다(아래 합계 계산 useMemo가 매 렌더 새 배열 때문에 무효화되지 않도록).
+  const services = useMemo(
+    () => shop?.services ?? shop?.menus.map((name) => ({ name, price: null, durationMinutes: null })) ?? [],
+    [shop],
+  )
   const needsOilType = selectedNames.includes(ENGINE_OIL_SERVICE_NAME)
 
   const toggleService = (name) => {

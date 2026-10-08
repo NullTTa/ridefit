@@ -35,10 +35,10 @@ const plain = (message) => (message ?? '').replace(/AI\s?/g, '')
 // 직접 합성 모드: 휠처럼 위치가 정확해야 하는 부품(vehicleFitPositions의 directComposite 배치)을 고르면 이미지 생성 대신
 // 위치 미리보기와 같은 배치를 차량 원본 해상도로 그려 저장한다(lib/fitComposite.js, 외부 호출 없음). 이때는 생성용 상태 확인도 하지 않는다.
 function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBasic, onGenerated, viewMode, refreshKey = 0, savedResults = [] }) {
-  const [check, setCheck] = useState(null)
-  const [checking, setChecking] = useState(false)
+  // 생성 가능 여부 응답은 어떤 요청(부품 조합/차량/새로고침 번호)에 대한 것인지 함께 저장한다.
+  const [checkState, setCheckState] = useState({ inputsKey: null, requestKey: null, value: null })
   const [generating, setGenerating] = useState(false)
-  const [error, setError] = useState(null)
+  const [errorNote, setErrorNote] = useState({ key: null, message: null })
 
   const layout = getFitLayout(vehicle)
   const compositeMode = activeParts.some((p) => isDirectCompositePart(p, layout))
@@ -51,26 +51,31 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
       return { partId: p.partId, anchorX: anchor ? Number(anchor.x.toFixed(1)) : null, anchorY: anchor ? Number(anchor.y.toFixed(1)) : null }
     })
   const inputsKey = JSON.stringify(inputs)
+  const requestKey = `${inputsKey}|${myVehicleId}|${refreshKey}`
+  const checkActive = inputs.length > 0 && !compositeMode
+  // 같은 조합을 다시 확인하는 동안(새로고침)은 이전 결과를 유지하고, 조합이 바뀌면 새 응답 전까지 비운다.
+  const check = checkActive && checkState.inputsKey === inputsKey ? checkState.value : null
+  const checking = checkActive && checkState.requestKey !== requestKey
+  const setCheck = (update) =>
+    setCheckState((prev) => ({ ...prev, value: typeof update === 'function' ? update(prev.value) : update }))
+  // 오류 안내도 같은 요청 동안만 보여준다(조합/차량이 바뀌면 사라진다).
+  const error = errorNote.key === requestKey ? errorNote.message : null
+  const setError = (message) => setErrorNote({ key: requestKey, message })
 
   useEffect(() => {
+    if (!checkActive) return
     const parts = JSON.parse(inputsKey)
-    if (parts.length === 0 || compositeMode) {
-      setCheck(null)
-      setChecking(false)
-      return
-    }
+    const key = `${inputsKey}|${myVehicleId}|${refreshKey}`
     let cancelled = false
-    setChecking(true)
-    setError(null)
+    const done = (value) => !cancelled && setCheckState({ inputsKey, requestKey: key, value })
     api
       .post('/api/ai-fit/check', { myVehicleId: Number(myVehicleId), parts })
-      .then((res) => !cancelled && setCheck(res))
-      .catch((err) => !cancelled && setCheck({ canGenerate: false, code: 'ERROR', message: err.message, parts: [] }))
-      .finally(() => !cancelled && setChecking(false))
+      .then(done)
+      .catch((err) => done({ canGenerate: false, code: 'ERROR', message: err.message, parts: [] }))
     return () => {
       cancelled = true
     }
-  }, [inputsKey, myVehicleId, refreshKey, compositeMode])
+  }, [checkActive, inputsKey, myVehicleId, refreshKey])
 
   const byId = new Map(activeParts.map((p) => [p.partId, p]))
   const statusById = new Map((check?.parts ?? []).map((s) => [s.partId, s]))

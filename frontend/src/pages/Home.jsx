@@ -10,7 +10,7 @@ import Reveal from '../components/Reveal'
 import SimilarVehicles from '../components/SimilarVehicles'
 import VehicleCard from '../components/VehicleCard'
 import VehicleImage from '../components/VehicleImage'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { api } from '../lib/api'
 import { getRecentVehicleIds } from '../lib/recentVehicles'
 
@@ -58,7 +58,9 @@ function Home() {
   const { isAuthenticated, user } = useAuth()
 
   const [vehicles, setVehicles] = useState([])
-  const [myVehicles, setMyVehicles] = useState([])
+  const [fetchedVehicles, setMyVehicles] = useState([])
+  // 로그아웃 상태에서는 이전에 받아둔 목록을 보여주지 않는다.
+  const myVehicles = isAuthenticated ? fetchedVehicles : []
   const [popularParts, setPopularParts] = useState(null) // null = 로딩 중
   const [newParts, setNewParts] = useState([])
   const [guides, setGuides] = useState([])
@@ -76,10 +78,7 @@ function Home() {
   }, [])
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setMyVehicles([])
-      return
-    }
+    if (!isAuthenticated) return
     api.get('/api/my-vehicles').then(setMyVehicles).catch(() => setMyVehicles([]))
   }, [isAuthenticated])
 

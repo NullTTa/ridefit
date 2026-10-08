@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 // Home 히어로와 /login 페이지에서 공통으로 쓰는 로그인 폼.
 function LoginForm({ redirectTo = '/garage', title = '로그인', description, as: Heading = 'h1' }) {

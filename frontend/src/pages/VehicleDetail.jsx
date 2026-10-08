@@ -8,7 +8,7 @@ import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleImage from '../components/VehicleImage'
 import { getVehicle360StartIndex, VEHICLE_360_FRAMES } from '../constants/vehicle360'
 import { getStageScaleForImage } from '../constants/vehicleFitPositions'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { api } from '../lib/api'
 import { loadPartCategorySlugs } from '../lib/guide'
 import { addRecentVehicle } from '../lib/recentVehicles'
@@ -29,19 +29,24 @@ function VehicleDetail() {
   const [parts, setParts] = useState([])
   const [categorySlugs, setCategorySlugs] = useState({})
   const [maintenanceSpecs, setMaintenanceSpecs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  // 응답이 어느 차량(vehicleId)의 것인지 저장한다 - 다른 차량으로 이동하면 새 응답이 올 때까지 '불러오는 중'.
+  const [loadedId, setLoadedId] = useState(null)
+  const [loadError, setError] = useState(null)
+  const loading = loadedId !== vehicleId
+  const error = loading ? null : loadError
 
-  const [interested, setInterested] = useState(false)
+  const [interestedFlag, setInterested] = useState(false)
+  const interested = isAuthenticated && interestedFlag
   const [interestBusy, setInterestBusy] = useState(false)
   const [yearId, setYearId] = useState('')
   const [adding, setAdding] = useState(false)
-  const [actionMessage, setActionMessage] = useState(null)
+  // 관심 등록/내 차고 추가 결과 안내 - 다른 차량으로 이동하면 보이지 않는다.
+  const [actionNote, setActionNote] = useState({ id: null, message: null })
+  const actionMessage = actionNote.id === vehicleId ? actionNote.message : null
+  const setActionMessage = (message) => setActionNote({ id: vehicleId, message })
 
   useEffect(() => {
-    setLoading(true)
-    setError(null)
-    setActionMessage(null)
+    let cancelled = false
     Promise.all([
       api.get(`/api/vehicles/${vehicleId}`, { auth: false }),
       api.get(`/api/vehicles/${vehicleId}/parts`, { auth: false }),
@@ -49,6 +54,8 @@ function VehicleDetail() {
       api.get(`/api/vehicle-models/${vehicleId}/maintenance-specs`, { auth: false }).catch(() => []),
     ])
       .then(([detailData, partData, slugs, specs]) => {
+        if (cancelled) return
+        setError(null)
         setDetail(detailData)
         setParts(partData)
         setCategorySlugs(slugs)
@@ -56,15 +63,15 @@ function VehicleDetail() {
         setYearId('')
         addRecentVehicle(detailData.vehicle.id)
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setLoadedId(vehicleId))
+    return () => {
+      cancelled = true
+    }
   }, [vehicleId])
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setInterested(false)
-      return
-    }
+    if (!isAuthenticated) return
     api
       .get('/api/me/vehicle-interests')
       .then((list) => setInterested(list.some((v) => String(v.id) === String(vehicleId))))

@@ -8,6 +8,7 @@ import SafeImage from '../components/SafeImage'
 import SellerListings from '../components/SellerListings'
 import YoutubeEmbed from '../components/YoutubeEmbed'
 import { api } from '../lib/api'
+import { josa } from '../lib/korean'
 import { formatFitment, groupFitmentsByModel } from '../lib/fitment'
 import { fitRoomPath } from '../lib/fitRoom'
 import { loadPartCategorySlugs } from '../lib/guide'
@@ -43,10 +44,15 @@ function PartDetail() {
   // ?vehicleId= 로 들어온 내 차량(호환 차량 목록에서 "내 차량" 표시, 호환 안내 문구에 사용)
   const [myVehicle, setMyVehicle] = useState(null)
   const [categorySlugs, setCategorySlugs] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  // 응답이 어느 부품/차량 조합의 것인지 저장한다 - 조합이 바뀌면 새 응답이 올 때까지 '불러오는 중'.
+  const loadKey = `${partId}:${vehicleId ?? ''}`
+  const [loadedKey, setLoadedKey] = useState(null)
+  const [loadError, setError] = useState(null)
+  const loading = loadedKey !== loadKey
+  const error = loading ? null : loadError
   // 이 차량(?vehicleId)에 저장했는지 - 내 차고 "이 차량에 저장한 부품"과 같은 데이터(차량별 즐겨찾기). null = 확인 중/차량 없음
-  const [saved, setSaved] = useState(null)
+  const [savedState, setSavedState] = useState({ key: null, value: null })
+  const saved = vehicleId && savedState.key === loadKey ? savedState.value : null
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -54,8 +60,7 @@ function PartDetail() {
   }, [])
 
   useEffect(() => {
-    setLoading(true)
-    setError(null)
+    let cancelled = false
     const query = vehicleId ? `?myVehicleId=${vehicleId}` : ''
     Promise.all([
       api.get(`/api/parts/${partId}${query}`),
@@ -68,24 +73,29 @@ function PartDetail() {
         : Promise.resolve(null),
     ])
       .then(([partData, reviewData, checkData, fitmentData, vehicleData]) => {
+        if (cancelled) return
         setPart(partData)
         setReviews(reviewData)
         setCheckResult(checkData)
         setFitments(fitmentData)
         setMyVehicle(vehicleData)
+        setError(null)
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setLoadedKey(`${partId}:${vehicleId ?? ''}`))
+    return () => {
+      cancelled = true
+    }
   }, [partId, vehicleId])
 
   useEffect(() => {
-    setSaved(null)
     if (!vehicleId) return
     let alive = true
+    const key = `${partId}:${vehicleId}`
     api
       .get(`/api/me/favorites?myVehicleId=${vehicleId}`)
-      .then((list) => alive && setSaved(list.some((f) => String(f.partId) === String(partId))))
-      .catch(() => alive && setSaved(null))
+      .then((list) => alive && setSavedState({ key, value: list.some((f) => String(f.partId) === String(partId)) }))
+      .catch(() => alive && setSavedState({ key, value: null }))
     return () => {
       alive = false
     }
@@ -97,7 +107,7 @@ function PartDetail() {
     try {
       if (saved) await api.del(`/api/me/favorites/${partId}?myVehicleId=${vehicleId}`)
       else await api.post('/api/me/favorites', { partId: Number(partId), myVehicleId: Number(vehicleId) })
-      setSaved(!saved)
+      setSavedState({ key: loadKey, value: !saved })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -131,7 +141,7 @@ function PartDetail() {
             {part.category}
             {categorySlugs[part.category] && (
               <Link to={`/guide/${categorySlugs[part.category]}`} className="ml-2 text-ridefit-text-secondary hover:text-ridefit-primary hover:underline">
-                {part.category}이(가) 뭔가요? <Ico as={ArrowRight} />
+                {josa(part.category, '이', '가')} 뭔가요? <Ico as={ArrowRight} />
               </Link>
             )}
           </p>

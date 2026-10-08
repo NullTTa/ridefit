@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { RIDEFIT_LOGO_IMAGE } from '../constants/images'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 const NAV_ITEMS = [
   { to: '/', label: '홈' },

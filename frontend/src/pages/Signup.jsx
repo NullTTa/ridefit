@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import VehicleHighlightAnimation from '../components/VehicleHighlightAnimation'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 function Signup() {
   const { signup } = useAuth()

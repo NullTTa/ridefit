@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Check, Heart, Maximize2, Star, Trash2 } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import AiFitPanel from '../components/AiFitPanel'
@@ -16,6 +16,7 @@ import { get360PartLayerInfo } from '../constants/vehicle360Parts'
 import { HERO_BUILD } from '../constants/heroBuild'
 import { getFitLayout, getStageScale, getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
+import { josa } from '../lib/korean'
 import { loadFitBuild, saveFitBuild } from '../lib/fitBuild'
 import { formatFitmentYears } from '../lib/fitment'
 
@@ -78,7 +79,8 @@ function FitRoom() {
     const saved = savedPartIds.has(partId)
     const flip = (prev) => {
       const next = new Set(prev)
-      saved ? next.delete(partId) : next.add(partId)
+      if (saved) next.delete(partId)
+      else next.add(partId)
       return next
     }
     setSavedPartIds(flip)
@@ -87,22 +89,26 @@ function FitRoom() {
       : api.post('/api/me/favorites', { partId, myVehicleId: Number(myVehicleId) })
     ).catch(() => setSavedPartIds((prev) => {
       const next = new Set(prev)
-      saved ? next.add(partId) : next.delete(partId)
+      if (saved) next.add(partId)
+      else next.delete(partId)
       return next
     }))
   }
 
-  const loadSavedResults = () =>
-    api
-      .get(`/api/ai-fit/results?myVehicleId=${myVehicleId}`)
-      .then((data) => {
-        setSavedResults(data)
-        return data
-      })
-      .catch(() => {
-        setSavedResults([])
-        return []
-      })
+  const loadSavedResults = useCallback(
+    () =>
+      api
+        .get(`/api/ai-fit/results?myVehicleId=${myVehicleId}`)
+        .then((data) => {
+          setSavedResults(data)
+          return data
+        })
+        .catch(() => {
+          setSavedResults([])
+          return []
+        }),
+    [myVehicleId],
+  )
 
   const confirmDeleteResult = async () => {
     const target = resultToDelete
@@ -138,7 +144,7 @@ function FitRoom() {
         setViewMode('ai')
       }
     })
-  }, [myVehicleId])
+  }, [loadSavedResults, requestedResultId])
 
   useEffect(() => {
     setLoading(true)
@@ -324,12 +330,14 @@ function FitRoom() {
           {preselect.build
             ? preselect.ok
               ? `홈에서 본 구성 중 이 차량에 호환되는 부품(${preselect.name})을 장착한 상태로 열었어요. [360° 보기]로 돌려보거나 하나씩 빼볼 수 있어요.`
-              : `홈에서 본 구성은 ${vehicle.nickname || vehicle.modelYearLabel}과(와) 호환이 확인되지 않아 장착하지 않았어요. 부품 목록의 호환 부품으로 직접 장착해보세요.`
+              : `홈에서 본 구성은 ${josa(vehicle.nickname || vehicle.modelYearLabel, '과', '와')} 호환이 확인되지 않아 장착하지 않았어요. 부품 목록의 호환 부품으로 직접 장착해보세요.`
             : preselect.ok
-            ? `'${preselect.name}'을(를) 장착한 상태로 열었어요. 아래 "장착한 모습" 패널에서 장착 결과 이미지도 만들 수 있어요.`
-            : `${preselect.name ? `'${preselect.name}'은(는) ` : '선택한 부품은 '}${
-                vehicle.nickname || vehicle.modelYearLabel
-              }과(와) 호환이 확인되지 않아 자동으로 장착하지 않았어요. 부품 목록의 호환 부품은 그대로 사용할 수 있어요.`}
+            ? `${josa(`'${preselect.name}'`, '을', '를')} 장착한 상태로 열었어요. 아래 "장착한 모습" 패널에서 장착 결과 이미지도 만들 수 있어요.`
+            : `${preselect.name ? `${josa(`'${preselect.name}'`, '은', '는')} ` : '선택한 부품은 '}${josa(
+                vehicle.nickname || vehicle.modelYearLabel,
+                '과',
+                '와',
+              )} 호환이 확인되지 않아 자동으로 장착하지 않았어요. 부품 목록의 호환 부품은 그대로 사용할 수 있어요.`}
         </div>
       )}
 
@@ -453,7 +461,7 @@ function FitRoom() {
           )}
           {replaced && (
             <p className="mt-3 rounded-lg border border-ridefit-primary/40 bg-ridefit-primary/10 px-3 py-2 text-center text-xs text-ridefit-text" data-testid="fit-replaced">
-              {replaced.category}는 한 자리에 하나만 장착돼요 - {replaced.from} 대신 {replaced.to}(으)로 바꿨어요.
+              {josa(replaced.category, '은', '는')} 한 자리에 하나만 장착돼요 - {replaced.from} 대신 {josa(replaced.to, '으로', '로')} 바꿨어요.
             </p>
           )}
 

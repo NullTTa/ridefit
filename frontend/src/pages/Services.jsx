@@ -22,8 +22,11 @@ function Services() {
   const [type, setType] = useState('')
   const [shops, setShops] = useState([])
   const [allShops, setAllShops] = useState([]) // 지도는 필터와 무관하게 8개 매장을 전부 보여준다.
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  // 어느 필터(type)에 대한 응답인지 저장한다 - 필터가 바뀌면 새 응답이 올 때까지 '불러오는 중'.
+  const [loadedType, setLoadedType] = useState(null)
+  const [loadError, setError] = useState(null)
+  const loading = loadedType !== type
+  const error = loading ? null : loadError
   const [selectedShopId, setSelectedShopId] = useState(null)
 
   useEffect(() => {
@@ -32,12 +35,19 @@ function Services() {
   }, [])
 
   useEffect(() => {
-    setLoading(true)
+    let cancelled = false
     api
       .get(`/api/services/shops${type ? `?type=${type}` : ''}`, { auth: false })
-      .then(setShops)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
+      .then((list) => {
+        if (cancelled) return
+        setShops(list)
+        setError(null)
+      })
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setLoadedType(type))
+    return () => {
+      cancelled = true
+    }
   }, [type])
 
   const selectedShop = useMemo(() => allShops.find((s) => s.id === selectedShopId) ?? null, [allShops, selectedShopId])

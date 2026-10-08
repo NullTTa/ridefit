@@ -55,17 +55,34 @@ function AdminProductImport() {
     api.get('/api/manufacturers', { auth: false }).then(setManufacturers).catch(() => setManufacturers([]))
   }, [])
 
-  useEffect(() => {
+  // 제조사/차종을 바꾸면 그 아래 단계(차종/연식) 선택을 비운다 - 선택한 순간(이벤트)에 처리한다.
+  const changeManufacturer = (id) => {
+    setManufacturerId(id)
     setModels([])
     setVehicleModelId('')
+    setYears([])
+  }
+  const changeVehicleModel = (id) => {
+    setVehicleModelId(id)
+    setYears([])
+  }
+
+  useEffect(() => {
     if (!manufacturerId) return
-    api.get(`/api/manufacturers/${manufacturerId}/vehicle-models`, { auth: false }).then(setModels)
+    let cancelled = false
+    api.get(`/api/manufacturers/${manufacturerId}/vehicle-models`, { auth: false }).then((list) => !cancelled && setModels(list))
+    return () => {
+      cancelled = true
+    }
   }, [manufacturerId])
 
   useEffect(() => {
-    setYears([])
     if (!vehicleModelId) return
-    api.get(`/api/vehicle-models/${vehicleModelId}/model-years`, { auth: false }).then(setYears)
+    let cancelled = false
+    api.get(`/api/vehicle-models/${vehicleModelId}/model-years`, { auth: false }).then((list) => !cancelled && setYears(list))
+    return () => {
+      cancelled = true
+    }
   }, [vehicleModelId])
 
   const selectedYears = useMemo(() => [...selectedYearIds], [selectedYearIds])
@@ -117,7 +134,8 @@ function AdminProductImport() {
   const toggleYear = (id) => {
     setSelectedYearIds((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
@@ -309,7 +327,7 @@ function AdminProductImport() {
               <fieldset className="flex flex-col gap-3">
                 <legend className="mb-2 text-sm font-semibold text-ridefit-text">호환 차량 (확인된 연식만 선택)</legend>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <select value={manufacturerId} onChange={(e) => setManufacturerId(e.target.value)} className={inputClass}>
+                  <select value={manufacturerId} onChange={(e) => changeManufacturer(e.target.value)} className={inputClass}>
                     <option value="">제조사 선택</option>
                     {manufacturers.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -319,7 +337,7 @@ function AdminProductImport() {
                   </select>
                   <select
                     value={vehicleModelId}
-                    onChange={(e) => setVehicleModelId(e.target.value)}
+                    onChange={(e) => changeVehicleModel(e.target.value)}
                     className={inputClass}
                     disabled={!manufacturerId}
                   >

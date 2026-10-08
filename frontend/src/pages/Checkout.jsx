@@ -31,7 +31,13 @@ function Checkout() {
   const [quote, setQuote] = useState(null)
   const [reservation, setReservation] = useState(null)
   const [vehicle, setVehicle] = useState(null)
-  const [error, setError] = useState(null)
+  // 오류 안내는 어느 주문 조건(상품/예약/수량)에서 난 것인지 함께 저장한다 - 조건이 바뀌면 이전 오류는 보이지 않는다.
+  const orderKey = `${partId ?? ''}|${reservationId ?? ''}|${quantity}`
+  const [errorNote, setErrorNote] = useState({ key: null, message: null })
+  const setError = (message) => setErrorNote({ key: orderKey, message })
+  const error = !partId && !reservationId
+    ? '결제할 상품이나 예약을 선택해주세요.'
+    : errorNote.key === orderKey ? errorNote.message : null
   const [notice, setNotice] = useState(null)
   const [busy, setBusy] = useState(false)
   const [widgetReady, setWidgetReady] = useState(false)
@@ -40,23 +46,22 @@ function Checkout() {
   const amount = partId ? quote?.amount : reservation?.totalPrice
 
   useEffect(() => {
-    setError(null)
+    const key = `${partId ?? ''}|${reservationId ?? ''}|${quantity}`
+    const fail = (message) => setErrorNote({ key, message })
     if (partId) {
       api
         .get(`/api/payments/quote/part?partId=${partId}&quantity=${quantity}`)
         .then(setQuote)
-        .catch((err) => setError(err.message))
+        .catch((err) => fail(err.message))
     } else if (reservationId) {
       api
         .get('/api/me/reservations')
         .then((list) => {
           const r = list.find((x) => String(x.id) === String(reservationId))
-          if (!r) setError('예약 정보를 찾을 수 없어요.')
+          if (!r) fail('예약 정보를 찾을 수 없어요.')
           else setReservation(r)
         })
-        .catch((err) => setError(err.message))
-    } else {
-      setError('결제할 상품이나 예약을 선택해주세요.')
+        .catch((err) => fail(err.message))
     }
   }, [partId, reservationId, quantity])
 
@@ -87,13 +92,13 @@ function Checkout() {
         }
         if (!cancelled) setWidgetReady(true)
       } catch (err) {
-        if (!cancelled) setError(`결제 화면을 불러오지 못했어요. (${tossErrorCode(err)})`)
+        if (!cancelled) setErrorNote({ key: orderKey, message: `결제 화면을 불러오지 못했어요. (${tossErrorCode(err)})` })
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [keyMode, amount])
+  }, [keyMode, amount, orderKey])
 
   const changeQuantity = (next) => {
     const params = new URLSearchParams(searchParams)

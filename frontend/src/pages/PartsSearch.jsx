@@ -13,6 +13,7 @@ import { displayImageUrl } from '../constants/productImages'
 import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
 import { getStageScale, getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
+import { josa } from '../lib/korean'
 import { formatFitmentYears } from '../lib/fitment'
 import { loadPartCategorySlugs } from '../lib/guide'
 
@@ -202,7 +203,8 @@ function PartsSearch() {
     const isFavorite = favoritePartIds.has(partId)
     setFavoritePartIds((prev) => {
       const next = new Set(prev)
-      isFavorite ? next.delete(partId) : next.add(partId)
+      if (isFavorite) next.delete(partId)
+      else next.add(partId)
       return next
     })
     ;(isFavorite
@@ -211,7 +213,8 @@ function PartsSearch() {
     ).catch(() => {
       setFavoritePartIds((prev) => {
         const next = new Set(prev)
-        isFavorite ? next.add(partId) : next.delete(partId)
+        if (isFavorite) next.add(partId)
+        else next.delete(partId)
         return next
       })
     })
@@ -356,7 +359,7 @@ function PartsSearch() {
             {' '}
             ·{' '}
             <Link to={`/guide/${categorySlugs[category]}`} className="font-medium text-ridefit-primary hover:underline">
-              {category}이(가) 뭔가요?
+              {josa(category, '이', '가')} 뭔가요?
             </Link>
           </>
         )}

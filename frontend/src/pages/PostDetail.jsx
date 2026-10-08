@@ -3,7 +3,7 @@ import { Eye, MessageCircle, Star, ThumbsUp } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { Ico } from '../components/Icon'
 import YoutubeEmbed from '../components/YoutubeEmbed'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { API_BASE, api } from '../lib/api'
 
 const FEEDBACK_LABEL = { MATCHED: '맞았어요', NOT_MATCHED: '안 맞았어요' }

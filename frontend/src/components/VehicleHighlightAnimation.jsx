@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { HERO_ANIMATION_IMAGE } from '../constants/images'
 
 // 히어로 "부품 설계도(블루프린트)" 애니메이션.
@@ -93,23 +93,23 @@ function useImagesReady(urls) {
   return ready
 }
 
+// 미리 불러올 이미지 목록(고정값 - 렌더마다 새 배열을 만들지 않도록 모듈에서 한 번만 만든다)
+const PRELOAD_URLS = [HERO_ANIMATION_IMAGE, ...POINTS.map((p) => p.image)]
+
 function VehicleHighlightAnimation() {
   const reducedMotion = usePrefersReducedMotion()
-  const preloadUrls = useRef([HERO_ANIMATION_IMAGE, ...POINTS.map((p) => p.image)]).current
-  const assetsReady = useImagesReady(preloadUrls)
+  const assetsReady = useImagesReady(PRELOAD_URLS)
 
   const [vehicleVisible, setVehicleVisible] = useState(false)
-  const [activeIndex, setActiveIndex] = useState(null) // null = 아직 차량만 보여주는 단계
+  const [cycleIndex, setActiveIndex] = useState(null) // null = 아직 차량만 보여주는 단계
+  // 움직임 줄이기 설정이면 순환 없이 첫 부품만 고정해서 보여준다.
+  const activeIndex = reducedMotion ? 0 : cycleIndex
 
   // 차량 사진 자체는 <img onLoad>로 실제 로드 시점에 맞춰 나타난다(고정 타이머로 추측하지 않음).
   const handleVehicleLoad = () => setVehicleVisible(true)
 
   useEffect(() => {
-    if (reducedMotion) {
-      setActiveIndex(0)
-      return
-    }
-    if (!assetsReady || !vehicleVisible) return
+    if (reducedMotion || !assetsReady || !vehicleVisible) return
 
     // 차량이 자리 잡은 뒤 잠깐 "차량만" 보여주고서 첫 부품을 지목한다.
     const startTimer = setTimeout(() => setActiveIndex(0), SETTLE_MS)

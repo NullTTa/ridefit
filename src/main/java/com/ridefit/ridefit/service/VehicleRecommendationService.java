@@ -186,7 +186,7 @@ public class VehicleRecommendationService {
         for (Trait t : byContribution) {
             if (reasons.size() >= 3) break;
             if (pref.get(t) >= 0.5 && score(profile, t) >= 4) {
-                reasons.add("'" + t.label() + "'을(를) 중요하게 답했고, 이 차량은 " + score(profile, t) + "/5점이에요.");
+                reasons.add("'" + t.label() + "'" + objectParticle(t.label()) + " 중요하게 답했고, 이 차량은 " + score(profile, t) + "/5점이에요.");
             }
         }
         if (reasons.isEmpty()) {
@@ -198,7 +198,7 @@ public class VehicleRecommendationService {
         List<String> cautions = new ArrayList<>();
         for (Trait t : Trait.all()) {
             if (pref.get(t) >= 0.5 && score(profile, t) <= 2) {
-                cautions.add("'" + t.label() + "'을(를) 중요하게 답했는데, 이 차량은 " + score(profile, t) + "/5점이라 아쉬울 수 있어요.");
+                cautions.add("'" + t.label() + "'" + objectParticle(t.label()) + " 중요하게 답했는데, 이 차량은 " + score(profile, t) + "/5점이라 아쉬울 수 있어요.");
             }
         }
         splitLines(profile.getCons()).stream().limit(2).forEach(cautions::add);
@@ -323,5 +323,12 @@ public class VehicleRecommendationService {
     public static List<String> splitLines(String text) {
         if (text == null || text.isBlank()) return List.of();
         return java.util.Arrays.stream(text.split("\\R")).map(String::trim).filter(s -> !s.isEmpty()).toList();
+    }
+
+    // 받침에 맞는 목적격 조사('을'/'를'). 한글로 끝나지 않으면 두 형태를 함께 쓴다.
+    private static String objectParticle(String word) {
+        char last = word.isEmpty() ? ' ' : word.charAt(word.length() - 1);
+        if (last < 0xAC00 || last > 0xD7A3) return "을(를)";
+        return (last - 0xAC00) % 28 == 0 ? "를" : "을";
     }
 }

@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { api } from '../lib/api'
 
 // /find-password에서 본인 확인을 마쳐야만 얻는 resetToken이 있어야 접근 가능한 화면.
 function ResetPassword() {
   const location = useLocation()
-  const navigate = useNavigate()
   const resetToken = location.state?.resetToken
 
   const [newPassword, setNewPassword] = useState('')
