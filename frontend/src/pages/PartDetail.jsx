@@ -193,7 +193,7 @@ function PartDetail() {
             {part.price != null ? (
               <p className="text-2xl font-bold text-ridefit-text">{part.price.toLocaleString()}원</p>
             ) : (
-              <p className="text-base font-semibold text-ridefit-text-secondary" data-testid="part-price-unknown">가격 정보 없음 · 판매 준비 중</p>
+              <p className="text-base font-semibold text-ridefit-text-secondary" data-testid="part-price-unknown">가격 정보 준비중</p>
             )}
           </div>
           {/* 예시 판매처/가격 미확인 판매처는 서버에서 제외된 값이다(PartPopularityService). */}

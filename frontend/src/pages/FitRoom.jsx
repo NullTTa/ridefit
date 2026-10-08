@@ -646,7 +646,7 @@ function FitRoom() {
                           {part.name}
                         </Link>
                         <p className="text-xs text-ridefit-text-secondary">
-                          {part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 없음'} · {part.status}
+                          {part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 준비중'} · {part.status}
                         </p>
                         {formatFitmentYears(part.sameModelFitments) && (
                           <p className="text-[11px] text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>

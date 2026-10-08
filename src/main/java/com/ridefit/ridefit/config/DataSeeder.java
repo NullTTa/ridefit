@@ -151,27 +151,27 @@ public class DataSeeder implements CommandLineRunner {
         setChassisCode(z12523, null, "BR125");
 
         // ---- Honda 부품 (기존) ----
-        Part cubMuffler = part("순정 스타일 스테인리스 머플러 (Cub 110)", "머플러", 189000);
-        Part cubCarrier = part("리어 확장 캐리어 (Cub 110)", "캐리어", 65000);
-        Part cubMirror = part("범용 백미러 세트 (Cub 110)", "미러", 32000);
-        Part cubSeat = part("펀칭 가죽 시트 커버 (Cub 110)", "시트", 48000);
+        Part cubMuffler = part("순정 스타일 스테인리스 머플러 (Cub 110)", "머플러");
+        Part cubCarrier = part("리어 확장 캐리어 (Cub 110)", "캐리어");
+        Part cubMirror = part("범용 백미러 세트 (Cub 110)", "미러");
+        Part cubSeat = part("펀칭 가죽 시트 커버 (Cub 110)", "시트");
         // Cub 110 커스텀에서 실제로 많이 쓰는 카테고리를 넓혀 카탈로그를 보강한다(2026-09-22).
         // 전부 실제 구매 링크를 찾지 못해 sourceUrl/imageUrl은 비워두고(=화면에서 "이미지 준비중" fallback),
         // 이름/카테고리/가격/호환성만 정상적으로 구성한다 - 존재하지 않는 판매처 상품인 것처럼 꾸미지 않는다.
-        Part cubHeadlight = part("LED 헤드라이트 키트 (Cub 110)", "램프", 68000);
-        Part cubScreen = part("스포츠 윈드스크린 (Cub 110)", "스크린", 55000);
-        Part cubGrip = part("논슬립 그립 세트 (Cub 110)", "핸들바", 15000);
-        Part cubLever = part("쇼트 브레이크 레버 세트 (Cub 110)", "레버", 28000);
-        Part cubFootpeg = part("확장 풋페그 세트 (Cub 110)", "풋페그", 32000);
-        Part cubEngineGuard = part("엔진 프로텍터 가드 (Cub 110)", "엔진가드", 75000);
-        Part cubRearShock = part("리어 쇼크업소버 (Cub 110)", "리어쇼크", 120000);
-        Part cubFrontCarrier = part("프론트 유틸리티 캐리어 (Cub 110)", "프론트캐리어", 58000);
-        Part cubTopBoxBracket = part("탑박스 브라켓 세트 (Cub 110)", "탑박스", 45000);
-        Part pcxScreen = part("스포츠 윈드스크린 (PCX)", "스크린", 79000);
-        Part pcxCarrier = part("탑박스 캐리어 (PCX)", "캐리어", 95000);
-        Part pcxLever = part("알루미늄 브레이크 레버 세트 (PCX)", "레버", 54000);
-        Part pcxLamp = part("LED 방향지시등 세트 (PCX)", "램프", 38000);
-        Part pcxOldMuffler = part("구형 머플러 (2018 PCX 호환, 신형 불가)", "머플러", 210000);
+        Part cubHeadlight = part("LED 헤드라이트 키트 (Cub 110)", "램프");
+        Part cubScreen = part("스포츠 윈드스크린 (Cub 110)", "스크린");
+        Part cubGrip = part("논슬립 그립 세트 (Cub 110)", "핸들바");
+        Part cubLever = part("쇼트 브레이크 레버 세트 (Cub 110)", "레버");
+        Part cubFootpeg = part("확장 풋페그 세트 (Cub 110)", "풋페그");
+        Part cubEngineGuard = part("엔진 프로텍터 가드 (Cub 110)", "엔진가드");
+        Part cubRearShock = part("리어 쇼크업소버 (Cub 110)", "리어쇼크");
+        Part cubFrontCarrier = part("프론트 유틸리티 캐리어 (Cub 110)", "프론트캐리어");
+        Part cubTopBoxBracket = part("탑박스 브라켓 세트 (Cub 110)", "탑박스");
+        Part pcxScreen = part("스포츠 윈드스크린 (PCX)", "스크린");
+        Part pcxCarrier = part("탑박스 캐리어 (PCX)", "캐리어");
+        Part pcxLever = part("알루미늄 브레이크 레버 세트 (PCX)", "레버");
+        Part pcxLamp = part("LED 방향지시등 세트 (PCX)", "램프");
+        Part pcxOldMuffler = part("구형 머플러 (2018 PCX 호환, 신형 불가)", "머플러");
 
         // JA44 세대(2018~) 기준 부품 — 바디/배기 형상이 이전 세대(JA07/JA10)와 달라서 옛 연식엔 안 맞는다.
         // (2023년식 cub23은 실제 JA59 - 아래 호환 데이터의 JA59 적합 여부는 추가 검증 필요)
@@ -215,17 +215,17 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         // ---- Yamaha 부품 (Tricity 125 / Vino 125) ----
-        Part yamahaGrip = part("야마하 범용 핸들바 그립 세트", "핸들바", 18000);
-        Part yamahaMirror = part("야마하 범용 사이드미러 세트", "미러", 29000);
-        Part tricityCarrier = part("트리시티 프론트 유틸리티 캐리어", "캐리어", 89000);
-        Part tricityScreen = part("트리시티 스포츠 윈드스크린", "스크린", 95000);
-        Part vinoSeat = part("비노 레트로 시트 커버", "시트", 42000);
-        Part vinoMuffler = part("비노 크롬 슬립온 머플러", "머플러", 175000);
+        Part yamahaGrip = part("야마하 범용 핸들바 그립 세트", "핸들바");
+        Part yamahaMirror = part("야마하 범용 사이드미러 세트", "미러");
+        Part tricityCarrier = part("트리시티 프론트 유틸리티 캐리어", "캐리어");
+        Part tricityScreen = part("트리시티 스포츠 윈드스크린", "스크린");
+        Part vinoSeat = part("비노 레트로 시트 커버", "시트");
+        Part vinoMuffler = part("비노 크롬 슬립온 머플러", "머플러");
         // "야마하 범용 알로이 휠 커버 세트"는 카탈로그(및 아래 부품 충돌 데이터)에는 남겨두되
         // compatibility는 연결하지 않는다 — Tricity(전14"/후12")와 Vino(10")조차 서로 휠 사이즈가
         // 달라, 하나의 휠 커버가 두 차종 모두에 확정 호환된다고 볼 근거가 없다(2026-09-21 검증).
         // 이후 NMAX/XMAX에도 같은 이유로 연결하지 않았다 — ContentSeeder.seedExpansionVehicleParts() 참고.
-        Part yamahaWheel = part("야마하 범용 알로이 휠 커버 세트", "휠", 36000);
+        Part yamahaWheel = part("야마하 범용 알로이 휠 커버 세트", "휠");
 
         for (ModelYear y : List.of(tricity21, tricity23, vino05, vino08)) {
             compat(y, yamahaGrip, "호환가능", null);
@@ -242,13 +242,13 @@ public class DataSeeder implements CommandLineRunner {
         compat(vino08, vinoMuffler, "호환가능", "정품 개스킷 포함");
 
         // ---- Suzuki 부품 (Address 125 / Burgman Street 125) ----
-        Part suzukiLamp = part("스즈키 범용 LED 방향지시등 세트", "램프", 33000);
-        Part addressCarrier = part("어드레스 언더시트 수납 캐리어", "캐리어", 58000);
-        Part addressWheel = part("어드레스 경량 알로이 휠", "휠", 210000);
-        Part burgmanSeat = part("버그만 스트리트 통풍 시트", "시트", 68000);
-        Part burgmanMirror = part("버그만 스트리트 크롬 사이드미러", "미러", 47000);
-        Part suzukiMuffler = part("스즈키 범용 스포츠 머플러", "머플러", 198000);
-        Part addressVisor = part("어드레스 스크린 바이저", "스크린", 39000);
+        Part suzukiLamp = part("스즈키 범용 LED 방향지시등 세트", "램프");
+        Part addressCarrier = part("어드레스 언더시트 수납 캐리어", "캐리어");
+        Part addressWheel = part("어드레스 경량 알로이 휠", "휠");
+        Part burgmanSeat = part("버그만 스트리트 통풍 시트", "시트");
+        Part burgmanMirror = part("버그만 스트리트 크롬 사이드미러", "미러");
+        Part suzukiMuffler = part("스즈키 범용 스포츠 머플러", "머플러");
+        Part addressVisor = part("어드레스 스크린 바이저", "스크린");
 
         // address15(풀체인지 이전 구형 플랫폼)는 일부러 이 범용 목록에서 빼둔다 — 지금 카탈로그의
         // 부품들은 2021년 풀체인지 이후 신형 플랫폼 기준이라 구형엔 실제로 맞지 않을 가능성이 높다.
@@ -268,13 +268,13 @@ public class DataSeeder implements CommandLineRunner {
         compat(address15, addressVisor, "호환불가", "2021년 풀체인지 이전 구형 플랫폼은 전면부 형상이 달라 장착 불가");
 
         // ---- Kawasaki 부품 (Ninja 125 / Z125) ----
-        Part kawasakiMuffler = part("가와사키 범용 레이싱 머플러", "머플러", 245000);
-        Part ninjaScreen = part("닌자125 스포츠 윈드스크린", "스크린", 87000);
-        Part ninjaClipOn = part("닌자125 레이싱 클립온 핸들바", "핸들바", 132000);
-        Part z125Mirror = part("Z125 스트리트 사이드미러 세트", "미러", 41000);
-        Part z125Lever = part("Z125 브레이크 레버 세트", "레버", 56000);
-        Part kawasakiWheel = part("가와사키 범용 휠 스프로킷 세트", "휠", 119000);
-        Part ninjaSeatCowl = part("닌자125 레이스 시트카울", "시트", 145000);
+        Part kawasakiMuffler = part("가와사키 범용 레이싱 머플러", "머플러");
+        Part ninjaScreen = part("닌자125 스포츠 윈드스크린", "스크린");
+        Part ninjaClipOn = part("닌자125 레이싱 클립온 핸들바", "핸들바");
+        Part z125Mirror = part("Z125 스트리트 사이드미러 세트", "미러");
+        Part z125Lever = part("Z125 브레이크 레버 세트", "레버");
+        Part kawasakiWheel = part("가와사키 범용 휠 스프로킷 세트", "휠");
+        Part ninjaSeatCowl = part("닌자125 레이스 시트카울", "시트");
 
         for (ModelYear y : List.of(ninja19, ninja23, z12521, z12523)) {
             compat(y, kawasakiMuffler, "브라켓필요", "레이스용 서브 브라켓 필요");
@@ -503,9 +503,11 @@ public class DataSeeder implements CommandLineRunner {
         partRepository.save(part);
     }
 
-    private Part part(String name, String category, int price) {
+    // 출처(판매처/상품 페이지)를 확인하지 못한 시드 부품이라 가격은 넣지 않는다(화면: "가격 정보 준비중", 구매 불가).
+    // 확인된 가격은 seed/verified-parts.json(VerifiedPartsSeeder)에서만 들어간다.
+    private Part part(String name, String category) {
         return partRepository.findByName(name)
-                .orElseGet(() -> partRepository.save(Part.builder().name(name).category(category).price(price).build()));
+                .orElseGet(() -> partRepository.save(Part.builder().name(name).category(category).build()));
     }
 
     private void compat(ModelYear modelYear, Part part, String status, String note) {

@@ -131,7 +131,7 @@ function GuideArticle() {
                       className="flex items-center justify-between gap-3 rounded-lg border border-ridefit-border bg-ridefit-card px-4 py-3 text-sm transition hover:border-ridefit-primary"
                     >
                       <span className="text-ridefit-text">{part.name}</span>
-                      <span className="shrink-0 text-ridefit-text-secondary">{part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 없음'}</span>
+                      <span className="shrink-0 text-ridefit-text-secondary">{part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 준비중'}</span>
                     </Link>
                   </li>
                 ))}

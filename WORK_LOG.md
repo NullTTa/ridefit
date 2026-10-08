@@ -4,6 +4,29 @@
 
 ---
 
+## 17차 - 출시 전 가격 신뢰성 + 업로드 오류 처리 + 최종 검증 (2026-10-08, main, 커밋+push)
+
+- **가격 점검(부품 90)**: RIDEFIT 판매 가격의 출처가 확인되는 부품은 7개(77 바이크007 원 상품가 / 118·119·120·121·122 = 출처 있는 판매처 최저가) - 그대로 유지.
+  나머지 83개(예전 DataSeeder/ContentSeeder 샘플 82 + KITACO 2)는 출처 없는 값이라 가격을 null로 두기로 함("가격 정보 준비중", 구매 버튼 숨김 - 기존 null 처리 재사용).
+  - KITACO(2) 120000원: 판매처 4곳(155,000~176,760원) 어디와도 안 맞는 예전 값. 재확인 결과 쿠즈모토는 **품절**, 상품 페이지 표기 적용 차종 JA44(18~20년식)
+    ("2021년식 JA56 장착불가") - RIDEFIT 호환은 KITACO 제조사 공식 자료(JA44/JA59) 근거라 변경하지 않음. 11번가 페이지는 내용을 읽지 못해 재확인 불가.
+  - 웹 검색(핵심 Super Cub 2025 부품만): OSAKA 슬립온 머플러(13), 수제 마차 휠(123) - 같은 상품의 판매 페이지를 찾지 못함 -> 새로 넣은 가격 0.
+  - 코드: 시드 `part(name, category)`가 가격을 넣지 않게 변경(새 DB에서도 출처 없는 가격이 생기지 않음), verified-parts.json의 KITACO price null + `_priceNote`.
+    PaymentFlowTest는 가격이 확인된 바스켓(118)으로 변경, VerifiedPartsSeederTest에 가격 규칙 단언 추가.
+  - **로컬 DB는 아직 반영 안 됨**(이번 세션에서 대량 UPDATE가 권한 확인에 막힘 - 사용자 결정 필요). 반영 SQL:
+    `UPDATE part SET price = NULL WHERE id NOT IN (77,118,119,120,121,122) AND price IS NOT NULL;` (83행 예상, 실행 전 `SELECT id, price FROM part` 백업 권장)
+  - 문구 통일: 부품 가격 없음 -> "가격 정보 준비중"(상세/Garage/FitRoom/Home/MyPage/Guide 글). PartImport 가격 null 가드.
+- **이미지**: 이미지 있는 22개는 사용자 제공 원본(5c21bb6) 또는 출처 기록된 판매처 이미지 - 유지. 없는 68개는 동일 상품 확인 불가 -> 기존 "이미지 준비 중" 유지(새 이미지 0).
+- **업로드 오류 처리(버그 2)**: ① 10MB 초과 업로드가 500 "일시적인 오류" -> `MaxUploadSizeExceededException` 413 + "파일이 너무 커요. 10MB 이하…"
+  ② 커뮤니티 사진 업로드가 앞부분만 PNG인 깨진 파일을 저장 -> PNG/JPG/GIF는 실제로 읽히는지 확인 후 저장(WEBP는 기본 ImageIO 미지원이라 형식 확인만). `UploadValidationTest` 추가.
+- **확인만**: 테스트 계정(user@ridefit.dev) 차량 13대는 회귀 테스트가 17/18/21/49를 쓰고 17에 장착 결과 9건이 있어 삭제하지 않음.
+  카운터는 세션 시작 시 체크포인트와 일치(되돌릴 것 없음), 이번 테스트로 오른 값은 다시 체크포인트로 복구. 카카오 지도: 같은 키로 Referer 5173 -> 200 sdk.js,
+  5174 -> 401 `AccessDeniedError: domain mismatched! caller=http://localhost:5174` (브라우저에선 ERR_BLOCKED_BY_ORB) -> Kakao Developers Web 도메인 등록 문제.
+- **테스트**: 백엔드 41/41, lint 0/0, build 성공. 브라우저(8081 + Vite 5174): 회귀 36/36(1280·390), 휠 흐름 61/61·60/60, 흐름 A 39/39, 화면 34/34,
+  최종 56/60(4 = 5174 지도), 21화면 x 2폭 순회 이상 없음(/services 중복 요청만 - 기존 P3), 신규 점검 65/65
+  (회원가입/잘못된 비밀번호/로그아웃 후 차단·뒤로가기/새로고침 유지/무효 토큰 -> 세션 만료 안내/직접 URL 6종/뒤로가기 흐름/권한 7종/업로드 8종/
+  예약 -> 결제 화면 -> 취소 CANCELED·변조 거절·타인 취소 403·없는 주문 404). AI 생성 0회. 테스트 회원은 앱 탈퇴로, 예약/결제/주문 행은 id 지정 삭제로 정리.
+
 ## 16차 - 발표 전 품질 점검: lint 경고 33 -> 0, 관리자 API 403, 조사 표기 (2026-10-08, main, 커밋+push)
 
 - **lint 33 -> 0** (eslint-disable/규칙 끄기 없음): effect 첫 줄에서 loading/error를 리셋하던 곳(set-state-in-effect 21건)은

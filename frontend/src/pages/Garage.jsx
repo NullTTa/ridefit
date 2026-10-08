@@ -13,7 +13,7 @@ import { getStageScale } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 import { loadFitBuild } from '../lib/fitBuild'
 
-const formatPrice = (price) => (price != null ? `${price.toLocaleString()}원` : '가격 정보 없음')
+const formatPrice = (price) => (price != null ? `${price.toLocaleString()}원` : '가격 정보 준비중')
 const formatDateTime = (value) =>
   new Date(value).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 

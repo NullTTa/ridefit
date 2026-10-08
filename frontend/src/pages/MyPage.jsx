@@ -259,7 +259,7 @@ function MyPage() {
                 <div>
                   <p className="font-medium text-ridefit-text">{f.name}</p>
                   <p className="text-xs text-ridefit-text-secondary">
-                    {f.category} · {f.price != null ? `${f.price.toLocaleString()}원` : '가격 정보 없음'}
+                    {f.category} · {f.price != null ? `${f.price.toLocaleString()}원` : '가격 정보 준비중'}
                   </p>
                   <p className="text-[11px] text-ridefit-text-secondary">{f.myVehicleLabel ? `${f.myVehicleLabel}에 저장` : '차량 미지정(예전에 저장)'}</p>
                 </div>

@@ -40,6 +40,10 @@ class VerifiedPartsSeederTest {
         assertThat(kitaco.getBrand()).isEqualTo("KITACO");
         assertThat(kitaco.getPartType()).isEqualTo(PartType.AFTERMARKET);
         assertThat(kitaco.getImageUrl()).isEqualTo("/assets/parts/kitaco-80-539-11530.jpg");
+        // RIDEFIT 판매 가격은 출처가 확인된 부품만 갖는다: KITACO(출처 없는 예전 값)와 예전 샘플 시드 부품은 null, 판매처 근거가 있는 바스켓은 그대로.
+        assertThat(kitaco.getPrice()).isNull();
+        assertThat(partRepository.findByName("순정 스타일 스테인리스 머플러 (Cub 110)").orElseThrow().getPrice()).isNull();
+        assertThat(partRepository.findByName("H2C 슈퍼커브 110 순정 프론트 바스켓 (21년~) [APK1MAL61000TA]").orElseThrow().getPrice()).isEqualTo(24800);
 
         Part screen = partRepository.findByName("H2C 슈퍼커브 110 순정 윈드스크린 (18년~) [APK76LJ-88210TA]").orElseThrow();
         assertThat(screen.getPartType()).isEqualTo(PartType.OEM);

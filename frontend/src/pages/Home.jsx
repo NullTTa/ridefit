@@ -284,7 +284,7 @@ function Home() {
                   )}
                   <p className="text-xs font-medium text-ridefit-primary">{part.category}</p>
                   <p className="mt-0.5 font-semibold text-ridefit-text">{part.name}</p>
-                  <p className="mt-auto pt-3 text-sm text-ridefit-text">{part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 없음'}</p>
+                  <p className="mt-auto pt-3 text-sm text-ridefit-text">{part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 준비중'}</p>
                   {part.stats && (part.stats.viewCount > 0 || part.stats.fitSelectionCount > 0) && (
                     <p className="text-xs text-ridefit-text-secondary">
                       조회 {part.stats.viewCount} · 장착해보기 {part.stats.fitSelectionCount}

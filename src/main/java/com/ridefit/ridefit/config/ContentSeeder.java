@@ -291,9 +291,9 @@ public class ContentSeeder implements CommandLineRunner {
             });
         }
 
-        Part cbMuffler = part("CB125R 숏 슬립온 머플러", "머플러", 259000);
-        Part cbLamp = part("CB125R LED 테일램프 세트", "램프", 42000);
-        Part cbHandlebar = part("CB125R 레이싱 클립온 핸들바", "핸들바", 89000);
+        Part cbMuffler = part("CB125R 숏 슬립온 머플러", "머플러");
+        Part cbLamp = part("CB125R LED 테일램프 세트", "램프");
+        Part cbHandlebar = part("CB125R 레이싱 클립온 핸들바", "핸들바");
         partImage(cbMuffler, "/assets/parts/cb125r-slipon-exhaust.png");
         for (ModelYear y : cb125rYears) {
             compat(y, cbMuffler, "호환가능", null);
@@ -304,8 +304,8 @@ public class ContentSeeder implements CommandLineRunner {
         // "가와사키 범용 레이싱 머플러/휠 스프로킷"은 Ninja125·Z125(네이키드/스포츠, 17" 캐스트휠) 전용으로
         // 만들어진 부품이라 차체 카테고리와 휠 사이즈·형식이 전혀 다른 Versys-X 300(어드벤처, 전19"·후17"
         // 스포크휠)에는 연결하지 않고, 이 차종 전용 부품만 새로 만든다.
-        Part versysCarrier = part("베르시스-X 300 어드벤처 리어 캐리어", "캐리어", 115000);
-        Part versysScreen = part("베르시스-X 300 롱 윈드스크린", "스크린", 92000);
+        Part versysCarrier = part("베르시스-X 300 어드벤처 리어 캐리어", "캐리어");
+        Part versysScreen = part("베르시스-X 300 롱 윈드스크린", "스크린");
         partImage(versysCarrier, "/assets/parts/versys-x300-rear-carrier.png");
         for (ModelYear y : versysYears) {
             compat(y, versysCarrier, "호환가능", null);
@@ -378,12 +378,12 @@ public class ContentSeeder implements CommandLineRunner {
         }
 
         // ---- 배달/실용 ----
-        Part phoneMount = part("범용 방수 스마트폰 거치대", "스마트폰거치대", 22000);
-        Part usbSocket = part("핸들바 USB 충전 소켓 세트", "USB충전기", 18000);
-        Part deliveryBoxSquare = part("스탠다드 배달통 (사각)", "배달통", 45000);
-        Part deliveryBoxRound = part("대형 배달통 (원형)", "배달통", 68000);
-        Part rearBag = part("방수 리어백 (캐리어 거치형)", "리어백", 39000);
-        Part handlebarPouch = part("핸들바 파우치 (방수)", "핸들바가방", 19000);
+        Part phoneMount = part("범용 방수 스마트폰 거치대", "스마트폰거치대");
+        Part usbSocket = part("핸들바 USB 충전 소켓 세트", "USB충전기");
+        Part deliveryBoxSquare = part("스탠다드 배달통 (사각)", "배달통");
+        Part deliveryBoxRound = part("대형 배달통 (원형)", "배달통");
+        Part rearBag = part("방수 리어백 (캐리어 거치형)", "리어백");
+        Part handlebarPouch = part("핸들바 파우치 (방수)", "핸들바가방");
 
         for (ModelYear y : allExisting) {
             compat(y, phoneMount, "호환가능", "핸들바 클램프 방식(22~32mm 대응), 공구 없이 장착 가능");
@@ -397,14 +397,14 @@ public class ContentSeeder implements CommandLineRunner {
         }
 
         // ---- 보호/외장 ----
-        Part waterproofCoverScooter = part("차체 방수 커버 (스쿠터/맥시스쿠터용)", "보호대", 32000);
-        Part waterproofCoverNaked = part("차체 방수 커버 (네이키드/스포츠용)", "보호대", 29000);
-        Part handguard = part("범용 핸드가드 세트", "핸드가드", 39000);
-        Part knuckleGuard = part("너클가드 (동계 방한용)", "너클가드", 25000);
-        Part frontBasket = part("프론트 유틸리티 바스켓", "프론트바구니", 34000);
-        Part ledFogLight = part("LED 보조 안개등 세트", "램프", 47000);
-        Part leverGuard = part("범용 브레이크 레버 프로텍터", "레버", 21000);
-        Part heatedGrip = part("열선 그립 세트", "핸들바", 55000);
+        Part waterproofCoverScooter = part("차체 방수 커버 (스쿠터/맥시스쿠터용)", "보호대");
+        Part waterproofCoverNaked = part("차체 방수 커버 (네이키드/스포츠용)", "보호대");
+        Part handguard = part("범용 핸드가드 세트", "핸드가드");
+        Part knuckleGuard = part("너클가드 (동계 방한용)", "너클가드");
+        Part frontBasket = part("프론트 유틸리티 바스켓", "프론트바구니");
+        Part ledFogLight = part("LED 보조 안개등 세트", "램프");
+        Part leverGuard = part("범용 브레이크 레버 프로텍터", "레버");
+        Part heatedGrip = part("열선 그립 세트", "핸들바");
 
         for (ModelYear y : stepThrough) {
             compat(y, waterproofCoverScooter, "호환가능", "차체 사이즈 기준 프리사이즈");
@@ -431,8 +431,8 @@ public class ContentSeeder implements CommandLineRunner {
         }
 
         // ---- 엔진별 전용 부품(에어필터는 흡기 규격이 엔진마다 달라 범용 연결하지 않는다) ----
-        Part cubAirFilter = part("슈퍼커브 110 고성능 에어필터 (교환식)", "에어필터", 26000);
-        Part pcxAirFilter = part("PCX 고성능 에어필터 (교환식)", "에어필터", 29000);
+        Part cubAirFilter = part("슈퍼커브 110 고성능 에어필터 (교환식)", "에어필터");
+        Part pcxAirFilter = part("PCX 고성능 에어필터 (교환식)", "에어필터");
         for (ModelYear y : cubRecent) {
             compat(y, cubAirFilter, "호환가능", "순정 에어박스 그대로 사용");
         }
@@ -442,21 +442,21 @@ public class ContentSeeder implements CommandLineRunner {
 
         // ---- 상품이 1개뿐이던 카테고리 보강 (2026-09-23) - 실제 있을 법한 범용/차종전용 품목만 추가,
         // 이미지가 없는 신규 항목은 imageUrl을 채우지 않아 "이미지 준비중"으로 정직하게 표시한다.
-        Part sideBagGeneric = part("범용 방수 사이드백 (편도형)", "사이드백", 52000);
-        Part footpegGeneric = part("범용 확장 풋페그 세트", "풋페그", 28000);
-        Part engineGuardNaked = part("엔진가드 세트 (네이키드/스포츠용)", "엔진가드", 48000);
-        Part rearShockScooter = part("리어 쇼크업소버 (스쿠터용 범용)", "리어쇼크", 65000);
-        Part frontCarrierPcx = part("PCX 프론트 유틸리티 캐리어", "프론트캐리어", 52000);
-        Part topboxBracketPcx = part("PCX 탑박스 브라켓 세트", "탑박스", 38000);
-        Part phoneMountClamp = part("핸들바 퀵클램프 스마트폰 거치대", "스마트폰거치대", 16000);
-        Part phoneMountPouch = part("바이크용 방수 스마트폰 파우치형 거치대", "스마트폰거치대", 24000);
-        Part usbSocketCigar = part("시거잭 겸용 USB 충전 소켓", "USB충전기", 15000);
-        Part usbSocketTypeC = part("퀵차지 지원 USB-C 충전 소켓", "USB충전기", 23000);
-        Part rearBagSaddle = part("소형 리어백 (안장 고정형)", "리어백", 29000);
-        Part handlebarFrameBag = part("핸들바 프레임백 (대용량)", "핸들바가방", 32000);
-        Part handguardRacing = part("레이싱 스타일 핸드가드 세트", "핸드가드", 45000);
-        Part knuckleGuardWind = part("반투명 윈드 너클가드", "너클가드", 19000);
-        Part frontBasketFoldable = part("접이식 프론트 바구니", "프론트바구니", 27000);
+        Part sideBagGeneric = part("범용 방수 사이드백 (편도형)", "사이드백");
+        Part footpegGeneric = part("범용 확장 풋페그 세트", "풋페그");
+        Part engineGuardNaked = part("엔진가드 세트 (네이키드/스포츠용)", "엔진가드");
+        Part rearShockScooter = part("리어 쇼크업소버 (스쿠터용 범용)", "리어쇼크");
+        Part frontCarrierPcx = part("PCX 프론트 유틸리티 캐리어", "프론트캐리어");
+        Part topboxBracketPcx = part("PCX 탑박스 브라켓 세트", "탑박스");
+        Part phoneMountClamp = part("핸들바 퀵클램프 스마트폰 거치대", "스마트폰거치대");
+        Part phoneMountPouch = part("바이크용 방수 스마트폰 파우치형 거치대", "스마트폰거치대");
+        Part usbSocketCigar = part("시거잭 겸용 USB 충전 소켓", "USB충전기");
+        Part usbSocketTypeC = part("퀵차지 지원 USB-C 충전 소켓", "USB충전기");
+        Part rearBagSaddle = part("소형 리어백 (안장 고정형)", "리어백");
+        Part handlebarFrameBag = part("핸들바 프레임백 (대용량)", "핸들바가방");
+        Part handguardRacing = part("레이싱 스타일 핸드가드 세트", "핸드가드");
+        Part knuckleGuardWind = part("반투명 윈드 너클가드", "너클가드");
+        Part frontBasketFoldable = part("접이식 프론트 바구니", "프론트바구니");
 
         for (ModelYear y : allExisting) {
             compat(y, sideBagGeneric, "브라켓필요", "프레임 레일/시트 스트랩 고정형, 차종별 고정점 확인 필요");
@@ -497,9 +497,11 @@ public class ContentSeeder implements CommandLineRunner {
     }
 
     // DataSeeder와 동일한 find-or-create 패턴.
-    private Part part(String name, String category, int price) {
+    // 출처(판매처/상품 페이지)를 확인하지 못한 시드 부품이라 가격은 넣지 않는다(화면: "가격 정보 준비중", 구매 불가).
+    // 확인된 가격은 seed/verified-parts.json(VerifiedPartsSeeder)에서만 들어간다.
+    private Part part(String name, String category) {
         return partRepository.findByName(name)
-                .orElseGet(() -> partRepository.save(Part.builder().name(name).category(category).price(price).build()));
+                .orElseGet(() -> partRepository.save(Part.builder().name(name).category(category).build()));
     }
 
     // DataSeeder.modelImage()/partImage()와 동일한 패턴 - 이미 이미지가 있으면 덮어쓰지 않는다.

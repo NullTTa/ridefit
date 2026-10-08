@@ -51,6 +51,9 @@ class PaymentFlowTest {
     private MockMvc mockMvc;
     @Autowired
     private PartRepository partRepository;
+
+    // 판매처로 가격이 확인된 부품(seed/verified-parts.json). 출처 없는 시드 부품은 가격이 없어 결제할 수 없다.
+    private static final String PRICED_PART = "H2C 슈퍼커브 110 순정 프론트 바스켓 (21년~) [APK1MAL61000TA]";
     @Autowired
     private PaymentRepository paymentRepository;
     @Autowired
@@ -77,7 +80,7 @@ class PaymentFlowTest {
     void 부품_결제는_서버_가격으로만_승인되고_변조_중복_타인_접근을_막는다() throws Exception {
         String user = login("user@ridefit.dev", "user1234!");
         String admin = login("admin@ridefit.dev", "admin1234!");
-        Part part = partRepository.findByName("KITACO 캐리어").orElseThrow();
+        Part part = partRepository.findByName(PRICED_PART).orElseThrow();
         int price = part.getPrice();
 
         // 미리보기: 서버 가격 x 수량(DB에 아무것도 만들지 않음)
@@ -151,7 +154,7 @@ class PaymentFlowTest {
     @Test
     void 결제_준비_뒤_가격이_바뀌면_승인하지_않는다() throws Exception {
         String user = login("user@ridefit.dev", "user1234!");
-        Part part = partRepository.findByName("KITACO 캐리어").orElseThrow();
+        Part part = partRepository.findByName(PRICED_PART).orElseThrow();
         int original = part.getPrice();
         String orderId = checkoutPart(user, part.getId(), 1).get("orderId").asText();
         inTx(() -> partRepository.findById(part.getId()).orElseThrow().setPrice(original + 1000));
@@ -212,7 +215,7 @@ class PaymentFlowTest {
     void 라이브_키면_결제를_시작하지_않는다() throws Exception {
         when(tossPaymentsClient.isTestKey()).thenReturn(false);
         String user = login("user@ridefit.dev", "user1234!");
-        Part part = partRepository.findByName("KITACO 캐리어").orElseThrow();
+        Part part = partRepository.findByName(PRICED_PART).orElseThrow();
         send(post("/api/payments/checkout/parts").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"items\":[{\"partId\":%d,\"quantity\":1}]}".formatted(part.getId())), user, 503);
     }

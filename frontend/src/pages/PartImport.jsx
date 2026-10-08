@@ -258,7 +258,7 @@ function PartImport() {
             <div>
               <p className="text-xs font-medium text-ridefit-primary">{part.category}</p>
               <p className="font-semibold text-ridefit-text">{part.name}</p>
-              <p className="text-sm text-ridefit-text-secondary">{part.price.toLocaleString()}원</p>
+              <p className="text-sm text-ridefit-text-secondary">{part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 준비중'}</p>
             </div>
           </div>
 

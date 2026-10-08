@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -36,6 +37,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({MissingServletRequestParameterException.class, MissingServletRequestPartException.class})
     public ResponseEntity<Map<String, String>> handleMissing(Exception e) {
         return ResponseEntity.badRequest().body(Map.of("message", "필요한 값이 빠졌어요. 입력값을 확인해주세요."));
+    }
+
+    // 업로드 크기 제한(spring.servlet.multipart.max-file-size=10MB)을 넘은 파일은 서버 오류(500)가 아니라 413 + 안내.
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleTooLarge(MaxUploadSizeExceededException e) {
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(Map.of("message", "파일이 너무 커요. 10MB 이하 이미지만 올릴 수 있어요."));
     }
 
     // 없는 정적 파일(예: 삭제된 /uploads 이미지)은 500이 아니라 404 - 화면은 이미지 대체 표시로 처리한다.

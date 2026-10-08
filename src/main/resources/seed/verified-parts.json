@@ -8,7 +8,8 @@
     {
       "name": "KITACO 캐리어",
       "category": "캐리어",
-      "price": 120000,
+      "_priceNote": "2026-10-08 RIDEFIT 판매 가격 120000은 출처가 없는 예전 시드 값이라 null(가격 정보 준비중). 판매처 참고 가격(아래 sellerListings, 2026-09-30 확인)은 유지. 재확인 시 쿠즈모토는 품절, 상품 페이지 표기 적용: JA44(18~20년식).",
+      "price": null,
       "imageUrl": "/assets/parts/kitaco-80-539-11530.jpg",
       "imageSourceUrl": "https://cusmoto.com/web/product/extra/big/202407/7441f20c72f52b3705a8282bd904478d.jpg",
       "partNumber": "80-539-11530",
