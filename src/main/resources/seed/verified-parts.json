@@ -434,6 +434,24 @@
           "_dbId": 107
         }
       ]
+    },
+    {
+      "name": "슈퍼커브110 수제 튜닝 마차 휠 (21~25년식)",
+      "category": "휠",
+      "_note": "2026-10-07 사용자 제공 상품 이미지(투명 배경 1254x1254, 림+스포크+드럼 허브, 타이어 없음)로 등록. 판매처/가격을 확인하지 못해 price는 null(가짜 가격 금지), 판매처 없음.",
+      "imageUrl": "/assets/parts/supercub110-handmade-spoke-wheel.png",
+      "partType": "AFTERMARKET",
+      "compatibilities": [
+        {
+          "manufacturer": "Honda",
+          "vehicleModel": "Super Cub 110",
+          "year": 2025,
+          "chassisCode": "JA59",
+          "status": "호환가능",
+          "note": "상품명 기준 슈퍼커브110 21~25년식 전용 튜닝 휠. RIDEFIT에는 우선 2025(JA59)만 등록(다른 연식은 확인 후 추가). 장착 미리보기는 직접 합성(AI 없음)."
+        }
+      ],
+      "sellerListings": []
     }
   ]
 }

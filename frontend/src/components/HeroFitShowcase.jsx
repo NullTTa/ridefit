@@ -29,7 +29,7 @@ const pct = (v, total) => `${(v / total) * 100}%`
 const INTRO = 1400 // 순정 상태
 const LINE = 900 // 선이 그려지는 시간(그 뒤 장착)
 const HOLD = 1700 // 장착 뒤 다음 선까지 유지
-const FINAL = 3200 // 완성 상태 유지
+const FINAL = 2800 // 완성 상태 유지(2~3초)
 const FADE = 1100 // 순정으로 서서히 돌아가는 시간
 const N = HERO_BUILD.length
 function buildTimeline() {

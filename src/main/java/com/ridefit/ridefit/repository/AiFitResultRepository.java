@@ -16,6 +16,10 @@ public interface AiFitResultRepository extends JpaRepository<AiFitResult, Long> 
 
     long countByCreatedAtAfter(LocalDateTime since);
 
+    // 서비스 전체 일일 AI 생성 한도용 - 직접 합성(model = excludedModel, AI 호출 없음) 결과는 세지 않는다.
+    @Query("select count(r) from AiFitResult r where r.createdAt > :since and (r.model is null or r.model <> :excludedModel)")
+    long countGeneratedSince(@Param("since") LocalDateTime since, @Param("excludedModel") String excludedModel);
+
     // 같은 이미지 파일을 가리키는 결과 수(삭제할 때 다른 결과가 같은 파일을 쓰면 파일은 남긴다).
     long countByGeneratedImage(String generatedImage);
 

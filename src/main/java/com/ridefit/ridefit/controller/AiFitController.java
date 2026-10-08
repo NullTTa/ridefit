@@ -16,6 +16,7 @@ import com.ridefit.ridefit.security.CurrentMember;
 import com.ridefit.ridefit.service.AiFitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,11 +25,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -81,6 +85,21 @@ public class AiFitController {
         }
         return aiFitService.generate(toInputs(raw, AiFitService.MAX_PARTS), requireOwnedVehicle(request.myVehicleId()),
                 currentMember.id(), Boolean.TRUE.equals(request.regenerate()));
+    }
+
+    // 직접 합성(AI 없음) 장착 모습 저장. image = 브라우저가 위치 미리보기와 같은 배치로 차량 원본 해상도로 그린 PNG.
+    // 본인 차량 + 호환 부품만, 같은 조합이면 저장된 결과를 돌려준다.
+    @PostMapping(value = "/api/ai-fit/composite", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public AiFitResponse saveComposite(@RequestParam Long myVehicleId, @RequestParam List<Long> partIds,
+                                       @RequestParam(defaultValue = "v1") String version,
+                                       @RequestParam("image") MultipartFile image) throws IOException {
+        MyVehicle vehicle = requireOwnedVehicle(myVehicleId);
+        List<Long> ids = partIds.stream().filter(Objects::nonNull).distinct().toList();
+        Map<Long, Part> found = partRepository.findAllById(ids).stream().collect(Collectors.toMap(Part::getId, Function.identity()));
+        if (found.size() != ids.size()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "부품 정보를 찾을 수 없습니다.");
+        }
+        return aiFitService.saveComposite(ids.stream().map(found::get).toList(), vehicle, currentMember.id(), version, image.getBytes());
     }
 
     // 이 차량으로 만든 장착 결과(최신순, 저장된 것 전부). 본인 차량만.

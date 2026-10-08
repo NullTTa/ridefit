@@ -90,7 +90,8 @@ public class VerifiedPartsSeeder implements CommandLineRunner {
             return partRepository.save(Part.builder()
                     .name(name)
                     .category(p.get("category").asText())
-                    .price(p.get("price").asInt())
+                    // 가격을 확인하지 못한 부품은 null(화면에 "가격 정보 없음") - 임의 가격을 넣지 않는다.
+                    .price(p.hasNonNull("price") ? p.get("price").asInt() : null)
                     .imageUrl(text(p, "imageUrl"))
                     .imageSourceUrl(text(p, "imageSourceUrl"))
                     .aiReferenceImageUrl(text(p, "aiReferenceImageUrl"))

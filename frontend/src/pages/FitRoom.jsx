@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Check, Heart, Star, Trash2 } from 'lucide-react'
+import { ArrowRight, Check, Heart, Maximize2, Star, Trash2 } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import AiFitPanel from '../components/AiFitPanel'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { Ico } from '../components/Icon'
+import { ImageLightbox, Lightbox } from '../components/Lightbox'
 import PartBadges from '../components/PartBadges'
 import ProductImage from '../components/ProductImage'
 import SafeImage from '../components/SafeImage'
@@ -11,9 +12,9 @@ import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
 import VehicleYearBadge, { ModelImageNotice } from '../components/VehicleYearBadge'
 import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
-import { get360PartLayer } from '../constants/vehicle360Parts'
+import { get360PartLayerInfo } from '../constants/vehicle360Parts'
 import { HERO_BUILD } from '../constants/heroBuild'
-import { getStageScale, getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
+import { getFitLayout, getStageScale, getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 import { loadFitBuild, saveFitBuild } from '../lib/fitBuild'
 import { formatFitmentYears } from '../lib/fitment'
@@ -56,6 +57,8 @@ function FitRoom() {
   const [aiCheckKey, setAiCheckKey] = useState(0)
   // "크게 보기"(전체 화면)로 연 장착 결과. null이면 닫힘.
   const [zoomed, setZoomed] = useState(null)
+  // 위치 미리보기 크게 보기(원본 이미지들을 큰 무대에 다시 배치 - 작은 화면을 늘리는 것이 아님)
+  const [stageZoom, setStageZoom] = useState(false)
   // 목록 카테고리 필터(null = 전체). 장착 상태와 무관 - 다른 카테고리에서 장착한 부품은 그대로 장착돼 있다.
   const [categoryFilter, setCategoryFilter] = useState(null)
   // true면 "이 차량에 저장한 부품"만 목록에 보인다(장착 상태와 무관).
@@ -88,13 +91,6 @@ function FitRoom() {
       return next
     }))
   }
-
-  useEffect(() => {
-    if (!zoomed) return
-    const onKey = (e) => e.key === 'Escape' && setZoomed(null)
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [zoomed])
 
   const loadSavedResults = () =>
     api
@@ -219,7 +215,7 @@ function FitRoom() {
   // (장착 상태는 위치 미리보기/360/장착 모습 만들기가 모두 같은 activePartIds 하나를 쓴다)
   const layers360 = vehicle360Frames
     ? activeParts
-        .map((p) => ({ key: p.partId, frames: get360PartLayer(vehicle.modelImageUrl, p.name, vehicle360Frames.length) }))
+        .map((p) => ({ key: p.partId, ...get360PartLayerInfo(vehicle.modelImageUrl, p.name, vehicle360Frames.length) }))
         .filter((l) => l.frames)
     : []
   const pending360 = vehicle360Frames ? activeParts.filter((p) => !layers360.some((l) => l.key === p.partId)) : []
@@ -282,30 +278,31 @@ function FitRoom() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
       {zoomed && (
-        // 전체 화면 보기: 화면 크기 안에서 비율을 지키며 가장 크게(잘리지 않음). 배경/닫기 버튼/Esc로 닫는다.
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="장착 모습 크게 보기"
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-black/90 p-3 sm:p-6"
-          onClick={() => setZoomed(null)}
-          data-testid="ai-fit-lightbox"
+        // 전체 화면 보기: 저장된 원본 결과 이미지를 그대로(썸네일 아님). 기본은 원본보다 크게 늘리지 않는 화면 맞춤, 큰 원본은 1:1로도 본다.
+        <ImageLightbox
+          src={zoomed.imageUrl}
+          alt={`${zoomed.title} 장착 모습`}
+          title={zoomed.title}
+          onClose={() => setZoomed(null)}
+          testid="ai-fit-lightbox"
+        />
+      )}
+      {stageZoom && (
+        // 위치 미리보기 크게 보기: 같은 원본 이미지(차량 1829px, 부품 레이어)를 큰 무대에 다시 배치한다 - 원본 픽셀보다 크게는 늘리지 않는다.
+        <Lightbox
+          label="위치 미리보기 크게 보기"
+          onClose={() => setStageZoom(false)}
+          testid="fit-stage-lightbox"
+          footer={<p className="w-full text-xs text-white/80">{activeParts.map((p) => p.name).join(' + ') || '순정'} · 위치 미리보기</p>}
         >
-          <img
-            src={zoomed.imageUrl}
-            alt={`${zoomed.title} 장착 모습`}
-            className="h-auto max-h-[calc(100vh-7rem)] w-full rounded-lg object-contain"
+          <div
+            className="w-full overflow-hidden rounded-lg bg-ridefit-card"
+            style={{ maxWidth: `min(100%, calc((100vh - 9rem) * ${getVehicleStageAspectRatio(vehicle)}))` }}
             onClick={(e) => e.stopPropagation()}
-          />
-          <p className="max-w-3xl text-center text-xs text-white/80">{zoomed.title}</p>
-          <button
-            type="button"
-            onClick={() => setZoomed(null)}
-            className="rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-white/25"
           >
-            닫기
-          </button>
-        </div>
+            <VehicleFitStage vehicle={vehicle} parts={activeParts} conflictPartIds={conflictPartIds} large />
+          </div>
+        </Lightbox>
       )}
 
       <p className="text-xs font-semibold uppercase tracking-wider text-ridefit-primary">부품 입혀보기</p>
@@ -329,7 +326,7 @@ function FitRoom() {
               ? `홈에서 본 구성 중 이 차량에 호환되는 부품(${preselect.name})을 장착한 상태로 열었어요. [360° 보기]로 돌려보거나 하나씩 빼볼 수 있어요.`
               : `홈에서 본 구성은 ${vehicle.nickname || vehicle.modelYearLabel}과(와) 호환이 확인되지 않아 장착하지 않았어요. 부품 목록의 호환 부품으로 직접 장착해보세요.`
             : preselect.ok
-            ? `'${preselect.name}'을(를) 장착한 상태로 열었어요. 아래 "장착한 모습 만들기"에서 장착한 모습도 확인할 수 있어요.`
+            ? `'${preselect.name}'을(를) 장착한 상태로 열었어요. 아래 "장착한 모습" 패널에서 장착 결과 이미지도 만들 수 있어요.`
             : `${preselect.name ? `'${preselect.name}'은(는) ` : '선택한 부품은 '}${
                 vehicle.nickname || vehicle.modelYearLabel
               }과(와) 호환이 확인되지 않아 자동으로 장착하지 않았어요. 부품 목록의 호환 부품은 그대로 사용할 수 있어요.`}
@@ -425,7 +422,23 @@ function FitRoom() {
               startIndex={getVehicle360StartIndex(vehicle.modelImageUrl)}
               normalizeTo={vehicle.modelImageUrl}
               layers={layers360}
+              expandable
             />
+          ) : getFitLayout(vehicle) ? (
+            // 누르면 크게 보기(원본 이미지로 다시 그린 큰 무대)
+            <div className="relative">
+              <button type="button" onClick={() => setStageZoom(true)} className="block w-full cursor-zoom-in" aria-label="위치 미리보기 크게 보기" data-testid="fit-stage-zoom-area">
+                <VehicleFitStage vehicle={vehicle} parts={activeParts} conflictPartIds={conflictPartIds} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setStageZoom(true)}
+                className="absolute right-2 top-2 z-[60] flex items-center gap-1 rounded-full border border-ridefit-border bg-ridefit-bg/85 px-2.5 py-1.5 text-xs font-medium text-ridefit-text shadow-lg backdrop-blur transition hover:border-ridefit-primary hover:text-ridefit-primary"
+                data-testid="fit-stage-zoom"
+              >
+                <Maximize2 aria-hidden="true" className="h-3.5 w-3.5" />크게 보기
+              </button>
+            </div>
           ) : (
             <VehicleFitStage vehicle={vehicle} parts={activeParts} conflictPartIds={conflictPartIds} />
           )}
@@ -458,6 +471,7 @@ function FitRoom() {
             onShowBasic={() => setViewMode('fit')}
             onGenerated={loadSavedResults}
             refreshKey={aiCheckKey}
+            savedResults={savedResults}
             onShowResult={(result) => {
               setAiResult(result)
               setViewMode('ai')
@@ -698,7 +712,10 @@ function FitRoom() {
             <div className="rounded-lg border border-ridefit-border bg-ridefit-card p-4">
               <p className="mb-1 text-sm font-semibold text-ridefit-text">
                 현재 조합 ({activeParts.length}개) · 합계{' '}
-                {activeParts.reduce((sum, p) => sum + p.price, 0).toLocaleString()}원
+                {activeParts.reduce((sum, p) => sum + (p.price ?? 0), 0).toLocaleString()}원
+                {activeParts.some((p) => p.price == null) && (
+                  <span className="ml-1 text-xs font-normal text-ridefit-text-secondary">(가격 정보 없는 부품 {activeParts.filter((p) => p.price == null).length}개 제외)</span>
+                )}
               </p>
               <p className="text-xs text-ridefit-text-secondary">
                 {activeParts.map((p) => p.name).join(', ')}

@@ -4,8 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 
@@ -27,6 +30,18 @@ public class GlobalExceptionHandler {
                 .map(err -> err.getDefaultMessage())
                 .orElse("입력값을 확인해주세요.");
         return ResponseEntity.badRequest().body(Map.of("message", message));
+    }
+
+    // 필수 파라미터/업로드 파일이 빠진 요청(예: 장착 모습 저장에 이미지 없음)은 서버 오류가 아니라 400.
+    @ExceptionHandler({MissingServletRequestParameterException.class, MissingServletRequestPartException.class})
+    public ResponseEntity<Map<String, String>> handleMissing(Exception e) {
+        return ResponseEntity.badRequest().body(Map.of("message", "필요한 값이 빠졌어요. 입력값을 확인해주세요."));
+    }
+
+    // 없는 정적 파일(예: 삭제된 /uploads 이미지)은 500이 아니라 404 - 화면은 이미지 대체 표시로 처리한다.
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNoResource(NoResourceFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "요청한 파일을 찾을 수 없어요."));
     }
 
     @ExceptionHandler(Exception.class)

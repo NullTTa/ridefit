@@ -460,7 +460,10 @@ function PartsSearch() {
                 <div className="mt-4 rounded-xl border border-ridefit-border bg-ridefit-card p-4">
                   <p className="mb-1 text-sm font-semibold text-ridefit-text">
                     장착 중 ({selectedParts.length}개) · 합계{' '}
-                    {selectedParts.reduce((sum, p) => sum + p.price, 0).toLocaleString()}원
+                    {selectedParts.reduce((sum, p) => sum + (p.price ?? 0), 0).toLocaleString()}원
+                    {selectedParts.some((p) => p.price == null) && (
+                      <span className="ml-1 text-xs font-normal text-ridefit-text-secondary">(가격 정보 없는 부품 제외)</span>
+                    )}
                   </p>
                   <p className="text-xs text-ridefit-text-secondary">{selectedParts.map((p) => p.name).join(', ')}</p>
                   {selectedPartIds.length >= 2 && (

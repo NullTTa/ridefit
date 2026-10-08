@@ -21,6 +21,11 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -141,6 +146,11 @@ public class AiFitService {
     // 한 번에 함께 합성할 수 있는 부품 수(입력 이미지 = 차량 1 + 부품 N). 너무 많으면 결과가 불안정하다.
     public static final int MAX_PARTS = 4;
 
+    // 직접 합성(AI 없음) 결과의 model 값. 서비스 전체 AI 일일 한도에서 제외한다.
+    public static final String COMPOSITE_MODEL = "direct-composite";
+    private static final int MAX_COMPOSITE_PARTS = 8;
+    private static final int MAX_COMPOSITE_SIDE = 4096;
+
     // 버튼을 활성화해도 되는지 + 이미 생성된 결과가 있는지(부품 1개, 예전 API). 이미지 API를 호출하지 않는다.
     public AiFitStatusResponse status(Part part, MyVehicle vehicle, Double anchorX, Double anchorY) {
         AiFitCheckResponse check = check(List.of(new PartInput(part, anchorX, anchorY)), vehicle);
@@ -216,7 +226,7 @@ public class AiFitService {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
                     "AI 이미지 기능이 아직 설정되지 않았어요. 기본 장착 미리보기는 그대로 사용할 수 있어요.");
         }
-        if (aiFitResultRepository.countByCreatedAtAfter(LocalDate.now().atStartOfDay()) >= globalDailyLimit) {
+        if (aiFitResultRepository.countGeneratedSince(LocalDate.now().atStartOfDay(), COMPOSITE_MODEL) >= globalDailyLimit) {
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS,
                     "오늘 준비된 AI 이미지 생성량을 모두 사용했어요. 내일 다시 시도해주세요.");
         }
@@ -344,6 +354,86 @@ public class AiFitService {
                     "AI 이미지를 만들지 못했어요. 잠시 후 다시 시도하거나 기본 장착 미리보기를 이용해주세요.");
         } finally {
             inFlight.remove(key);
+        }
+    }
+
+    // "직접 합성" 장착 모습 저장 - AI를 쓰지 않는다. 브라우저가 위치 미리보기와 같은 배치(vehicleFitPositions.js)로
+    // 차량 대표 사진 원본 해상도 그대로 그린 PNG를 받아 결과로 저장한다(휠처럼 위치가 정확해야 하는 부품용).
+    // 같은 조합(+ 합성 버전)은 저장된 결과를 그대로 돌려주고 새 파일을 만들지 않는다.
+    // 받는 이미지는 PNG만, 차량 대표 사진과 같은 비율 + 대표 사진 해상도 이상(축소본 거절)만 허용하고, 무손실로 다시 인코딩해 저장한다.
+    public AiFitResponse saveComposite(List<Part> parts, MyVehicle vehicle, Long memberId, String version, byte[] upload) {
+        if (parts.isEmpty() || parts.size() > MAX_COMPOSITE_PARTS) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "함께 합성할 부품을 " + MAX_COMPOSITE_PARTS + "개 이하로 선택해주세요.");
+        }
+        if (version == null || !version.matches("[a-z0-9-]{1,20}")) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "합성 버전 형식이 올바르지 않아요.");
+        }
+        for (Part part : parts) {
+            if (!compatibilityCheckService.isProceedAllowed(part.getId(), vehicle.getModelYear().getId())) {
+                throw new ApiException(HttpStatus.CONFLICT, part.getName() + ": 이 차량과 호환이 확인되지 않은 부품은 장착 모습을 저장할 수 없어요.");
+            }
+        }
+        // 직접 합성 배치는 차종 대표 사진 기준이라, 사용자 사진을 올린 차량에는 쓰지 않는다(화면도 배치 없음 = 배지).
+        if (vehicle.getPhotoUrl() != null && !vehicle.getPhotoUrl().isBlank()) {
+            throw new ApiException(HttpStatus.CONFLICT, "직접 올린 차량 사진에는 장착 모습을 합성할 수 없어요.");
+        }
+        String vehicleImagePath = vehicleImagePath(vehicle);
+        BufferedImage base = imageStorageService.read(vehicleImagePath)
+                .map(img -> decode(img.bytes()))
+                .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "차량 원본 이미지를 읽을 수 없어요."));
+        if (upload == null || upload.length < 8 || (upload[0] & 0xFF) != 0x89 || upload[1] != 'P' || upload[2] != 'N' || upload[3] != 'G') {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "장착 모습은 PNG 이미지로만 저장할 수 있어요.");
+        }
+        BufferedImage image = decode(upload);
+        if (image == null || base == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "이미지를 읽을 수 없어요.");
+        }
+        double baseRatio = (double) base.getWidth() / base.getHeight();
+        double ratio = (double) image.getWidth() / image.getHeight();
+        if (image.getWidth() > MAX_COMPOSITE_SIDE || image.getHeight() > MAX_COMPOSITE_SIDE
+                || image.getWidth() < base.getWidth() || Math.abs(ratio - baseRatio) / baseRatio > 0.01) {
+            log.warn("직접 합성 이미지 거절: {}x{} (대표 사진 {}x{})", image.getWidth(), image.getHeight(), base.getWidth(), base.getHeight());
+            throw new ApiException(HttpStatus.BAD_REQUEST, "차량 사진과 비율/해상도가 맞지 않는 이미지예요.");
+        }
+
+        List<Long> partIds = parts.stream().map(Part::getId).sorted().toList();
+        String key = sha256(String.join("|", "composite", version, vehicleImagePath,
+                String.valueOf(vehicle.getModelYear().getId()), partIds.toString()));
+        Optional<AiFitResult> cached = usableCached(key);
+        if (cached.isPresent()) {
+            log.info("직접 합성: 저장된 결과 재사용 resultId={}, partIds={}, myVehicleId={}", cached.get().getId(), partIds, vehicle.getId());
+            return toResponse(cached.get(), true);
+        }
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", out);
+            String storedPath = imageStorageService.storeBytes(out.toByteArray(), "ai-fit");
+            AiFitResult saved = aiFitResultRepository.save(AiFitResult.builder()
+                    .cacheKey(key)
+                    .part(parts.get(0))
+                    .partIds(String.join(",", partIds.stream().map(String::valueOf).toList()))
+                    .myVehicleId(vehicle.getId())
+                    .vehicleModel(vehicle.getModelYear().getVehicleModel())
+                    .sourceVehicleImage(vehicleImagePath)
+                    .sourcePartImage(String.join(",", parts.stream().map(p -> String.valueOf(p.getImageUrl())).toList()))
+                    .generatedImage(storedPath)
+                    .model(COMPOSITE_MODEL)
+                    .promptVersion("composite-" + version)
+                    .requestedByMemberId(memberId)
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            log.info("직접 합성 결과 저장: resultId={}, {}x{}, image={}", saved.getId(), image.getWidth(), image.getHeight(), storedPath);
+            return toResponse(saved, false);
+        } catch (IOException e) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "장착 모습을 저장하지 못했어요.");
+        }
+    }
+
+    private static BufferedImage decode(byte[] bytes) {
+        try {
+            return ImageIO.read(new ByteArrayInputStream(bytes));
+        } catch (IOException e) {
+            return null;
         }
     }
 

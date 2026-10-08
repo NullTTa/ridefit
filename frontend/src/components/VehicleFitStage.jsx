@@ -1,5 +1,13 @@
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
-import { CATEGORY_POSITION, DEFAULT_POSITION, getFitLayout, getPartOverlays, getStageScale } from '../constants/vehicleFitPositions'
+import {
+  CATEGORY_POSITION,
+  DEFAULT_POSITION,
+  cssMaskStyle,
+  getFitLayout,
+  getPartOverlays,
+  getStageScale,
+  getVehicleMasks,
+} from '../constants/vehicleFitPositions'
 
 const pct = (value, total) => `${(value / total) * 100}%`
 
@@ -12,7 +20,8 @@ const DEFAULT_LABEL_OFFSET = { dx: 0, dy: -34 }
 //    "부착 지점(점) + 짧은 연결선 + '장착 이미지 준비 중' 라벨" 로 대신한다 - 차량 본체를 덜 가리도록 여백 방향으로 살짝 띄운다.
 //  - 없으면(임시 아이콘/사용자 사진): 예전처럼 4:3 박스에 같은 방식(점+짧은 선+라벨)으로 표시한다.
 // parts: 지금 장착 중인 부품 배열, conflictPartIds: 충돌 중인 partId Set(빨간 윤곽/배지).
-function VehicleFitStage({ vehicle, parts, conflictPartIds }) {
+// large: 크게 보기 화면용 - 기본 max-w-2xl 대신 화면 폭까지 넓히되, 차량 사진이 원본 해상도보다 크게 늘어나지 않는 폭까지만.
+function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
   const layout = getFitLayout(vehicle)
   const imageSrc = vehicle?.photoUrl || vehicle?.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE
   const alt = vehicle?.modelYearLabel ?? '차량'
@@ -103,45 +112,62 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds }) {
   }
 
   // 차량이 무대를 꽉 채우지 않도록 360°와 같은 비율로 가운데 기준 축소(inset이 위아래/좌우 같은 %라 사진 비율과 좌표는 그대로).
-  const inset = `${((1 - getStageScale(vehicle)) / 2) * 100}%`
+  const stageScale = getStageScale(vehicle)
+  const inset = `${((1 - stageScale) / 2) * 100}%`
+  // 휠 교체처럼 순정 부품을 지워야 하는 부품: 차량 사진에 마스크를 걸고(지운 자리), 새 부품 레이어는 차량 "아래"(under)에 깐다.
+  const vehicleMask = cssMaskStyle(getVehicleMasks(parts, layout))
+
+  const overlayImg = (part, o, i) => (
+    <img
+      key={`${part.partId}-${i}`}
+      src={o.src}
+      alt={part.name}
+      title={part.name}
+      draggable={false}
+      data-testid={`fit-overlay-${part.partId}`}
+      className="pointer-events-none absolute animate-fadeIn select-none"
+      style={{
+        left: pct(o.x, layout.width),
+        top: pct(o.y, layout.height),
+        width: pct(o.width, layout.width),
+        height: 'auto',
+        // under 레이어는 z-index 없이 차량 사진보다 먼저 그려 그 아래에 깔린다.
+        zIndex: o.under ? undefined : (o.z ?? 10),
+        transform: `translate(-50%, -50%) rotate(${o.rotate ?? 0}deg) scaleX(${o.flipX ? -1 : 1})`,
+        filter: isConflict(part)
+          ? 'drop-shadow(0 0 5px rgba(248,113,113,0.95))'
+          : o.shadow === false ? undefined : 'drop-shadow(0 2px 3px rgba(0,0,0,0.55))',
+      }}
+    />
+  )
+  const overlaysOf = (under) =>
+    parts.flatMap((part) =>
+      getPartOverlays(part, layout)
+        .map((o, i) => [o, i])
+        .filter(([o]) => !!o.under === under)
+        .map(([o, i]) => overlayImg(part, o, i)),
+    )
 
   return (
     <div
-      className="relative mx-auto w-full max-w-2xl"
-      style={{ aspectRatio: `${layout.width} / ${layout.height}` }}
-      data-testid="fit-stage"
+      className={`relative mx-auto w-full ${large ? '' : 'max-w-2xl'}`}
+      // 크게 보기: 차량 사진이 원본 픽셀보다 크게 늘어나지 않는 폭(사진 폭 / 무대 축소 비율)까지만 넓힌다.
+      style={{ aspectRatio: `${layout.width} / ${layout.height}`, ...(large ? { maxWidth: `${Math.round(layout.width / stageScale)}px` } : {}) }}
+      data-testid={large ? 'fit-stage-large' : 'fit-stage'}
     >
       <div className="absolute" style={{ inset }} data-testid="fit-stage-inner">
-      <img src={imageSrc} alt={alt} className="absolute inset-0 h-full w-full select-none" draggable={false} />
+      {overlaysOf(true)}
+      <img
+        src={imageSrc}
+        alt={alt}
+        className="absolute inset-0 h-full w-full select-none"
+        style={vehicleMask ?? undefined}
+        draggable={false}
+        data-testid="fit-stage-vehicle"
+        data-masked={vehicleMask ? 'true' : undefined}
+      />
 
-      {parts.map((part) => {
-        const overlays = getPartOverlays(part, layout)
-        if (overlays.length > 0) {
-          return overlays.map((o, i) => (
-            <img
-              key={`${part.partId}-${i}`}
-              src={o.src}
-              alt={part.name}
-              title={part.name}
-              draggable={false}
-              data-testid={`fit-overlay-${part.partId}`}
-              className="pointer-events-none absolute animate-fadeIn select-none"
-              style={{
-                left: pct(o.x, layout.width),
-                top: pct(o.y, layout.height),
-                width: pct(o.width, layout.width),
-                height: 'auto',
-                zIndex: o.z ?? 10,
-                transform: `translate(-50%, -50%) rotate(${o.rotate ?? 0}deg) scaleX(${o.flipX ? -1 : 1})`,
-                filter: isConflict(part)
-                  ? 'drop-shadow(0 0 5px rgba(248,113,113,0.95))'
-                  : 'drop-shadow(0 2px 3px rgba(0,0,0,0.55))',
-              }}
-            />
-          ))
-        }
-        return null
-      })}
+      {overlaysOf(false)}
 
       <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${layout.width} ${layout.height}`} preserveAspectRatio="none">
         {badgeParts.map((part) => connector(part, resolveAnchor(part)))}

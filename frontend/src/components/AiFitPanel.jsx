@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getAiAnchor } from '../constants/vehicleFitPositions'
+import { getAiAnchor, getFitLayout, isDirectCompositePart } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
+import { COMPOSITE_VERSION, compositeIncludedParts, renderFitComposite } from '../lib/fitComposite'
 import SafeImage from './SafeImage'
 
 // "장착해보기" - 체크한 부품들을 내 차량 사진에 함께 장착한 합성 이미지 한 장을 만든다. 기존 2D 위치 미리보기와 별개.
@@ -29,11 +30,18 @@ const STATUS_TEXT = {
 const plain = (message) => (message ?? '').replace(/AI\s?/g, '')
 
 // refreshKey: 저장된 장착 모습을 삭제하는 등 서버 캐시가 바뀌었을 때 값을 바꿔 다시 확인하게 한다.
-function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBasic, onGenerated, viewMode, refreshKey = 0 }) {
+// savedResults: 이 차량의 저장된 장착 모습(직접 합성 결과가 이미 있는지 확인용).
+//
+// 직접 합성 모드: 휠처럼 위치가 정확해야 하는 부품(vehicleFitPositions의 directComposite 배치)을 고르면 이미지 생성 대신
+// 위치 미리보기와 같은 배치를 차량 원본 해상도로 그려 저장한다(lib/fitComposite.js, 외부 호출 없음). 이때는 생성용 상태 확인도 하지 않는다.
+function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBasic, onGenerated, viewMode, refreshKey = 0, savedResults = [] }) {
   const [check, setCheck] = useState(null)
   const [checking, setChecking] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState(null)
+
+  const layout = getFitLayout(vehicle)
+  const compositeMode = activeParts.some((p) => isDirectCompositePart(p, layout))
 
   // 체크한 순서와 상관없이 같은 조합이면 같은 요청이 되도록 부품 id 순으로 보낸다(서버 캐시 키도 정렬 기준).
   const inputs = [...activeParts]
@@ -46,8 +54,9 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
 
   useEffect(() => {
     const parts = JSON.parse(inputsKey)
-    if (parts.length === 0) {
+    if (parts.length === 0 || compositeMode) {
       setCheck(null)
+      setChecking(false)
       return
     }
     let cancelled = false
@@ -61,7 +70,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
     return () => {
       cancelled = true
     }
-  }, [inputsKey, myVehicleId, refreshKey])
+  }, [inputsKey, myVehicleId, refreshKey, compositeMode])
 
   const byId = new Map(activeParts.map((p) => [p.partId, p]))
   const statusById = new Map((check?.parts ?? []).map((s) => [s.partId, s]))
@@ -93,6 +102,95 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
 
   const ready = check?.canGenerate && !generating && !checking
   const isCached = check?.code === 'CACHED'
+
+  if (compositeMode) {
+    const includedParts = compositeIncludedParts(vehicle, activeParts)
+    const includedIds = includedParts.map((p) => p.partId).sort((a, b) => a - b)
+    const compositeTitle = includedParts.map((p) => p.name).join(' + ')
+    const saved = savedResults.find(
+      (r) => r.model === 'direct-composite' && [...r.partIds].sort((a, b) => a - b).join(',') === includedIds.join(','),
+    )
+    const saveComposite = async () => {
+      if (saved) {
+        onShowResult({ imageUrl: saved.imageUrl, cached: true, title: compositeTitle })
+        return
+      }
+      setGenerating(true)
+      setError(null)
+      try {
+        const blob = await renderFitComposite(vehicle, includedParts)
+        const form = new FormData()
+        form.append('myVehicleId', String(myVehicleId))
+        includedIds.forEach((id) => form.append('partIds', String(id)))
+        form.append('version', COMPOSITE_VERSION)
+        form.append('image', blob, 'fit-composite.png')
+        const res = await api.post('/api/ai-fit/composite', form)
+        onShowResult({ imageUrl: res.imageUrl, cached: res.cached, title: compositeTitle })
+        onGenerated?.()
+      } catch (err) {
+        setError(plain(err.message))
+      } finally {
+        setGenerating(false)
+      }
+    }
+    return (
+      <div className="mt-6 rounded-lg border border-ridefit-border bg-ridefit-bg p-4 text-left" data-testid="ai-fit-panel" data-mode="composite">
+        <p className="mb-1 text-sm font-semibold text-ridefit-text">장착한 모습 저장하기</p>
+        <p className="mb-3 text-xs text-ridefit-text-secondary">
+          휠은 위치가 정확해야 해서 새로 그리지 않고, 위치 미리보기와 같은 배치를 차량 원본 사진 해상도 그대로 합성해 저장해요.
+        </p>
+        <ul className="mb-3 flex flex-col gap-1.5" data-testid="ai-fit-parts">
+          {activeParts.map((p) => {
+            const ok = includedParts.some((x) => x.partId === p.partId)
+            return (
+              <li key={p.partId} className="flex items-center gap-2" data-testid={`ai-fit-part-${p.partId}`} data-included={ok ? 'true' : 'false'}>
+                <SafeImage
+                  src={p.imageUrl}
+                  alt=""
+                  className="h-8 w-8 shrink-0 rounded border border-ridefit-border bg-white object-contain p-0.5"
+                  fallbackClassName="h-8 w-8 shrink-0 rounded border border-ridefit-border text-[8px] leading-tight"
+                />
+                <span className={`min-w-0 flex-1 truncate text-xs ${ok ? 'text-ridefit-text' : 'text-ridefit-text-secondary line-through decoration-ridefit-text-secondary/50'}`}>
+                  {p.name}
+                </span>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${ok ? 'bg-ridefit-primary/15 text-ridefit-primary' : 'bg-ridefit-card text-ridefit-text-secondary'}`}>
+                  {ok ? '직접 합성' : '위치 표시만'}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+        <div className="flex flex-wrap gap-2">
+          {viewMode !== 'fit' && (
+            <button
+              type="button"
+              onClick={onShowBasic}
+              className="rounded-lg border border-ridefit-border px-3 py-2 text-xs font-semibold text-ridefit-text-secondary transition hover:border-ridefit-primary"
+            >
+              위치 미리보기로 돌아가기
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={saveComposite}
+            disabled={generating || includedParts.length === 0}
+            className="rounded-lg bg-ridefit-primary px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+            data-testid="ai-fit-composite-button"
+          >
+            {generating ? '저장하는 중...' : saved ? '저장된 장착 모습 보기' : '장착 모습 저장하기'}
+          </button>
+        </div>
+        {error && (
+          <p className="mt-2 text-xs text-ridefit-danger" data-testid="ai-fit-error">
+            {error}
+          </p>
+        )}
+        <p className="mt-3 text-[11px] text-ridefit-text-secondary">
+          장착 모습은 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있어요. 저장한 결과는 아래 "저장된 장착 모습"과 내 차고에 남아요.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-6 rounded-lg border border-ridefit-border bg-ridefit-bg p-4 text-left" data-testid="ai-fit-panel">

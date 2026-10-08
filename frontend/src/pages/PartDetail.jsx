@@ -179,7 +179,12 @@ function PartDetail() {
               외부 판매처 가격은 참고용이라 결제 금액으로 쓰지 않는다 - 둘을 다른 줄/다른 이름으로 구분한다. */}
           <div data-testid="part-price">
             <p className="text-[11px] font-medium text-ridefit-text-secondary">RIDEFIT 판매 가격</p>
-            <p className="text-2xl font-bold text-ridefit-text">{part.price.toLocaleString()}원</p>
+            {/* 가격을 확인하지 못한 부품은 가격을 만들지 않는다(구매 버튼도 숨김). */}
+            {part.price != null ? (
+              <p className="text-2xl font-bold text-ridefit-text">{part.price.toLocaleString()}원</p>
+            ) : (
+              <p className="text-base font-semibold text-ridefit-text-secondary" data-testid="part-price-unknown">가격 정보 없음 · 판매 준비 중</p>
+            )}
           </div>
           {/* 예시 판매처/가격 미확인 판매처는 서버에서 제외된 값이다(PartPopularityService). */}
           {stats.lowestPrice != null && (
@@ -246,13 +251,15 @@ function PartDetail() {
             ) : (
               <FitVehiclePicker partId={part.id} currentVehicleId={vehicleId} className="w-full" />
             )}
-            <Link
-              to={`/checkout?partId=${part.id}&qty=1${vehicleId ? `&vehicleId=${vehicleId}` : ''}`}
-              className="rounded-lg border border-ridefit-border px-3 py-2 text-center text-sm font-semibold text-ridefit-text transition hover:border-ridefit-primary hover:text-ridefit-primary"
-              data-testid="part-buy"
-            >
-              <Ico as={ShoppingCart} className="mr-1" />구매하기 · {part.price.toLocaleString()}원
-            </Link>
+            {part.price != null && (
+              <Link
+                to={`/checkout?partId=${part.id}&qty=1${vehicleId ? `&vehicleId=${vehicleId}` : ''}`}
+                className="rounded-lg border border-ridefit-border px-3 py-2 text-center text-sm font-semibold text-ridefit-text transition hover:border-ridefit-primary hover:text-ridefit-primary"
+                data-testid="part-buy"
+              >
+                <Ico as={ShoppingCart} className="mr-1" />구매하기 · {part.price.toLocaleString()}원
+              </Link>
+            )}
             {vehicleId && saved !== null && (
               <button
                 type="button"

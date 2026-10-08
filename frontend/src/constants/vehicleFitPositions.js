@@ -59,6 +59,9 @@ export const PART_OVERLAY_IMAGES = {
 //  - overlays[카테고리]: 그 카테고리 부품의 오버레이 배치(여러 개면 좌/우 미러처럼 여러 장).
 //      x,y = 오버레이 중심, width = 오버레이 가로(px), rotate = 도, flipX = 좌우 반전, z = 겹침 순서.
 //      높이는 오버레이 이미지 비율대로 자동.
+//      (선택) src = 이 배치 전용 이미지(없으면 PART_OVERLAY_IMAGES), forImage = 이 상품 사진의 부품에만 적용,
+//      under = 차량 사진 아래에 깐다, mask = 차량 사진에 거는 알파 마스크(같은 캔버스, 0인 곳의 순정 부품을 지움),
+//      shadow = false면 그림자 없음, directComposite = AI 대신 이 배치 그대로 "장착 모습"을 저장한다(AiFitPanel).
 //  - anchors[카테고리]: 오버레이 이미지가 없는 부품의 "부착 지점"(x,y, 실제 그 부품이 붙는 자리)과,
 //      라벨을 그 지점에서 얼마나/어느 방향으로 짧게 띄울지(dx,dy, 픽셀). 차량 몸체를 덜 가리도록
 //      여백이 있는 방향으로 밀어둔 값이다. 생략하면 기본값(짧게 위로)을 쓴다.
@@ -79,6 +82,17 @@ export const VEHICLE_FIT_LAYOUTS = {
       // 짐받이 아래 측면에 매달린 위치(짐받이 위가 아님). 뒤 쇼크 윗부분을 가린다(가방이 바깥쪽).
       // 오버레이는 원본 비율 그대로(가로/세로 같은 배율, 222x181) - width만 주고 height는 auto. 홈 Hero도 이 값을 그대로 쓴다.
       사이드백: [{ x: 498, y: 450, width: 222, z: 18 }],
+      // 휠(사용자 제공 '수제 튜닝 마차 휠' 상품 사진만 - forImage). 원본 휠 PNG를 이 사진의 앞/뒤 림 외곽 타원(실측)에 맞춰
+      // 같은 1829x860 캔버스로 만든 레이어를 차량 "아래"(under)에 깔고, 차량 사진에는 순정 휠 안쪽만 지우는 마스크를 건다
+      // (포크/디스크/캘리퍼/머플러/쇼크처럼 휠 앞에 있는 부품은 마스크에서 남겨 새 휠을 자연스럽게 가린다). AI 없음.
+      // 생성: tools/wheel-fit/build_wheel_layers.py (views.json에 타원/가림 영역). 캔버스 전체라 x,y = 중앙, width = 사진 폭.
+      휠: [{
+        x: 914.5, y: 430, width: 1829,
+        under: true, shadow: false, directComposite: true,
+        forImage: '/assets/parts/supercub110-handmade-spoke-wheel.png',
+        src: '/assets/parts/overlay/super-cub-110-spoke-wheel/layer.png',
+        mask: '/assets/parts/overlay/super-cub-110-spoke-wheel/mask.png',
+      }],
       // 순정 사진에 이미 양쪽 미러가 그려져 있어서, 같은 자리에 미러 오버레이를 또 얹으면
       // 두 개가 겹쳐 뜬 것처럼 보인다. 오버레이로 가리는 대신 배지로만 "미러 장착됨"을 표시한다.
     },
@@ -288,11 +302,40 @@ export function getVehicleStageAspectRatio(vehicle) {
 }
 
 // 부품 하나가 이 레이아웃에서 차량 위에 올릴 오버레이 목록. 없으면 빈 배열.
+// forImage가 있는 배치는 그 상품 사진의 부품에만 쓴다(같은 카테고리의 다른 상품에 이 이미지를 붙이지 않는다).
 export function getPartOverlays(part, layout) {
-  const src = PART_OVERLAY_IMAGES[part.imageUrl]
   const placements = layout?.overlays?.[part.category]
-  if (!src || !placements) return []
-  return placements.map((placement) => ({ ...placement, src }))
+  if (!placements) return []
+  return placements
+    .filter((placement) => !placement.forImage || placement.forImage === part.imageUrl)
+    .map((placement) => ({ ...placement, src: placement.src ?? PART_OVERLAY_IMAGES[part.imageUrl] }))
+    .filter((placement) => placement.src)
+}
+
+// 장착한 부품들 중 차량 사진에 마스크를 거는 것(휠 교체처럼 순정 부품을 지워야 하는 경우)의 마스크 경로들.
+export function getVehicleMasks(parts, layout) {
+  return parts.flatMap((part) => getPartOverlays(part, layout).map((o) => o.mask).filter(Boolean))
+}
+
+// AI 대신 위치 미리보기 배치 그대로 "장착 모습"을 저장하는 부품인지(휠).
+export function isDirectCompositePart(part, layout) {
+  return getPartOverlays(part, layout).some((o) => o.directComposite)
+}
+
+// 여러 장의 알파 마스크를 CSS mask로(사진과 같은 object-contain 박스에 맞춤). 여러 장이면 교집합.
+export function cssMaskStyle(masks) {
+  if (!masks || masks.length === 0) return null
+  const image = masks.map((m) => `url("${m}")`).join(', ')
+  const repeat = masks.map(() => 'no-repeat').join(', ')
+  const size = masks.map(() => 'contain').join(', ')
+  const position = masks.map(() => 'center').join(', ')
+  return {
+    WebkitMaskImage: image, maskImage: image,
+    WebkitMaskRepeat: repeat, maskRepeat: repeat,
+    WebkitMaskSize: size, maskSize: size,
+    WebkitMaskPosition: position, maskPosition: position,
+    ...(masks.length > 1 ? { WebkitMaskComposite: 'source-in', maskComposite: 'intersect' } : {}),
+  }
 }
 
 // FitRoom 좌표(vehicleFitPositions.js)에서 이 부품 카테고리의 장착 지점을 찾아 차량 사진 기준 0~100% 로 환산한다.
