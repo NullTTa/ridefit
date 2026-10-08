@@ -3,6 +3,7 @@ import { getAiAnchor, getFitLayout, isDirectCompositePart } from '../constants/v
 import { api } from '../lib/api'
 import { COMPOSITE_VERSION, compositeIncludedParts, renderFitComposite } from '../lib/fitComposite'
 import SafeImage from './SafeImage'
+import { displayImageUrl } from '../constants/productImages'
 
 // "장착해보기" - 체크한 부품들을 내 차량 사진에 함께 장착한 합성 이미지 한 장을 만든다. 기존 2D 위치 미리보기와 별개.
 // 준비 상태 확인(/api/ai-fit/check)은 무료(API 호출 없음)이고, 실제 생성은 버튼을 눌렀을 때만 요청한다.
@@ -150,7 +151,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
             return (
               <li key={p.partId} className="flex items-center gap-2" data-testid={`ai-fit-part-${p.partId}`} data-included={ok ? 'true' : 'false'}>
                 <SafeImage
-                  src={p.imageUrl}
+                  src={displayImageUrl(p.imageUrl)}
                   alt=""
                   className="h-8 w-8 shrink-0 rounded border border-ridefit-border bg-white object-contain p-0.5"
                   fallbackClassName="h-8 w-8 shrink-0 rounded border border-ridefit-border text-[8px] leading-tight"
@@ -216,7 +217,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
             return (
               <li key={p.partId} className="flex items-center gap-2" data-testid={`ai-fit-part-${p.partId}`} data-included={ok ? 'true' : 'false'}>
                 <SafeImage
-                  src={p.imageUrl}
+                  src={displayImageUrl(p.imageUrl)}
                   alt=""
                   className="h-8 w-8 shrink-0 rounded border border-ridefit-border bg-white object-contain p-0.5"
                   fallbackClassName="h-8 w-8 shrink-0 rounded border border-ridefit-border text-[8px] leading-tight"

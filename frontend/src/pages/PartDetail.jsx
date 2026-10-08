@@ -5,6 +5,7 @@ import FitVehiclePicker from '../components/FitVehiclePicker'
 import { Ico } from '../components/Icon'
 import PartBadges from '../components/PartBadges'
 import SafeImage from '../components/SafeImage'
+import { displayImageUrl } from '../constants/productImages'
 import SellerListings from '../components/SellerListings'
 import YoutubeEmbed from '../components/YoutubeEmbed'
 import { api } from '../lib/api'
@@ -127,7 +128,7 @@ function PartDetail() {
       <div className="grid gap-6 sm:grid-cols-2">
         <div>
           <SafeImage
-            src={part.imageUrl}
+            src={displayImageUrl(part.imageUrl)}
             alt={part.name}
             className="aspect-square w-full rounded-xl border border-ridefit-border bg-white object-contain p-4"
             fallbackClassName="h-48 w-full rounded-xl border border-ridefit-border bg-ridefit-card text-sm"

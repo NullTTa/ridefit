@@ -12,6 +12,7 @@ import VehicleCard from '../components/VehicleCard'
 import VehicleImage from '../components/VehicleImage'
 import { useAuth } from '../context/useAuth'
 import { api } from '../lib/api'
+import { displayImageUrl } from '../constants/productImages'
 import { getRecentVehicleIds } from '../lib/recentVehicles'
 
 // 홈 하단에 소개할 정보 글(slug). 서버에 없으면 자동으로 빠진다.
@@ -270,7 +271,7 @@ function Home() {
                 <Link to={`/parts/${part.id}`} className="flex h-full flex-col rounded-xl border border-ridefit-border bg-ridefit-card p-4 transition hover:-translate-y-1 hover:border-ridefit-primary/60">
                   {part.imageUrl ? (
                     <img
-                      src={part.imageUrl}
+                      src={displayImageUrl(part.imageUrl)}
                       alt={part.name}
                       className="mb-3 h-28 w-full rounded-lg bg-white object-contain p-2"
                     />
@@ -347,7 +348,7 @@ function Home() {
                 {partsForShowcase.slice(0, 3).map((part) => (
                   <div key={part.id} className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-xl border border-ridefit-border bg-white p-2 shadow sm:h-28 sm:w-28">
                     {part.imageUrl ? (
-                      <img src={part.imageUrl} alt={part.name} className="h-full w-full object-contain" />
+                      <img src={displayImageUrl(part.imageUrl)} alt={part.name} className="h-full w-full object-contain" />
                     ) : (
                       <span className="text-xs text-ridefit-text-secondary">이미지 준비중</span>
                     )}
