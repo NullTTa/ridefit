@@ -1,4 +1,5 @@
-import { getFitLayout, getPartOverlays, getStageScale } from '../constants/vehicleFitPositions'
+import { getFitLayout, getPartOverlays, getStageScale, isDirectCompositePart } from '../constants/vehicleFitPositions'
+import { api } from './api'
 
 // "직접 합성" 장착 모습(AI 없음): 위치 미리보기(VehicleFitStage)와 같은 배치를 브라우저 canvas에 차량 대표 사진의
 // 원본 해상도 그대로 그려 PNG 한 장으로 만든다. 서버(POST /api/ai-fit/composite)는 비율/해상도를 확인하고 무손실로 저장한다.
@@ -6,7 +7,9 @@ import { getFitLayout, getPartOverlays, getStageScale } from '../constants/vehic
 //  - 무대와 같은 여백(getStageScale)을 두어 결과 화면/위치 미리보기/360에서 차량 크기가 같게 보인다. 여백은 투명.
 //  - 오버레이 배치/마스크/아래 깔기(under) 규칙은 VehicleFitStage와 같다.
 // 레이어 이미지/배치를 바꾸면 버전을 올린다(같은 조합의 예전 저장 결과와 구분 - 서버 cacheKey에 들어간다).
-export const COMPOSITE_VERSION = 'wheel-v1'
+// hero-v3: 사이드백을 커밋된 Hero 이미지(overlay/saddlebag-pair-lace-side.png)로 되돌림. hero-v2: 머플러/앞바구니/사이드백이
+// Hero 레이어로 직접 합성에 들어감(2026-10). wheel-v1: 휠만.
+export const COMPOSITE_VERSION = 'hero-v3'
 
 const loadImage = (src) =>
   new Promise((resolve, reject) => {
@@ -20,6 +23,28 @@ const loadImage = (src) =>
 export function compositeIncludedParts(vehicle, parts) {
   const layout = getFitLayout(vehicle)
   return layout ? parts.filter((p) => getPartOverlays(p, layout).length > 0) : []
+}
+
+// 지금 장착한 부품으로 "현재 모습"을 직접 합성해 저장할 수 있는지(미리 준비한 장착 이미지가 있는 부품이 하나라도 있어야 한다).
+export function canSaveFitComposite(vehicle, parts) {
+  const layout = getFitLayout(vehicle)
+  return !!layout && parts.some((p) => isDirectCompositePart(p, layout))
+}
+
+// "현재 모습 저장": 위치 미리보기와 같은 배치로 그린 PNG를 POST /api/ai-fit/composite로 저장한다(AI 없음).
+// 서버는 같은 조합 + 같은 COMPOSITE_VERSION이면 새 파일 없이 기존 결과를 돌려준다(cached: true).
+// 반환: { result: 서버 응답(id/imageUrl/cached/partIds...), includedParts: 이미지에 들어간 부품 }
+export async function saveFitComposite(vehicle, myVehicleId, parts) {
+  const includedParts = compositeIncludedParts(vehicle, parts)
+  if (includedParts.length === 0) throw new Error('저장 이미지에 넣을 수 있는 부품이 없어요.')
+  const blob = await renderFitComposite(vehicle, includedParts)
+  const form = new FormData()
+  form.append('myVehicleId', String(myVehicleId))
+  includedParts.map((p) => p.partId).sort((a, b) => a - b).forEach((id) => form.append('partIds', String(id)))
+  form.append('version', COMPOSITE_VERSION)
+  form.append('image', blob, 'fit-composite.png')
+  const result = await api.post('/api/ai-fit/composite', form)
+  return { result, includedParts }
 }
 
 export async function renderFitComposite(vehicle, parts) {

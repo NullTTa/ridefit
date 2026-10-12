@@ -62,25 +62,43 @@ function PartDetail() {
 
   useEffect(() => {
     let cancelled = false
-    const query = vehicleId ? `?myVehicleId=${vehicleId}` : ''
+    // 부품 정보/후기/호환 차량은 vehicleId와 무관하게 항상 받을 수 있다(먼저, 반드시 성공하는 것만 Promise.all로 묶는다).
+    // myVehicleId가 붙는 호출(getPart 보강, /check, 내 차량 찾기)은 그 값이 지금 로그인한 사용자의 차량이
+    // 아니면(다른 사람 차량 id를 북마크/공유 링크로 열었거나, 로그아웃 후 다시 로그인한 경우 등) 서버가
+    // 403/404를 던진다 - 이걸 여기서 개별로 흡수하지 않으면 페이지 전체가 에러로 빠져서 "장착해보기"
+    // 버튼까지 통째로 사라진다(실제로는 버튼 비활성화가 아니라 페이지 전체 에러). 실패하면 그 vehicleId를
+    // 쓰지 않은 것(차량 미지정)과 같게 처리하고, 기본 부품 정보는 그대로 보여준다.
     Promise.all([
-      api.get(`/api/parts/${partId}${query}`),
+      api.get(`/api/parts/${partId}`),
       api.get(`/api/parts/${partId}/reviews`, { auth: false }),
-      vehicleId ? api.get(`/api/parts/${partId}/check?myVehicleId=${vehicleId}`) : Promise.resolve(null),
-      // 호환 차량 목록/내 차량 정보는 부가 정보라 실패해도 상세 화면은 그대로 보여준다.
       api.get(`/api/parts/${partId}/compatibilities`, { auth: false }).catch(() => []),
-      vehicleId
-        ? api.get('/api/my-vehicles').then((list) => list.find((v) => String(v.id) === String(vehicleId)) ?? null).catch(() => null)
-        : Promise.resolve(null),
     ])
-      .then(([partData, reviewData, checkData, fitmentData, vehicleData]) => {
+      .then(([partData, reviewData, fitmentData]) => {
         if (cancelled) return
         setPart(partData)
         setReviews(reviewData)
-        setCheckResult(checkData)
         setFitments(fitmentData)
-        setMyVehicle(vehicleData)
         setError(null)
+
+        if (!vehicleId) {
+          setCheckResult(null)
+          setMyVehicle(null)
+          return
+        }
+        Promise.all([
+          api.get(`/api/parts/${partId}?myVehicleId=${vehicleId}`).catch(() => null),
+          api.get(`/api/parts/${partId}/check?myVehicleId=${vehicleId}`).catch(() => null),
+          api
+            .get('/api/my-vehicles')
+            .then((list) => list.find((v) => String(v.id) === String(vehicleId)) ?? null)
+            .catch(() => null),
+        ]).then(([vehicleScopedPart, checkData, vehicleData]) => {
+          if (cancelled) return
+          // 성공했을 때만 경쟁 배지가 포함된 버전으로 바꾼다(실패하면 위에서 받은 기본 정보를 그대로 둔다).
+          if (vehicleScopedPart) setPart(vehicleScopedPart)
+          setCheckResult(checkData)
+          setMyVehicle(vehicleData)
+        })
       })
       .catch((err) => !cancelled && setError(err.message))
       .finally(() => !cancelled && setLoadedKey(`${partId}:${vehicleId ?? ''}`))

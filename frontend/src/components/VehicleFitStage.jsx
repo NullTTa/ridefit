@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
 import {
   CATEGORY_POSITION,
@@ -6,7 +7,6 @@ import {
   getFitLayout,
   getPartOverlays,
   getStageScale,
-  getVehicleMasks,
 } from '../constants/vehicleFitPositions'
 
 const pct = (value, total) => `${(value / total) * 100}%`
@@ -22,7 +22,11 @@ const DEFAULT_LABEL_OFFSET = { dx: 0, dy: -34 }
 // parts: 지금 장착 중인 부품 배열, conflictPartIds: 충돌 중인 partId Set(빨간 윤곽/배지).
 // large: 크게 보기 화면용 - 기본 max-w-2xl 대신 화면 폭까지 넓히되, 차량 사진이 원본 해상도보다 크게 늘어나지 않는 폭까지만.
 function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
+  // 불러오지 못한 이미지 경로. 부품 레이어가 실패하면 깨진 아이콘 대신 배지로 돌리고, 차량 사진이 실패하면 안내 문구를 띄운다.
+  const [failedSrcs, setFailedSrcs] = useState(() => new Set())
+  const markFailed = (src) => setFailedSrcs((prev) => (prev.has(src) ? prev : new Set(prev).add(src)))
   const layout = getFitLayout(vehicle)
+  const overlaysFor = (part) => getPartOverlays(part, layout).filter((o) => !failedSrcs.has(o.src))
   const imageSrc = vehicle?.photoUrl || vehicle?.modelImageUrl || VEHICLE_PLACEHOLDER_IMAGE
   const alt = vehicle?.modelYearLabel ?? '차량'
   const isConflict = (part) => conflictPartIds?.has(part.partId) ?? false
@@ -96,7 +100,7 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
   }
 
   const badgeParts = layout
-    ? parts.filter((part) => getPartOverlays(part, layout).length === 0)
+    ? parts.filter((part) => overlaysFor(part).length === 0)
     : parts
 
   if (!layout) {
@@ -115,7 +119,8 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
   const stageScale = getStageScale(vehicle)
   const inset = `${((1 - stageScale) / 2) * 100}%`
   // 휠 교체처럼 순정 부품을 지워야 하는 부품: 차량 사진에 마스크를 걸고(지운 자리), 새 부품 레이어는 차량 "아래"(under)에 깐다.
-  const vehicleMask = cssMaskStyle(getVehicleMasks(parts, layout))
+  // 레이어를 못 불러온 부품은 마스크도 걸지 않는다(순정 부품만 지워지고 새 부품이 없는 빈자리가 생기지 않게).
+  const vehicleMask = cssMaskStyle(parts.flatMap((part) => overlaysFor(part).map((o) => o.mask).filter(Boolean)))
 
   const overlayImg = (part, o, i) => (
     <img
@@ -125,6 +130,7 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
       title={part.name}
       draggable={false}
       data-testid={`fit-overlay-${part.partId}`}
+      onError={() => markFailed(o.src)}
       className="pointer-events-none absolute animate-fadeIn select-none"
       style={{
         left: pct(o.x, layout.width),
@@ -142,7 +148,7 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
   )
   const overlaysOf = (under) =>
     parts.flatMap((part) =>
-      getPartOverlays(part, layout)
+      overlaysFor(part)
         .map((o, i) => [o, i])
         .filter(([o]) => !!o.under === under)
         .map(([o, i]) => overlayImg(part, o, i)),
@@ -165,7 +171,13 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
         draggable={false}
         data-testid="fit-stage-vehicle"
         data-masked={vehicleMask ? 'true' : undefined}
+        onError={() => markFailed(imageSrc)}
       />
+      {failedSrcs.has(imageSrc) && (
+        <p className="absolute inset-0 flex items-center justify-center text-xs text-ridefit-text-secondary" data-testid="fit-stage-vehicle-error">
+          차량 사진을 불러오지 못했어요. 새로고침해 주세요.
+        </p>
+      )}
 
       {overlaysOf(false)}
 

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getAiAnchor, getFitLayout, isDirectCompositePart } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
-import { COMPOSITE_VERSION, compositeIncludedParts, renderFitComposite } from '../lib/fitComposite'
 import SafeImage from './SafeImage'
 import { displayImageUrl } from '../constants/productImages'
 
@@ -30,12 +29,60 @@ const STATUS_TEXT = {
 // 서버 문구(예: "AI 이미지를 만들지 못했어요")에서 기술 용어만 걷어낸다.
 const plain = (message) => (message ?? '').replace(/AI\s?/g, '')
 
+// 패널 안 부품 한 줄: 썸네일 + 이름 + 상태 배지 + [장착하기/장착해제].
+// 버튼은 FitRoom의 togglePart(= lib/fitBuild toggleFitBuildPart, 실행 취소 이력/현재 구성 저장 포함)를 그대로 부른다 - 별도 장착 상태 없음.
+function PartRow({ part, active, ok, badge, badgeActive, onToggle }) {
+  return (
+    <li className="flex items-center gap-2" data-testid={`ai-fit-part-${part.partId}`} data-included={ok ? 'true' : 'false'} data-active={active ? 'true' : 'false'}>
+      <SafeImage
+        src={displayImageUrl(part.imageUrl)}
+        alt=""
+        className={`h-8 w-8 shrink-0 rounded border border-ridefit-border bg-white object-contain p-0.5 ${active ? '' : 'opacity-50'}`}
+        fallbackClassName="h-8 w-8 shrink-0 rounded border border-ridefit-border text-[8px] leading-tight"
+        fallbackText="없음"
+      />
+      {/* 좁은 화면에서는 이름을 두 줄까지 보여주고 배지를 이름 아래로 내린다(한 줄에 배지+버튼까지 넣으면 이름이 몇 글자만 남았다). */}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+        <span
+          className={`min-w-0 break-keep text-xs leading-snug line-clamp-2 sm:flex-1 sm:truncate ${active && ok ? 'text-ridefit-text' : 'text-ridefit-text-secondary'} ${active && !ok ? 'line-through decoration-ridefit-text-secondary/50' : ''}`}
+          title={part.name}
+        >
+          {part.name}
+        </span>
+        <span className={`w-fit shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${badgeActive ? 'bg-ridefit-primary/15 text-ridefit-primary' : 'bg-ridefit-card text-ridefit-text-secondary'}`}>
+          {badge}
+        </span>
+      </span>
+      {onToggle && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onToggle(part.partId)
+          }}
+          aria-pressed={active}
+          aria-label={`${part.name} ${active ? '장착해제' : '장착하기'}`}
+          data-testid={`ai-fit-toggle-${part.partId}`}
+          className={`shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
+            active
+              ? 'border border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-danger hover:text-ridefit-danger'
+              : 'bg-ridefit-primary text-white hover:brightness-110'
+          }`}
+        >
+          {active ? '장착해제' : '장착하기'}
+        </button>
+      )}
+    </li>
+  )
+}
+
 // refreshKey: 저장된 장착 모습을 삭제하는 등 서버 캐시가 바뀌었을 때 값을 바꿔 다시 확인하게 한다.
-// savedResults: 이 차량의 저장된 장착 모습(직접 합성 결과가 이미 있는지 확인용).
 //
-// 직접 합성 모드: 휠처럼 위치가 정확해야 하는 부품(vehicleFitPositions의 directComposite 배치)을 고르면 이미지 생성 대신
-// 위치 미리보기와 같은 배치를 차량 원본 해상도로 그려 저장한다(lib/fitComposite.js, 외부 호출 없음). 이때는 생성용 상태 확인도 하지 않는다.
-function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBasic, onGenerated, viewMode, refreshKey = 0, savedResults = [] }) {
+// 직접 합성 모드: 미리 준비한 장착 이미지가 있는 부품(vehicleFitPositions의 directComposite 배치)을 고르면 이 패널은 숨고(null),
+// FitRoom의 FitSavePanel [현재 모습 저장]이 위치 미리보기와 같은 배치로 저장한다(lib/fitComposite.js, 외부 호출 없음). 이때는 생성용 상태 확인도 하지 않는다.
+// 장착/해제는 FitRoom 왼쪽 "현재 장착 중" 패널과 오른쪽 부품 목록이 맡는다 - 이 패널은 "어떤 부품이 이미지에 들어가는지"만 보여준다(같은 부품을 두 번 다루지 않게).
+function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBasic, onGenerated, viewMode, refreshKey = 0 }) {
   // 생성 가능 여부 응답은 어떤 요청(부품 조합/차량/새로고침 번호)에 대한 것인지 함께 저장한다.
   const [checkState, setCheckState] = useState({ inputsKey: null, requestKey: null, value: null })
   const [generating, setGenerating] = useState(false)
@@ -108,135 +155,43 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
 
   const ready = check?.canGenerate && !generating && !checking
   const isCached = check?.code === 'CACHED'
+  // 이미지 만들기 버튼을 누를 수 없는 이유(버튼 옆에 그대로 보여준다 - 장착/해제 버튼과는 무관).
+  const blockedReason = generating || ready
+    ? null
+    : checking
+      ? '이미지에 넣을 수 있는지 확인 중이에요.'
+      : check?.code === 'NOT_CONFIGURED'
+        ? '이미지 만들기는 아직 준비 중이에요. 장착/해제와 합성 전·후 비교는 위 미리보기에서 바로 볼 수 있어요.'
+        : null
 
-  if (compositeMode) {
-    const includedParts = compositeIncludedParts(vehicle, activeParts)
-    const includedIds = includedParts.map((p) => p.partId).sort((a, b) => a - b)
-    const compositeTitle = includedParts.map((p) => p.name).join(' + ')
-    const saved = savedResults.find(
-      (r) => r.model === 'direct-composite' && [...r.partIds].sort((a, b) => a - b).join(',') === includedIds.join(','),
-    )
-    const saveComposite = async () => {
-      if (saved) {
-        onShowResult({ imageUrl: saved.imageUrl, cached: true, title: compositeTitle })
-        return
-      }
-      setGenerating(true)
-      setError(null)
-      try {
-        const blob = await renderFitComposite(vehicle, includedParts)
-        const form = new FormData()
-        form.append('myVehicleId', String(myVehicleId))
-        includedIds.forEach((id) => form.append('partIds', String(id)))
-        form.append('version', COMPOSITE_VERSION)
-        form.append('image', blob, 'fit-composite.png')
-        const res = await api.post('/api/ai-fit/composite', form)
-        onShowResult({ imageUrl: res.imageUrl, cached: res.cached, title: compositeTitle })
-        onGenerated?.()
-      } catch (err) {
-        setError(plain(err.message))
-      } finally {
-        setGenerating(false)
-      }
-    }
-    return (
-      <div className="mt-6 rounded-lg border border-ridefit-border bg-ridefit-bg p-4 text-left" data-testid="ai-fit-panel" data-mode="composite">
-        <p className="mb-1 text-sm font-semibold text-ridefit-text">장착한 모습 저장하기</p>
-        <p className="mb-3 text-xs text-ridefit-text-secondary">
-          휠은 위치가 정확해야 해서 새로 그리지 않고, 위치 미리보기와 같은 배치를 차량 원본 사진 해상도 그대로 합성해 저장해요.
-        </p>
-        <ul className="mb-3 flex flex-col gap-1.5" data-testid="ai-fit-parts">
-          {activeParts.map((p) => {
-            const ok = includedParts.some((x) => x.partId === p.partId)
-            return (
-              <li key={p.partId} className="flex items-center gap-2" data-testid={`ai-fit-part-${p.partId}`} data-included={ok ? 'true' : 'false'}>
-                <SafeImage
-                  src={displayImageUrl(p.imageUrl)}
-                  alt=""
-                  className="h-8 w-8 shrink-0 rounded border border-ridefit-border bg-white object-contain p-0.5"
-                  fallbackClassName="h-8 w-8 shrink-0 rounded border border-ridefit-border text-[8px] leading-tight"
-                />
-                <span className={`min-w-0 flex-1 truncate text-xs ${ok ? 'text-ridefit-text' : 'text-ridefit-text-secondary line-through decoration-ridefit-text-secondary/50'}`}>
-                  {p.name}
-                </span>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${ok ? 'bg-ridefit-primary/15 text-ridefit-primary' : 'bg-ridefit-card text-ridefit-text-secondary'}`}>
-                  {ok ? '직접 합성' : '위치 표시만'}
-                </span>
-              </li>
-            )
-          })}
-        </ul>
-        <div className="flex flex-wrap gap-2">
-          {viewMode !== 'fit' && (
-            <button
-              type="button"
-              onClick={onShowBasic}
-              className="rounded-lg border border-ridefit-border px-3 py-2 text-xs font-semibold text-ridefit-text-secondary transition hover:border-ridefit-primary"
-            >
-              위치 미리보기로 돌아가기
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={saveComposite}
-            disabled={generating || includedParts.length === 0}
-            className="rounded-lg bg-ridefit-primary px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-            data-testid="ai-fit-composite-button"
-          >
-            {generating ? '저장하는 중...' : saved ? '저장된 장착 모습 보기' : '장착 모습 저장하기'}
-          </button>
-        </div>
-        {error && (
-          <p className="mt-2 text-xs text-ridefit-danger" data-testid="ai-fit-error">
-            {error}
-          </p>
-        )}
-        <p className="mt-3 text-[11px] text-ridefit-text-secondary">
-          장착 모습은 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있어요. 저장한 결과는 아래 "저장된 장착 모습"과 내 차고에 남아요.
-        </p>
-      </div>
-    )
-  }
+  // 미리 준비한 장착 이미지가 있는 부품(직접 합성)은 FitRoom 왼쪽의 [현재 모습 저장](FitSavePanel, lib/fitComposite saveFitComposite)이 저장한다.
+  // 이 패널은 그 외 부품의 "장착한 모습 만들기" 흐름만 맡는다(저장 버튼을 두 군데 만들지 않는다).
+  // 장착한 부품이 없으면 만들 것도 없다 - 빈 안내는 왼쪽 "현재 장착 중"/[현재 모습 저장] 줄이 이미 보여준다.
+  if (compositeMode || activeParts.length === 0) return null
 
   return (
     <div className="mt-6 rounded-lg border border-ridefit-border bg-ridefit-bg p-4 text-left" data-testid="ai-fit-panel">
       <p className="mb-1 text-sm font-semibold text-ridefit-text">장착한 모습 만들기</p>
       <p className="mb-3 text-xs text-ridefit-text-secondary">
-        부품 목록에서 [장착해보기]로 고른 부품들을 내 차량 사진에 함께 장착한 이미지 한 장으로 만들어요.
+        미리 준비한 장착 이미지가 없는 부품은 버튼을 눌렀을 때 내 차량 사진에 함께 장착한 이미지 한 장을 새로 만들어요.
       </p>
 
-      {activeParts.length === 0 ? (
-        <p className="text-xs text-ridefit-text-secondary" data-testid="ai-fit-empty">
-          부품 목록에서 하나 이상 [장착해보기]로 고르면 만들 수 있어요.
-        </p>
-      ) : (
+      <p className="mb-1.5 text-[11px] font-semibold text-ridefit-text-secondary">이미지에 들어갈 부품 <span className="font-normal">· 장착/해제는 위 '현재 장착 중'에서</span></p>
+      {activeParts.length > 0 && (
         <ul className="mb-3 flex flex-col gap-1.5" data-testid="ai-fit-parts">
           {activeParts.map((p) => {
             const s = statusById.get(p.partId)
             const ok = s?.included
+            // 배지는 "이미지 만들기"에 들어가는지(서버 확인 결과)이고, 장착 상태는 오른쪽 버튼이 보여준다.
             return (
-              <li key={p.partId} className="flex items-center gap-2" data-testid={`ai-fit-part-${p.partId}`} data-included={ok ? 'true' : 'false'}>
-                <SafeImage
-                  src={displayImageUrl(p.imageUrl)}
-                  alt=""
-                  className="h-8 w-8 shrink-0 rounded border border-ridefit-border bg-white object-contain p-0.5"
-                  fallbackClassName="h-8 w-8 shrink-0 rounded border border-ridefit-border text-[8px] leading-tight"
-                />
-                <span className={`min-w-0 flex-1 truncate text-xs ${ok ? 'text-ridefit-text' : 'text-ridefit-text-secondary line-through decoration-ridefit-text-secondary/50'}`}>
-                  {p.name}
-                </span>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                    checking || !s
-                      ? 'bg-ridefit-card text-ridefit-text-secondary'
-                      : ok
-                        ? 'bg-ridefit-primary/15 text-ridefit-primary'
-                        : 'bg-ridefit-card text-ridefit-text-secondary'
-                  }`}
-                >
-                  {checking || !s ? '확인 중' : ok ? '함께 장착' : (PART_REASON[s.code] ?? '제외')}
-                </span>
-              </li>
+              <PartRow
+                key={p.partId}
+                part={p}
+                active
+                ok={ok}
+                badge={checking || !s ? '확인 중' : ok ? '이미지 포함' : (PART_REASON[s.code] ?? '제외')}
+                badgeActive={!checking && !!s && ok}
+              />
             )
           })}
         </ul>
@@ -271,7 +226,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
             className="rounded-lg bg-ridefit-primary px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             data-testid="ai-fit-button"
           >
-            {generating ? '장착하는 중... (최대 1~2분)' : isCached ? '저장된 장착 모습 보기' : '장착해보기'}
+            {generating ? '이미지 만드는 중... (최대 1~2분)' : isCached ? '저장된 장착 모습 보기' : '장착 모습 이미지 만들기'}
           </button>
           {isCached && !generating && (
             <button
@@ -287,6 +242,12 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
         </div>
       )}
 
+      {activeParts.length > 0 && blockedReason && (
+        <p className="mt-2 text-xs text-ridefit-text-secondary" data-testid="ai-fit-blocked">
+          {blockedReason}
+        </p>
+      )}
+
       {generating && (
         <p className="mt-2 flex items-center gap-2 text-xs text-ridefit-text-secondary" data-testid="ai-fit-generating" aria-live="polite">
           <span className="h-3 w-3 animate-spin rounded-full border-2 border-ridefit-primary border-t-transparent" aria-hidden="true" />
@@ -300,7 +261,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
         </p>
       )}
       <p className="mt-3 text-[11px] text-ridefit-text-secondary">
-        장착 모습은 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있어요. 버튼을 눌렀을 때만 만들어지고, 만든 결과는 모두 아래 "저장된 장착 모습"에 남아요.
+        장착 모습은 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있어요. 버튼을 눌렀을 때만 만들어지고, 만든 결과는 모두 위 '내 저장 목록'에 남아요.
       </p>
     </div>
   )

@@ -1,0 +1,9 @@
+{
+  "name": "ridefit-fit-360-tools",
+  "private": true,
+  "description": "Super Cub 110 머플러/사이드백 360°·2D 장착 레이어 생성기 (AI 없음)",
+  "type": "module",
+  "dependencies": {
+    "pngjs": "7.0.0"
+  }
+}

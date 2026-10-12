@@ -9,8 +9,8 @@
 //      머플러: 로컬 합성본(hero/supercub-v2-muffler.png)에서 원본과 달라진 픽셀만.
 //      앞바구니: AI 결과 #8(uploads/ai-fit/f3be4626-...png, 머플러 합성본 위에 앞바구니 118만 추가)을 대표 사진 좌표로 맞춰 바구니 주변만.
 //        (원본 해상도가 낮아 바구니만 조금 부드럽다. 배경이 검정이라 Hero 무대 배경 #020202 위에서만 자연스럽다.)
-//  - overlayPartImage: 레이어 대신 FitRoom 오버레이를 그대로 쓰는 부품(사이드백). PART_OVERLAY_IMAGES[이 경로] 이미지를
-//      VEHICLE_FIT_LAYOUTS의 같은 카테고리 배치(중심/가로, 비율 유지)로 얹는다 -> FitRoom과 Hero의 사이드백이 항상 같은 모습.
+//  - overlayPartImage: 레이어 대신 FitRoom 오버레이를 그대로 쓰는 부품(사이드백). getPartOverlays(이 상품 사진)가 고른
+//      VEHICLE_FIT_LAYOUTS 같은 카테고리 배치(이미지/중심/가로)로 얹는다 -> FitRoom과 Hero의 사이드백이 항상 같은 모습.
 //    배열 순서 = 장착 순서 = 겹치는 순서(머플러 -> 앞바구니 -> 사이드백).
 //  - node: 부품 이름 버튼 위치(같은 1829x860 좌표, 차량 바깥 여백까지 포함).
 export const HERO_BUILD = [

@@ -115,3 +115,28 @@ body {
 .hero-node-in {
   animation: hero-node-in 1s ease-out;
 }
+
+/* FitRoom 데스크톱 독립 스크롤 영역(미리보기 카드/부품 목록 박스) - 얇고 눈에 덜 띄는 스크롤바 */
+.fit-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #232b3a transparent;
+}
+.fit-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.fit-scroll::-webkit-scrollbar-thumb {
+  background: #232b3a;
+  border-radius: 9999px;
+}
+.fit-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* FitRoom 데스크톱: 화면 높이가 낮으면(노트북 등) 차량 무대 폭을 줄여, 고정된 미리보기(보기 버튼 + 무대)와 [현재 모습 저장] 버튼이
+   카드 안에 함께 들어오게 한다. 33rem = 헤더/제목/보기·합성 전후 줄/[현재 모습 저장] 줄 + 아래 내 저장 목록이 보일 최소 높이(약 150px). 아주 낮은 화면에서도 15rem보다 작게는 줄이지 않는다. --fit-stage-ar = 무대 가로/세로. */
+@media (min-width: 1024px) {
+  .fit-stage-cap {
+    max-width: clamp(15rem, calc((100dvh - 33rem) * var(--fit-stage-ar, 1.333)), 42rem);
+  }
+}

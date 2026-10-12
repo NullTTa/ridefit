@@ -43,13 +43,17 @@ export const DEFAULT_POSITION = { x: 50, y: 50 }
 // (흰 배경 flood-fill 제거 + 미러는 포장 상자에서 오른쪽 미러 한 개만 잘라냄. AI 생성/합성 아님).
 // 여기에 없는 부품은 "오버레이 이미지 없음" -> 카테고리 배지 fallback.
 export const PART_OVERLAY_IMAGES = {
-  '/assets/parts/cub110-stainless-exhaust.png': '/assets/parts/overlay/cub110-stainless-exhaust.png',
-  '/assets/parts/cub110-rear-carrier.png': '/assets/parts/overlay/cub110-rear-carrier.png',
+  // cub110-stainless-exhaust.png(머플러)는 이 작은 제품컷 대신 아래 overlays.머플러의 전체 캔버스
+  // diff 레이어(forImage + src로 직접 지정)를 쓴다 - 순정 머플러를 가리지 못해 덮어씌운 것처럼 보이는
+  // 문제가 있었다(2026-10). 여기 남겨두면 안 쓰이는데도 "이게 오버레이"처럼 보여 혼동을 주므로 뺐다.
+  // cub110-rear-carrier.png(리어 확장 캐리어, 부품 2)는 오버레이를 쓰지 않는다 - 상품 사진이 위에서 비스듬히 본 3/4 각도라
+  // 측면 대표 사진의 순정 짐받이 위에 다른 각도의 짐받이가 떠 있는 것처럼 겹쳐 보였다(2026-10). 같은 각도의 장착 이미지가
+  // 생기기 전까지는 배지(장착 이미지 준비 중)로 표시한다. overlay/cub110-rear-carrier.png 파일은 남겨둠.
   '/assets/parts/cub110-mirror.png': '/assets/parts/overlay/cub110-mirror.png',
   '/assets/parts/kitaco-rear-carrier.png': '/assets/parts/overlay/kitaco-rear-carrier.png',
-  // 사이드백 121(한 쌍): 사용자가 만든 측면 장착 이미지(AI 결과 #26, uploads/ai-fit/c74c65e1-...png)에서 가방만 잘라
-  // Super Cub 110 대표 사진 좌표로 옮긴 것(새로 그린 픽셀 없음). 측면 사진이라 앞쪽 가방 하나만 보인다.
-  '/assets/parts/saddlebag-pair-lace.png': '/assets/parts/overlay/saddlebag-pair-lace-side.png',
+  // 사이드백(한 쌍, saddlebag-pair-lace.png)은 여기 두지 않는다 - 이 이미지는 Super Cub 110 대표 사진 전용 크롭이라,
+  // 아래 VEHICLE_FIT_LAYOUTS['/assets/vehicles/super-cub-110.png'].overlays.사이드백에 forImage + src로 직접 묶었다
+  // (여기 두면 다른 차량 레이아웃에 사이드백 배치가 생길 때 그 차량에도 이 가방이 얹힌다).
 }
 
 // ---------- 3) 차량 사진별 레이아웃 ----------
@@ -62,6 +66,7 @@ export const PART_OVERLAY_IMAGES = {
 //      (선택) src = 이 배치 전용 이미지(없으면 PART_OVERLAY_IMAGES), forImage = 이 상품 사진의 부품에만 적용,
 //      under = 차량 사진 아래에 깐다, mask = 차량 사진에 거는 알파 마스크(같은 캔버스, 0인 곳의 순정 부품을 지움),
 //      shadow = false면 그림자 없음, directComposite = AI 대신 이 배치 그대로 "장착 모습"을 저장한다(AiFitPanel).
+//      미리 만들어 검증한 전체 캔버스 레이어(휠, Hero 레이어를 쓰는 머플러/앞바구니/사이드백)에만 붙인다.
 //  - anchors[카테고리]: 오버레이 이미지가 없는 부품의 "부착 지점"(x,y, 실제 그 부품이 붙는 자리)과,
 //      라벨을 그 지점에서 얼마나/어느 방향으로 짧게 띄울지(dx,dy, 픽셀). 차량 몸체를 덜 가리도록
 //      여백이 있는 방향으로 밀어둔 값이다. 생략하면 기본값(짧게 위로)을 쓴다.
@@ -73,15 +78,44 @@ export const VEHICLE_FIT_LAYOUTS = {
     // 사진 안 차량 영역(0~1, 알파 실측). 차량이 사진 높이를 꽉 채운다(미러 끝 0.003 ~ 바퀴 1.000).
     vehicleBounds: { y0: 0.003, y1: 1.0 },
     overlays: {
-      머플러: [{ x: 528, y: 662, width: 385, rotate: 8, z: 20 }],
-      // 순정 사진에 이미 캐리어가 달려 있어서, "확장 캐리어" 오버레이는 그 위에 겹쳐 보인다.
-      // 오버레이 사진은 3/4 각도 제품샷이라 옆모습 사진의 실루엣과 완전히 같은 구도는 아니지만,
-      // 실측한 순정 캐리어 위치(약 x 260~620, y 295~350)에 맞춰 크기/좌표를 줄이고,
-      // 사진 속 장착부(짧은 다리)가 시트 쪽(오른쪽)을, 확장된 랙이 테일램프 쪽(왼쪽)을 향하도록 좌우 반전했다.
-      캐리어: [{ x: 430, y: 322, width: 170, flipX: true, z: 15 }],
+      // 순정 스테인리스 머플러(Cub 110) 전용 - 작은 제품컷(297x72)을 순정 머플러 위에 그냥 얹으면
+      // 마스크가 없어 순정 머플러가 뒤에 그대로 비쳐 "덮어씌운 것처럼" 보였다(위치 미리보기 2026-10
+      // 버그). 홈 Hero가 이미 만들어 둔, 같은 1829x860 캔버스에 순정 머플러를 지우고 새 머플러를 그린
+      // 완성 diff 레이어(hero/layers/super-cub-110-muffler.png)를 그대로 재사용한다(새 에셋 생성 없음,
+      // 휠과 같은 forImage + 전체 캔버스 패턴). 이 상품 사진이 아닌 다른 머플러는 이 오버레이를 쓰지
+      // 않고 기존처럼 배지(장착 이미지 준비 중)로 표시된다.
+      머플러: [{
+        x: 914.5, y: 430, width: 1829,
+        forImage: '/assets/parts/cub110-stainless-exhaust.png',
+        src: '/assets/hero/layers/super-cub-110-muffler.png',
+        z: 20, directComposite: true,
+      }],
+      // 캐리어(리어 확장 캐리어/KITACO): 오버레이 배치 없음 -> 배지. 있는 상품 사진이 모두 3/4 각도 제품샷이라
+      // 순정 짐받이(약 x 260~620, y 295~350) 위에 다른 각도의 짐받이가 겹쳐 보였다(예전 값: x 430, y 322, width 170, flipX, z 15).
+      // 이 사진과 같은 측면 각도의 캐리어 이미지(또는 장착 사진)가 생기면 그때 전체 캔버스 레이어로 넣는다.
       // 짐받이 아래 측면에 매달린 위치(짐받이 위가 아님). 뒤 쇼크 윗부분을 가린다(가방이 바깥쪽).
       // 오버레이는 원본 비율 그대로(가로/세로 같은 배율, 222x181) - width만 주고 height는 auto. 홈 Hero도 이 값을 그대로 쓴다.
-      사이드백: [{ x: 498, y: 450, width: 222, z: 18 }],
+      // 사이드백 121(한 쌍) 전용(forImage) - 사용자가 만든 측면 장착 이미지(AI 결과 #26, uploads/ai-fit/c74c65e1-...png)에서 가방만 잘라
+      // 이 사진 좌표로 옮긴 것(새로 그린 픽셀 없음, 은색 핀 버클). 측면 사진이라 앞쪽 가방 하나만 보인다.
+      // 커밋된 값(14차, 1506a9e) 그대로 - 홈 Hero/FitRoom/저장 이미지가 이 배치를 같이 쓰고, 360°는 이 이미지를 텍스처로 만든
+      // saddlebag-pair-lace-v4 프레임을 쓴다. (한때 바꿨던 투영 레이어 overlay/super-cub-110-saddlebag-pair-lace/layer.png는 쓰지 않아 저장소에
+      // 올리지 않았고(tools/fit-360 sidebag.mjs rep로 다시 만들 수 있음), 11차 Hero 레이어 hero/layers/super-cub-110-sidebag.png(버클 디자인이 다름)도 쓰지 않는다 - 파일은 남겨둠.)
+      사이드백: [{
+        x: 498, y: 450, width: 222, z: 18, directComposite: true,
+        forImage: '/assets/parts/saddlebag-pair-lace.png',
+        src: '/assets/parts/overlay/saddlebag-pair-lace-side.png',
+      }],
+      // H2C 순정 프론트 바스켓 전용 - 홈 Hero와 같은 바구니 레이어(hero/layers/super-cub-110-basket.png, 이 사진과 같은
+      // 1829x860 캔버스, AI 결과 #8을 대표 사진 좌표로 맞춘 것)를 그대로 쓴다 -> Hero와 FitRoom의 바구니가 같은 모습.
+      // 카드 배경(#131824)에서 테두리가 뜨지 않는 것을 확인했다(밝은 배경에서는 바구니 가장자리가 검게 보이므로 밝은 무대에는 쓰지 않는다).
+      // (예전에는 360° 02 프레임을 썼는데, 360° 프레임은 대표 사진과 다른 사진이라 바구니가 앞쪽에 떠 보이고
+      //  다른 사진의 레그실드 픽셀이 섞여 2D에는 쓰지 않는다. 360°는 각도별 프레임(vehicle360Parts.js)을 그대로 쓴다.)
+      프론트바구니: [{
+        x: 914.5, y: 430, width: 1829,
+        forImage: '/assets/parts/h2c-cub110-front-basket.png',
+        src: '/assets/hero/layers/super-cub-110-basket.png',
+        z: 20, directComposite: true,
+      }],
       // 휠(사용자 제공 '수제 튜닝 마차 휠' 상품 사진만 - forImage). 원본 휠 PNG를 이 사진의 앞/뒤 림 외곽 타원(실측)에 맞춰
       // 같은 1829x860 캔버스로 만든 레이어를 차량 "아래"(under)에 깔고, 차량 사진에는 순정 휠 안쪽만 지우는 마스크를 건다
       // (포크/디스크/캘리퍼/머플러/쇼크처럼 휠 앞에 있는 부품은 마스크에서 남겨 새 휠을 자연스럽게 가린다). AI 없음.

@@ -11,11 +11,14 @@ import VehicleFitStage from '../components/VehicleFitStage'
 import VehicleYearBadge, { ModelImageNotice } from '../components/VehicleYearBadge'
 import { displayImageUrl } from '../constants/productImages'
 import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
+import { get360PartLayerInfo } from '../constants/vehicle360Parts'
 import { getStageScale, getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 import { josa } from '../lib/korean'
+import { loadFitBuild, saveFitBuild, toggleFitBuildPart } from '../lib/fitBuild'
 import { formatFitmentYears } from '../lib/fitment'
 import { loadPartCategorySlugs } from '../lib/guide'
+import { groupCategories, groupLabelOf } from '../constants/partCategoryGroups'
 
 const STATUS_STYLE = {
   호환가능: 'text-ridefit-success',
@@ -165,11 +168,17 @@ function PartsSearch() {
 
   const [viewMode, setViewMode] = useState('fit') // 'fit' | '360' - 차량 전체 보기(360)와 부품 장착(2D)은 서로 다른 화면이다.
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const [selectedPartIds, setSelectedPartIds] = useState([])
-  const [conflicts, setConflicts] = useState(null)
+  // "현재 구성"(장착 상태) - FitRoom과 같은 저장소(lib/fitBuild)를 쓴다. 여기서 켜고 끈 부품은 FitRoom에
+  // 다시 들어갔을 때도 그대로 이어지고, 반대로 FitRoom에서 바꾼 것도 이 화면에 돌아오면 그대로 보인다.
+  const [selectedPartIds, setSelectedPartIds] = useState(() => new Set())
+  const [conflicts, setConflicts] = useState([])
   const [checkingConflicts, setCheckingConflicts] = useState(false)
+  // 같은 자리(카테고리)의 다른 부품을 새로 켜서 기존 것이 자동으로 빠졌을 때의 안내. FitRoom과 같은 모양.
+  const [replaced, setReplaced] = useState(null)
   const [favoritePartIds, setFavoritePartIds] = useState(new Set())
   const [expandedPartId, setExpandedPartId] = useState(null)
+  // 카테고리 2단 필터: 대분류(group, 없으면 전체) -> 소분류(category, 없으면 그 대분류 전체).
+  const [categoryGroup, setCategoryGroup] = useState(null)
 
   const vehicleId = searchParams.get('vehicleId')
   const [categorySlugs, setCategorySlugs] = useState({})
@@ -249,6 +258,13 @@ function PartsSearch() {
         setIncompatibleParts(data.filter((p) => !fit.includes(p)))
         setCategories([...new Set(fit.map((p) => p.category))])
         setListingSummaries({})
+
+        // 이 차량에 저장해 둔 "현재 구성"을 불러온다(지금도 호환 후보인 것만) - FitRoom과 같은 저장소라
+        // FitRoom에서 장착/제거한 결과가 여기도 그대로 보이고, 반대로도 마찬가지다.
+        const saved = loadFitBuild(vehicleId).filter((id) => fit.some((p) => p.partId === id))
+        setSelectedPartIds(new Set(saved))
+        if (saved.length > 1) checkConflicts(new Set(saved))
+        else setConflicts([])
         if (fit.length > 0) {
           api
             .get(`/api/parts/listings-summary?partIds=${fit.map((p) => p.partId).join(',')}`, { auth: false })
@@ -277,34 +293,15 @@ function PartsSearch() {
   const vehicle = vehicles.find((v) => String(v.id) === String(vehicleId)) ?? null
   const vehicle360Frames = getVehicle360Frames(vehicle)
 
-  const handleVehicleChange = (id) => {
-    if (category && !(otherVehicleSummary ?? []).find((v) => String(v.myVehicleId) === String(id))?.parts.some((p) => p.category === category)) {
-      setCategory(null)
+  // 충돌 확인은 FitRoom과 같은 규칙으로 "부품을 켤 때마다 자동으로" 한다(예전엔 버튼을 눌러야 했다).
+  const checkConflicts = async (nextIds) => {
+    if (nextIds.size < 2) {
+      setConflicts([])
+      return
     }
-    setSelectedPartIds([])
-    setConflicts(null)
-    setVisibleCount(PAGE_SIZE)
-    setViewMode('fit')
-    setSearchParams({ vehicleId: id })
-  }
-
-  const handleCategoryChange = (cat) => {
-    setCategory(cat)
-    setVisibleCount(PAGE_SIZE)
-  }
-
-  const togglePartSelection = (partId) => {
-    setConflicts(null)
-    setSelectedPartIds((prev) =>
-      prev.includes(partId) ? prev.filter((id) => id !== partId) : [...prev, partId],
-    )
-  }
-
-  const handleCheckConflicts = async () => {
     setCheckingConflicts(true)
-    setError(null)
     try {
-      const result = await api.post('/api/part-conflicts/check', { partIds: selectedPartIds })
+      const result = await api.post('/api/part-conflicts/check', { partIds: [...nextIds] })
       setConflicts(result)
     } catch (err) {
       setError(err.message)
@@ -313,18 +310,75 @@ function PartsSearch() {
     }
   }
 
+  const handleVehicleChange = (id) => {
+    const keepCategory =
+      category && (otherVehicleSummary ?? []).find((v) => String(v.myVehicleId) === String(id))?.parts.some((p) => p.category === category)
+    if (!keepCategory) {
+      setCategory(null)
+      setCategoryGroup(null)
+    }
+    setSelectedPartIds(new Set())
+    setConflicts([])
+    setReplaced(null)
+    setVisibleCount(PAGE_SIZE)
+    setViewMode('fit')
+    setSearchParams({ vehicleId: id })
+  }
+
+  // 대분류를 바꾸면 소분류 선택은 그 대분류 전체를 보도록 초기화한다. 소분류를 직접 고르면 그 대분류로 맞춘다.
+  const handleGroupChange = (label) => {
+    setCategoryGroup(label)
+    setCategory(null)
+    setVisibleCount(PAGE_SIZE)
+  }
+  const handleCategoryChange = (cat) => {
+    setCategory(cat)
+    if (cat) setCategoryGroup(groupLabelOf(cat))
+    setVisibleCount(PAGE_SIZE)
+  }
+
+  // 카테고리에서 바로 장착/제거 - FitRoom의 toggleFitBuildPart와 같은 규칙(같은 자리는 하나만, 다른
+  // 카테고리는 그대로 유지)을 쓰고, 같은 저장소에 적어서 FitRoom과 항상 같은 "현재 구성"을 본다.
+  const togglePartSelection = (partId) => {
+    const { next, turningOn, replaced: r } = toggleFitBuildPart(selectedPartIds, partId, parts)
+    setReplaced(r)
+    setSelectedPartIds(next)
+    saveFitBuild(vehicleId, next)
+    checkConflicts(next)
+    if (turningOn) {
+      // 실제 "장착 시도" 신호 - 인기상품 계산에 쓰인다(FitRoom과 같은 집계).
+      api.post(`/api/parts/${partId}/fit-selections`).catch(() => {})
+    }
+  }
+
   const selectedParts = useMemo(
-    () => parts.filter((p) => selectedPartIds.includes(p.partId)),
+    () => parts.filter((p) => selectedPartIds.has(p.partId)),
     [parts, selectedPartIds],
   )
+  // 360° 보기에도 FitRoom과 똑같이 "지금 장착한 부품 중 8개 각도 레이어가 완성된 것만" 겹친다 - 나머지는
+  // "360° 장착 이미지 준비 중"으로 안내한다(장착 상태 자체는 그대로, 위치 미리보기에서는 보인다).
+  const layers360 = vehicle360Frames
+    ? selectedParts
+        .map((p) => ({ key: p.partId, ...get360PartLayerInfo(vehicle.modelImageUrl, p.name, vehicle360Frames.length, selectedParts.map((x) => x.name)) }))
+        .filter((l) => l.frames)
+    : []
+  const pending360 = vehicle360Frames ? selectedParts.filter((p) => !layers360.some((l) => l.key === p.partId)) : []
+  // 카테고리 2단 필터 표시용: [대분류, 그 안에 실제로 있는 소분류들] - 대분류 순서 유지, 없는 대분류는 숨긴다.
+  const groupedCategories = useMemo(() => groupCategories(categories), [categories])
+  const subCategoriesShown = categoryGroup
+    ? groupedCategories.find(([label]) => label === categoryGroup)?.[1] ?? []
+    : categories
   const filteredParts = useMemo(() => {
     const q = keyword.trim().toLowerCase()
-    return parts.filter(
-      (p) =>
-        (!category || p.category === category) &&
-        (!q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)),
-    )
-  }, [parts, category, keyword])
+    return parts.filter((p) => {
+      if (category) {
+        if (p.category !== category) return false
+      } else if (categoryGroup) {
+        if (groupLabelOf(p.category) !== categoryGroup) return false
+      }
+      return !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+    })
+  }, [parts, category, categoryGroup, keyword])
   const visibleParts = filteredParts.slice(0, visibleCount)
   const vehicleName = vehicle ? vehicle.nickname || vehicle.modelYearLabel : '내 차량'
   const otherMatches = useMemo(() => {
@@ -341,8 +395,8 @@ function PartsSearch() {
       .filter((v) => v.count > 0)
   }, [otherVehicleSummary, vehicleId, keyword, category])
   const hasMoreParts = filteredParts.length > visibleParts.length
-  const activeConflictPairs = (conflicts ?? []).filter(
-    (c) => selectedPartIds.includes(c.partAId) && selectedPartIds.includes(c.partBId),
+  const activeConflictPairs = conflicts.filter(
+    (c) => selectedPartIds.has(c.partAId) && selectedPartIds.has(c.partBId),
   )
   const conflictPartIds = new Set(activeConflictPairs.flatMap((c) => [c.partAId, c.partBId]))
 
@@ -442,6 +496,7 @@ function PartsSearch() {
                     fillScale={getStageScale(vehicle)}
                     startIndex={getVehicle360StartIndex(vehicle?.modelImageUrl)}
                     normalizeTo={vehicle?.modelImageUrl}
+                    layers={layers360}
                   />
                 ) : (
                   <VehicleFitStage vehicle={vehicle} parts={selectedParts} conflictPartIds={conflictPartIds} />
@@ -457,6 +512,17 @@ function PartsSearch() {
                     아래 목록에서 [위치 미리보기]를 누르면 차량 위에 표시돼요.
                   </p>
                 )}
+                {viewMode === '360' && pending360.length > 0 && (
+                  <p className="mt-3 rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-center text-xs text-ridefit-text-secondary" data-testid="parts-360-pending">
+                    360° 장착 이미지 준비 중: {pending360.map((p) => p.name).join(', ')}
+                    <span className="mt-0.5 block">장착 상태는 그대로예요. [부품 장착] 보기에서 확인할 수 있어요.</span>
+                  </p>
+                )}
+                {replaced && (
+                  <p className="mt-3 rounded-lg border border-ridefit-primary/40 bg-ridefit-primary/10 px-3 py-2 text-center text-xs text-ridefit-text" data-testid="parts-replaced">
+                    {josa(replaced.category, '은', '는')} 한 자리에 하나만 장착돼요 - {replaced.from} 대신 {josa(replaced.to, '으로', '로')} 바꿨어요.
+                  </p>
+                )}
               </div>
 
               {selectedParts.length > 0 && (
@@ -469,17 +535,8 @@ function PartsSearch() {
                     )}
                   </p>
                   <p className="text-xs text-ridefit-text-secondary">{selectedParts.map((p) => p.name).join(', ')}</p>
-                  {selectedPartIds.length >= 2 && (
-                    <button
-                      type="button"
-                      onClick={handleCheckConflicts}
-                      disabled={checkingConflicts}
-                      className="mt-3 rounded-lg bg-ridefit-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
-                    >
-                      {checkingConflicts ? '확인 중...' : '동시 장착 충돌 확인'}
-                    </button>
-                  )}
-                  {conflicts && conflicts.length === 0 && (
+                  {checkingConflicts && <p className="mt-2 text-xs text-ridefit-text-secondary">충돌 확인 중...</p>}
+                  {!checkingConflicts && selectedPartIds.size >= 2 && conflicts.length === 0 && (
                     <p className="mt-2 text-xs text-ridefit-success">선택한 부품 사이에 알려진 충돌이 없어요.</p>
                   )}
                   {activeConflictPairs.length > 0 && (
@@ -508,11 +565,51 @@ function PartsSearch() {
                 aria-label="호환 부품 검색"
                 className="mb-3 w-full rounded-lg border border-ridefit-border bg-ridefit-card px-3 py-2 text-sm text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary"
               />
-              <div className="mb-4 flex flex-wrap gap-2">
+              {/* 대분류(큰 묶음) - 모바일에서도 오른쪽 패널 없이 가로로 스크롤해서 고른다. 소분류는 그 아래 줄.
+                  대분류는 표시용 묶음일 뿐(lib/partCategoryGroups) - 실제 필터/저장 데이터는 소분류(category) 그대로. */}
+              {groupedCategories.length > 1 && (
+                <div
+                  className="mb-2 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+                  role="group"
+                  aria-label="부품 대분류"
+                  data-testid="parts-group-filter"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleGroupChange(null)}
+                    aria-pressed={categoryGroup === null}
+                    className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                      categoryGroup === null ? 'bg-ridefit-primary text-white' : 'bg-ridefit-card text-ridefit-text-secondary hover:bg-ridefit-bg-alt'
+                    }`}
+                  >
+                    전체
+                  </button>
+                  {groupedCategories.map(([label]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => handleGroupChange(label)}
+                      aria-pressed={categoryGroup === label}
+                      data-testid={`parts-group-${label}`}
+                      className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                        categoryGroup === label ? 'bg-ridefit-primary text-white' : 'bg-ridefit-card text-ridefit-text-secondary hover:bg-ridefit-bg-alt'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div
+                className="mb-4 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+                role="group"
+                aria-label="부품 소분류"
+              >
                 <button
                   type="button"
                   onClick={() => handleCategoryChange(null)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  aria-pressed={category === null}
+                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
                     category === null
                       ? 'bg-ridefit-primary text-white'
                       : 'bg-ridefit-card text-ridefit-text-secondary hover:bg-ridefit-bg-alt'
@@ -520,12 +617,13 @@ function PartsSearch() {
                 >
                   전체
                 </button>
-                {categories.map((cat) => (
+                {subCategoriesShown.map((cat) => (
                   <button
                     key={cat}
                     type="button"
                     onClick={() => handleCategoryChange(cat)}
-                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    aria-pressed={category === cat}
+                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
                       category === cat
                         ? 'bg-ridefit-primary text-white'
                         : 'bg-ridefit-card text-ridefit-text-secondary hover:bg-ridefit-bg-alt'
@@ -584,7 +682,7 @@ function PartsSearch() {
               {!loading && !error && visibleParts.length > 0 && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="parts-grid">
                   {visibleParts.map((part) => {
-                    const isActive = selectedPartIds.includes(part.partId)
+                    const isActive = selectedPartIds.has(part.partId)
                     return (
                       <div
                         key={part.partId}
