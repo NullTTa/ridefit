@@ -85,7 +85,7 @@ function KakaoServiceMap({ shops, selectedShopId, onSelectShop, className = '' }
     markersRef.current = []
 
     const bounds = new kakao.maps.LatLngBounds()
-    let hasPosition = false
+    let positionCount = 0
 
     shops.forEach((shop) => {
       if (shop.lat == null || shop.lng == null) return
@@ -94,10 +94,16 @@ function KakaoServiceMap({ shops, selectedShopId, onSelectShop, className = '' }
       kakao.maps.event.addListener(marker, 'click', () => onSelectShop?.(shop))
       markersRef.current.push(marker)
       bounds.extend(position)
-      hasPosition = true
+      positionCount += 1
     })
 
-    if (hasPosition) mapRef.current.setBounds(bounds)
+    // 매장이 하나뿐이면(상세 페이지) setBounds가 최대 확대로 붙어버리므로 중심 + 동네 수준 줌으로 맞춘다.
+    if (positionCount === 1) {
+      mapRef.current.setLevel(4)
+      mapRef.current.setCenter(bounds.getCenter())
+    } else if (positionCount > 1) {
+      mapRef.current.setBounds(bounds)
+    }
   }, [status, shops, onSelectShop])
 
   useEffect(() => {

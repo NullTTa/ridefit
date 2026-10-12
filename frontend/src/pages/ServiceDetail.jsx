@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CircleCheck } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import KakaoServiceMap from '../components/KakaoServiceMap'
 import { useAuth } from '../context/useAuth'
 import { api } from '../lib/api'
 
@@ -89,6 +90,8 @@ function ServiceDetail() {
     () => shop?.services ?? shop?.menus.map((name) => ({ name, price: null, durationMinutes: null })) ?? [],
     [shop],
   )
+  // 지도 마커 effect가 매 렌더 다시 돌지 않도록 같은 배열 참조를 유지한다.
+  const mapShops = useMemo(() => (shop ? [shop] : []), [shop])
   const needsOilType = selectedNames.includes(ENGINE_OIL_SERVICE_NAME)
 
   const toggleService = (name) => {
@@ -233,6 +236,12 @@ function ServiceDetail() {
         </p>
         <p className="mt-3 text-ridefit-text-secondary">{shop.description}</p>
       </header>
+
+      {shop.lat != null && shop.lng != null && (
+        <div className="mb-6">
+          <KakaoServiceMap shops={mapShops} selectedShopId={shop.id} />
+        </div>
+      )}
 
       <section className="rounded-xl border border-ridefit-border bg-ridefit-card p-6 shadow-lg">
         <h2 className="text-lg font-bold text-ridefit-text">예약 신청</h2>
