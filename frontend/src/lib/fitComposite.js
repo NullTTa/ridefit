@@ -9,7 +9,9 @@ import { api } from './api'
 // 레이어 이미지/배치를 바꾸면 버전을 올린다(같은 조합의 예전 저장 결과와 구분 - 서버 cacheKey에 들어간다).
 // hero-v3: 사이드백을 커밋된 Hero 이미지(overlay/saddlebag-pair-lace-side.png)로 되돌림. hero-v2: 머플러/앞바구니/사이드백이
 // Hero 레이어로 직접 합성에 들어감(2026-10). wheel-v1: 휠만.
-export const COMPOSITE_VERSION = 'hero-v3'
+// approx-v1: 장착 레이어가 없는 부품도 간이 미리보기(상품 사진 근사치/일러스트)로 그려 저장(아래 여백에 안내 문구).
+export const COMPOSITE_VERSION = 'approx-v1'
+export const MAX_COMPOSITE_PARTS = 8
 
 const loadImage = (src) =>
   new Promise((resolve, reject) => {
@@ -19,7 +21,7 @@ const loadImage = (src) =>
     img.src = src
   })
 
-// 직접 합성에 들어가는 부품(위치 미리보기에서 이미지로 보이는 부품). 배지로만 표시되는 부품은 빠진다.
+// 직접 합성에 들어가는 부품(위치 미리보기에서 이미지로 보이는 부품 - 장착 레이어 + 간이 미리보기). 배지로만 표시되는 부품은 빠진다.
 export function compositeIncludedParts(vehicle, parts) {
   const layout = getFitLayout(vehicle)
   return layout ? parts.filter((p) => getPartOverlays(p, layout).length > 0) : []
@@ -37,6 +39,10 @@ export function canSaveFitComposite(vehicle, parts) {
 export async function saveFitComposite(vehicle, myVehicleId, parts) {
   const includedParts = compositeIncludedParts(vehicle, parts)
   if (includedParts.length === 0) throw new Error('저장 이미지에 넣을 수 있는 부품이 없어요.')
+  // 서버 한도(AiFitService.MAX_COMPOSITE_PARTS)와 같다 - 이미지를 만들기 전에 알려 준다.
+  if (includedParts.length > MAX_COMPOSITE_PARTS) {
+    throw new Error(`저장 이미지에는 부품을 ${MAX_COMPOSITE_PARTS}개까지 넣을 수 있어요. 몇 개를 빼고 다시 저장해 주세요.`)
+  }
   const blob = await renderFitComposite(vehicle, includedParts)
   const form = new FormData()
   form.append('myVehicleId', String(myVehicleId))
@@ -105,6 +111,15 @@ export async function renderFitComposite(vehicle, parts) {
     .filter(([o]) => !o.under)
     .sort((a, b) => (a[0].z ?? 10) - (b[0].z ?? 10))
     .forEach(([o, img]) => draw(o, img))
+  // 4) 간이 미리보기가 들어갔으면 아래 여백에 안내 문구(저장 이미지만 따로 봐도 실제 장착 사진으로 오해하지 않게)
+  if (overlays.some((o) => o.approx)) {
+    const size = Math.max(14, Math.round(H * 0.024))
+    ctx.font = `${size}px sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+    ctx.fillStyle = 'rgba(203, 213, 225, 0.9)'
+    ctx.fillText('RIDEFIT 간이 미리보기 포함 - 실제 장착 모습과 다를 수 있어요', W / 2, H - Math.round(size * 0.35))
+  }
 
   return new Promise((resolve, reject) =>
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('장착 모습 이미지를 만들지 못했어요.'))), 'image/png'),

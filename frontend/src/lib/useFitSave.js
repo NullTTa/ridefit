@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getFitLayout, getPartLayerKind } from '../constants/vehicleFitPositions'
 import { canSaveFitComposite, compositeIncludedParts, saveFitComposite } from './fitComposite'
 
 // FitRoom [현재 모습 저장] 상태(components/FitSavePanel의 FitSaveAction·FitSavedList가 같이 쓴다).
@@ -9,6 +10,9 @@ export function useFitSave({ vehicle, myVehicleId, activeParts, onSaved }) {
   const canSave = canSaveFitComposite(vehicle, activeParts)
   const included = canSave ? compositeIncludedParts(vehicle, activeParts) : []
   const excluded = activeParts.filter((p) => !included.some((x) => x.partId === p.partId))
+  // 저장 이미지에 간이 미리보기(상품 사진 근사치/일러스트)로 들어가는 부품 - 저장 줄에 "(간이)"로 표시한다.
+  const layout = getFitLayout(vehicle)
+  const approxIds = new Set(included.filter((p) => ['photo', 'illustration'].includes(getPartLayerKind(p, layout))).map((p) => p.partId))
   const save = async () => {
     setSaving(true)
     setNote(null)
@@ -22,5 +26,5 @@ export function useFitSave({ vehicle, myVehicleId, activeParts, onSaved }) {
       setSaving(false)
     }
   }
-  return { canSave, included, excluded, saving, note, save, hasParts: activeParts.length > 0 }
+  return { canSave, included, excluded, approxIds, saving, note, save, hasParts: activeParts.length > 0 }
 }

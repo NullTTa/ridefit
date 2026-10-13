@@ -96,7 +96,8 @@ export function ImageLightbox({ src, alt, title, onClose, testid = 'image-lightb
       testid={testid}
       footer={
         <>
-          {title && <p className="wrap-name w-full text-xs text-white/80">{title}</p>}
+          {/* 부품 이름이 많아도(간이 미리보기 포함) 이미지와 [닫기]가 화면 안에 남도록 두 줄까지만 늘리고 그 이상은 이 칸 안에서 스크롤 */}
+          {title && <p className="fit-scroll wrap-name max-h-8 w-full overflow-y-auto text-xs text-white/80">{title}</p>}
           {natural && (
             <p className="w-full text-[11px] text-white/60" data-testid="lightbox-resolution">
               원본 {natural.w}×{natural.h}

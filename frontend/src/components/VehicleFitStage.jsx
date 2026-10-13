@@ -12,6 +12,9 @@ import { groupStageLabels } from '../lib/fitBadges'
 
 const pct = (value, total) => `${(value / total) * 100}%`
 
+// 간이 미리보기 레이어 종류 이름(vehicleFitPositions.getPartLayerKind와 같은 값)
+const APPROX_LABEL = { photo: '상품 사진 기반 간이 미리보기', illustration: '간이 일러스트' }
+
 // 배지를 부착 지점에서 얼마나/어느 방향으로 띄울지 기본값(방향 지정이 없는 카테고리용) - 짧게 위로.
 const DEFAULT_LABEL_OFFSET = { dx: 0, dy: -34 }
 
@@ -44,6 +47,9 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
     }
     return CATEGORY_POSITION[part.category] ?? DEFAULT_POSITION
   }
+
+  // 간이 미리보기(상품 사진 근사치/일러스트)로 그려지는 부품 수
+  const approxCount = layout ? parts.filter((part) => overlaysFor(part).some((o) => o.approx)).length : 0
 
   const badgeParts = layout
     ? parts.filter((part) => overlaysFor(part).length === 0)
@@ -198,9 +204,10 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
       key={`${part.partId}-${i}`}
       src={o.src}
       alt={part.name}
-      title={part.name}
+      title={o.approx ? `${part.name} (${APPROX_LABEL[o.approx]} - 실제 장착 모습과 다를 수 있어요)` : part.name}
       draggable={false}
       data-testid={`fit-overlay-${part.partId}`}
+      data-approx={o.approx ?? undefined}
       onError={() => markFailed(o.src)}
       className="pointer-events-none absolute animate-fadeIn select-none"
       style={{
@@ -260,6 +267,16 @@ function VehicleFitStage({ vehicle, parts, conflictPartIds, large = false }) {
       </div>
       {labelLayer}
       {probes}
+      {/* 간이 미리보기(상품 사진 근사치/일러스트)가 하나라도 그려지면 무대 아래 여백에 표시 - 실제 장착 모습으로 오해하지 않게.
+          저장 이미지에도 같은 뜻의 문구가 들어간다(lib/fitComposite). */}
+      {approxCount > 0 && (
+        <p
+          className="pointer-events-none absolute bottom-0.5 left-1/2 z-30 w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-full bg-black/65 px-2 py-0.5 text-center text-[10px] leading-4 text-ridefit-text-secondary"
+          data-testid="fit-approx-note"
+        >
+          간이 미리보기 {approxCount}개 포함 · 실제 장착 모습과 다를 수 있어요
+        </p>
+      )}
     </div>
   )
 }

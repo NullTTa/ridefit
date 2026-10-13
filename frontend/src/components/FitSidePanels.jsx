@@ -62,7 +62,9 @@ export function FitEquippedPanel({ activeParts, onRemove }) {
 // 즐겨찾기 해제는 장착 상태를 바꾸지 않는다(이미 장착 중이면 그대로 장착돼 있다).
 export function FitFavoritesPanel({ items, onToggleEquip, onUnfavorite, error }) {
   return (
-    <section className="mt-4 rounded-lg border border-ridefit-border bg-ridefit-bg p-3 text-left" data-testid="fit-favorites-panel" aria-labelledby="fit-favorites-title">
+    // isolate: 카드의 즐겨찾기 해제 하트(absolute z-10)가 이 패널 안에서만 겹치게 한다. 없으면 데스크톱에서 왼쪽 패널을 내릴 때
+    // 같은 z-10인 고정 영역(차량 무대 + 저장 줄, lg:sticky)보다 DOM이 뒤라 하트가 저장 줄 글자·[내 목록] 위로 올라왔다.
+    <section className="isolate mt-4 rounded-lg border border-ridefit-border bg-ridefit-bg p-3 text-left" data-testid="fit-favorites-panel" aria-labelledby="fit-favorites-title">
       <p id="fit-favorites-title" className="mb-2 px-1 text-sm font-semibold text-ridefit-text">
         즐겨찾기 부품 <span className="font-normal text-ridefit-text-secondary">({items.length})</span>
       </p>

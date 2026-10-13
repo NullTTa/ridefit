@@ -28,7 +28,9 @@ function SaveButton({ fitSave, testid = 'fit-save-current' }) {
 // 차량 무대 바로 아래 한 줄: [현재 모습 저장] + 이미지에 들어가는 부품 안내(짧게).
 // savedCount/onJumpToList: [내 목록 n ↓] - 고정된 미리보기 아래쪽 "내 저장 목록"까지 한 번에 내려간다(왼쪽 패널이 길어져도 바로 찾게).
 export function FitSaveAction({ fitSave, savedCount = 0, onJumpToList }) {
-  const { canSave, included, excluded, hasParts, note } = fitSave
+  const { canSave, included, excluded, approxIds, hasParts, note } = fitSave
+  // 간이 미리보기로 들어가는 부품은 이름 뒤에 "(간이)" - 실제 장착 레이어와 구분
+  const includedNames = included.map((p) => `${p.name}${approxIds?.has(p.partId) ? ' (간이)' : ''}`).join(', ')
   return (
     <div className="mt-3 rounded-lg border border-ridefit-primary/40 bg-ridefit-bg px-3 py-2" data-testid="fit-save-panel">
       {/* 좁은 화면: 안내 문구를 한 줄 전체 폭으로 두고 버튼은 그 아래 오른쪽에(한 줄에 두면 문구 칸이 0px까지 줄어 안 보였다).
@@ -37,13 +39,13 @@ export function FitSaveAction({ fitSave, savedCount = 0, onJumpToList }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <p
           className="fit-scroll wrap-name min-w-0 text-[11px] leading-snug text-ridefit-text-secondary sm:flex-1 lg:max-h-[4.125em] lg:overflow-y-auto"
-          title={canSave ? [included.map((p) => p.name).join(', '), excluded.length ? `위치 표시만: ${excluded.map((p) => p.name).join(', ')}` : ''].filter(Boolean).join(' / ') : undefined}
+          title={canSave ? [includedNames, excluded.length ? `위치 표시만: ${excluded.map((p) => p.name).join(', ')}` : ''].filter(Boolean).join(' / ') : undefined}
           data-testid="fit-save-included"
         >
           {!hasParts
             ? '부품 목록에서 [장착해보기]를 누르면 차량 위에 표시되고, 지금 모습을 이미지로 저장할 수 있어요.'
             : canSave
-              ? <>저장 이미지에 들어가는 부품: <span className="text-ridefit-text">{included.map((p) => p.name).join(', ')}</span></>
+              ? <>저장 이미지에 들어가는 부품: <span className="text-ridefit-text">{includedNames}</span></>
               : '장착 이미지가 아직 없는 부품이라 바로 저장할 수 없어요. 아래 ‘장착한 모습 만들기’를 확인해 주세요.'}
           {canSave && excluded.length > 0 && (
             <span> · 위치 표시만(이미지에 안 들어감): {excluded.map((p) => p.name).join(', ')}</span>

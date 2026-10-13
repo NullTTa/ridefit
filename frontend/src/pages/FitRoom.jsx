@@ -18,7 +18,7 @@ import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehic
 import { get360PartLayerInfo } from '../constants/vehicle360Parts'
 import { groupCategories, groupLabelOf } from '../constants/partCategoryGroups'
 import { HERO_BUILD } from '../constants/heroBuild'
-import { getFitLayout, getStageScale, getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
+import { getFitLayout, getPartLayerKind, getStageScale, getVehicleStageAspectRatio } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 import { josa } from '../lib/korean'
 import { deleteFitPreset, listFitPresets, loadFitBuild, saveFitBuild, saveFitPreset, toggleFitBuildPart } from '../lib/fitBuild'
@@ -35,6 +35,14 @@ const STATUS_STYLE = {
   브라켓필요: 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning',
   // 호환 근거 미확인(호환가능 + 근거 메모 없음) - 장착 중이어도 근거 있는 호환과 같은 초록으로 보이지 않게
   unverified: 'border-ridefit-primary bg-ridefit-primary/10',
+}
+
+// 부품 카드의 "장착하면 차량 위에 그려지는 것" 안내(getPartLayerKind 값별)
+const LAYER_KIND_TEXT = {
+  layer: '장착 이미지 있음 · 차량 위에 그려지고 저장 이미지에 들어가요',
+  photo: '간이 미리보기 · 상품 사진을 장착 자리에 겹친 근사치예요(실제 장착 모습과 다를 수 있어요)',
+  illustration: '간이 일러스트 · 상품 사진이 없어 단순한 그림으로 보여 줘요(실제 제품 모습 아님)',
+  pin: '장착 이미지 준비 중 · 차량 위에는 부착 위치만 표시돼요',
 }
 
 function FitRoom() {
@@ -290,6 +298,13 @@ function FitRoom() {
   const groupedCategories = useMemo(() => groupCategories(categories.map(([c]) => c)), [categories])
   const categoryCounts = useMemo(() => new Map(categories.map(([c, ps]) => [c, ps.length])), [categories])
 
+  // 장착하면 차량 위에 무엇이 그려지는지(부품별) - 위치 미리보기·저장 이미지와 같은 기준(getPartLayerKind = getPartOverlays).
+  // 'layer' 검증한 장착 레이어 / 'photo' 상품 사진 기반 간이 미리보기 / 'illustration' 간이 일러스트 / 없음 = 부착 위치 배지만.
+  // 카드에서 미리 구분해 알려 준다(간이 미리보기를 실제 장착 모습으로 오해하지 않게).
+  const layerKindById = useMemo(() => {
+    const layout = vehicle ? getFitLayout(vehicle) : null
+    return new Map(parts.map((p) => [p.partId, layout ? getPartLayerKind(p, layout) : null]))
+  }, [vehicle, parts])
   const activeParts = useMemo(() => parts.filter((p) => activePartIds.has(p.partId)), [parts, activePartIds])
   // [현재 모습 저장] - 버튼(미리보기 고정 영역)과 내 저장 목록이 같은 저장 상태를 쓴다. 저장하면 목록을 다시 읽고 그 결과를 연다.
   const fitSave = useFitSave({
@@ -1113,6 +1128,13 @@ function FitRoom() {
                           >
                             {compat.label}
                           </span>
+                        </p>
+                        <p
+                          className={`text-[11px] ${layerKindById.get(part.partId) === 'layer' ? 'text-ridefit-primary' : 'text-ridefit-text-secondary'}`}
+                          data-testid={`fit-image-${part.partId}`}
+                          data-image={layerKindById.get(part.partId) ?? 'pin'}
+                        >
+                          {LAYER_KIND_TEXT[layerKindById.get(part.partId) ?? 'pin']}
                         </p>
                         {formatFitmentYears(part.sameModelFitments) && (
                           <p className="text-[11px] text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>

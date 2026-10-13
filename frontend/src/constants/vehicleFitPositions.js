@@ -48,7 +48,7 @@ export const PART_OVERLAY_IMAGES = {
   // 문제가 있었다(2026-10). 여기 남겨두면 안 쓰이는데도 "이게 오버레이"처럼 보여 혼동을 주므로 뺐다.
   // cub110-rear-carrier.png(리어 확장 캐리어, 부품 2)는 오버레이를 쓰지 않는다 - 상품 사진이 위에서 비스듬히 본 3/4 각도라
   // 측면 대표 사진의 순정 짐받이 위에 다른 각도의 짐받이가 떠 있는 것처럼 겹쳐 보였다(2026-10). 같은 각도의 장착 이미지가
-  // 생기기 전까지는 배지(장착 이미지 준비 중)로 표시한다. overlay/cub110-rear-carrier.png 파일은 남겨둠.
+  // 생기기 전까지는 검증한 장착 레이어로 쓰지 않는다 - 아래 approx.photos에서 "간이 미리보기"(근사치)로만 쓴다.
   '/assets/parts/cub110-mirror.png': '/assets/parts/overlay/cub110-mirror.png',
   '/assets/parts/kitaco-rear-carrier.png': '/assets/parts/overlay/kitaco-rear-carrier.png',
   // 사이드백(한 쌍, saddlebag-pair-lace.png)은 여기 두지 않는다 - 이 이미지는 Super Cub 110 대표 사진 전용 크롭이라,
@@ -90,7 +90,7 @@ export const VEHICLE_FIT_LAYOUTS = {
         src: '/assets/hero/layers/super-cub-110-muffler.png',
         z: 20, directComposite: true,
       }],
-      // 캐리어(리어 확장 캐리어/KITACO): 오버레이 배치 없음 -> 배지. 있는 상품 사진이 모두 3/4 각도 제품샷이라
+      // 캐리어(리어 확장 캐리어/KITACO): 검증한 장착 레이어 없음 -> approx.photos(간이 미리보기). 있는 상품 사진이 모두 3/4 각도 제품샷이라
       // 순정 짐받이(약 x 260~620, y 295~350) 위에 다른 각도의 짐받이가 겹쳐 보였다(예전 값: x 430, y 322, width 170, flipX, z 15).
       // 이 사진과 같은 측면 각도의 캐리어 이미지(또는 장착 사진)가 생기면 그때 전체 캔버스 레이어로 넣는다.
       // 짐받이 아래 측면에 매달린 위치(짐받이 위가 아님). 뒤 쇼크 윗부분을 가린다(가방이 바깥쪽).
@@ -128,7 +128,7 @@ export const VEHICLE_FIT_LAYOUTS = {
         mask: '/assets/parts/overlay/super-cub-110-spoke-wheel/mask.png',
       }],
       // 순정 사진에 이미 양쪽 미러가 그려져 있어서, 같은 자리에 미러 오버레이를 또 얹으면
-      // 두 개가 겹쳐 뜬 것처럼 보인다. 오버레이로 가리는 대신 배지로만 "미러 장착됨"을 표시한다.
+      // 두 개가 겹쳐 뜬 것처럼 보인다. 검증한 레이어로는 쓰지 않고, approx.photos에서 앞쪽 미러를 덮는 간이 미리보기로만 보여 준다.
     },
     anchors: {
       머플러: { x: 528, y: 662, dx: -80, dy: 60 },
@@ -156,6 +156,33 @@ export const VEHICLE_FIT_LAYOUTS = {
       너클가드: { x: 985, y: 150, dx: 115, dy: -35 },
       프론트바구니: { x: 1200, y: 250, dx: 145, dy: -25 },
       에어필터: { x: 660, y: 525, dx: -75, dy: 70 },
+    },
+    // 간이 미리보기(근사치) - 위 overlays(검증한 장착 레이어)가 없는 부품도 차량 위에 "보이는 변화"가 있도록 한다.
+    // 실제 장착 모습을 보장하지 않으므로 화면·저장 이미지에 "간이 미리보기"로 표시한다(getPartLayerKind).
+    //  - photos[상품 사진 경로]: 그 부품의 상품 사진에서 배경만 지운 레이어(approx/, 원본 사진은 그대로)를 장착 자리에 얹는다.
+    //      제품컷 각도(대부분 3/4)가 이 측면 사진과 달라 떠 보일 수 있다 - 그래서 "근사치". 상품 사진 경로로만 고르므로
+    //      다른 부품에 이 사진이 붙지 않는다. 미러/리어 캐리어는 예전 배경 제거 레이어(overlay/)를 그대로 쓴다.
+    //      (예전에는 각도가 안 맞아 배지로만 표시했다 - 지금은 "간이"로 구분해 보여 준다.)
+    //  - illustrations[카테고리]: 상품 사진이 아예 없는 부품용 단순 도형(이 사진과 같은 1829x860 캔버스 SVG, 실제 제품 모습 아님).
+    //      tools 없이 손으로 그린 카테고리 실루엣이라 같은 카테고리 부품은 같은 그림을 쓴다.
+    approx: {
+      photos: {
+        '/assets/parts/cub110-rear-carrier.png': { x: 455, y: 316, width: 300, z: 15, src: '/assets/parts/overlay/cub110-rear-carrier.png' },
+        '/assets/parts/kitaco-80-539-11530.jpg': { x: 455, y: 314, width: 280, z: 15, src: '/assets/parts/approx/kitaco-80-539-11530.png' },
+        '/assets/parts/cub110-mirror.png': { x: 850, y: 32, width: 104, z: 21, src: '/assets/parts/overlay/cub110-mirror.png' },
+        '/assets/parts/asahi-champion-sidebag-yellow.jpg': { x: 492, y: 458, width: 220, z: 18, src: '/assets/parts/approx/asahi-champion-sidebag-yellow.png' },
+        '/assets/parts/saddlebag-cupholder-buckle.png': { x: 482, y: 458, width: 260, z: 18, src: '/assets/parts/approx/saddlebag-cupholder-buckle.png' },
+        '/assets/parts/h2c-cub110-windscreen.png': { x: 1137, y: 98, width: 210, z: 21, src: '/assets/parts/approx/h2c-cub110-windscreen.png' },
+        '/assets/parts/universal-windscreen-lotteon.jpg': { x: 1137, y: 92, width: 190, z: 21, src: '/assets/parts/approx/universal-windscreen-lotteon.png' },
+      },
+      illustrations: {
+        USB충전기: 'usb-charger', 너클가드: 'knuckle-guard', 핸드가드: 'hand-guard', 램프: 'lamp', 레버: 'lever',
+        리어백: 'rear-bag', 리어쇼크: 'rear-shock', 배달통: 'delivery-box', 사이드백: 'side-bag', 스마트폰거치대: 'phone-mount',
+        스크린: 'screen', 시트: 'seat-cover', 에어필터: 'air-filter', 엔진가드: 'engine-guard', 탑박스: 'topbox-bracket',
+        풋페그: 'footpeg', 프론트바구니: 'front-basket', 프론트캐리어: 'front-carrier', 핸들바: 'grips', 핸들바가방: 'handlebar-bag',
+        // 차체 커버는 이 사진의 차량 실루엣을 흐리게 만든 PNG(맨 위에 덮는다)
+        보호대: { src: '/assets/parts/approx/super-cub-110/body-cover.png', z: 30 },
+      },
     },
   },
 
@@ -335,15 +362,43 @@ export function getVehicleStageAspectRatio(vehicle) {
   return layout ? layout.width / layout.height : 4 / 3
 }
 
-// 부품 하나가 이 레이아웃에서 차량 위에 올릴 오버레이 목록. 없으면 빈 배열.
-// forImage가 있는 배치는 그 상품 사진의 부품에만 쓴다(같은 카테고리의 다른 상품에 이 이미지를 붙이지 않는다).
-export function getPartOverlays(part, layout) {
+// 검증한 장착 레이어(overlays)만. forImage가 있는 배치는 그 상품 사진의 부품에만 쓴다(같은 카테고리의 다른 상품에 이 이미지를 붙이지 않는다).
+function getRealOverlays(part, layout) {
   const placements = layout?.overlays?.[part.category]
   if (!placements) return []
   return placements
     .filter((placement) => !placement.forImage || placement.forImage === part.imageUrl)
     .map((placement) => ({ ...placement, src: placement.src ?? PART_OVERLAY_IMAGES[part.imageUrl] }))
     .filter((placement) => placement.src)
+}
+
+// 간이 미리보기 레이어(layout.approx). 상품 사진이 있으면 그 사진의 배경 제거 레이어만(없으면 간이 레이어 없음 - 다른 그림을 쓰지 않는다),
+// 상품 사진이 없을 때만 카테고리 일러스트. 일러스트는 차량 사진과 같은 크기의 캔버스라 중심/폭이 사진 전체다.
+function getApproxOverlays(part, layout) {
+  const approx = layout?.approx
+  if (!approx) return []
+  if (part.imageUrl) {
+    const photo = approx.photos?.[part.imageUrl]
+    return photo ? [{ ...photo, approx: 'photo', directComposite: true }] : []
+  }
+  const illust = approx.illustrations?.[part.category]
+  if (!illust) return []
+  const { src, z } = typeof illust === 'string' ? { src: `/assets/parts/approx/super-cub-110/${illust}.svg`, z: 19 } : illust
+  return [{ x: layout.width / 2, y: layout.height / 2, width: layout.width, z, src, approx: 'illustration', directComposite: true }]
+}
+
+// 부품 하나가 이 레이아웃에서 차량 위에 올릴 오버레이 목록. 검증한 장착 레이어가 있으면 그것만, 없으면 간이 미리보기. 둘 다 없으면 빈 배열(배지).
+// 위치 미리보기(VehicleFitStage)와 저장 이미지(fitComposite)가 이 함수 하나를 같이 써서 화면과 저장 결과가 같다.
+export function getPartOverlays(part, layout) {
+  const real = getRealOverlays(part, layout)
+  return real.length > 0 ? real : getApproxOverlays(part, layout)
+}
+
+// 장착 이미지 종류: 'layer'(검증한 장착 레이어) | 'photo'(상품 사진 기반 간이) | 'illustration'(간이 일러스트) | null(배지만)
+export function getPartLayerKind(part, layout) {
+  const overlays = getPartOverlays(part, layout)
+  if (overlays.length === 0) return null
+  return overlays[0].approx ?? 'layer'
 }
 
 // 장착한 부품들 중 차량 사진에 마스크를 거는 것(휠 교체처럼 순정 부품을 지워야 하는 경우)의 마스크 경로들.
