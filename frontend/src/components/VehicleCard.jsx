@@ -29,7 +29,7 @@ function VehicleCard({ vehicle, badge, reasons, footer }) {
         </div>
 
         {vehicle.summary && !reasons && (
-          <p className="mt-3 line-clamp-3 text-sm text-ridefit-text-secondary">{vehicle.summary}</p>
+          <p className="mt-3 text-sm text-ridefit-text-secondary">{vehicle.summary}</p>
         )}
 
         {reasons && reasons.length > 0 && (

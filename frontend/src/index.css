@@ -8,6 +8,15 @@ body,
   height: 100%;
 }
 
+/* 부품명·상품명처럼 긴 이름: 한글은 단어 단위로 자연스럽게 줄바꿈하고(keep-all), 공백 없는 긴 영문·품번(예: 80-539-11530)은
+   칸을 넘칠 때만 아무 곳에서나 끊는다(anywhere - flex/grid 자식의 최소 폭도 줄여 컨테이너 밖으로 밀려나지 않게 한다). */
+@layer utilities {
+  .wrap-name {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+}
+
 body {
   margin: 0;
   background-color: #0b0e14;

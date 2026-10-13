@@ -29,7 +29,8 @@ export function Lightbox({ label, onClose, children, footer, testid }) {
       role="dialog"
       aria-modal="true"
       aria-label={label}
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-black/90 p-2 outline-none sm:p-6"
+      // 아래 제목(부품 이름)이 길어 이미지 + 버튼 줄이 화면보다 높아지면 이 안에서 스크롤한다(safe center: 위가 잘리지 않게).
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 overflow-y-auto bg-black/90 p-2 outline-none [justify-content:safe_center] sm:p-6"
       onClick={onClose}
       data-testid={testid}
     >
@@ -95,7 +96,7 @@ export function ImageLightbox({ src, alt, title, onClose, testid = 'image-lightb
       testid={testid}
       footer={
         <>
-          {title && <p className="w-full text-xs text-white/80">{title}</p>}
+          {title && <p className="wrap-name w-full text-xs text-white/80">{title}</p>}
           {natural && (
             <p className="w-full text-[11px] text-white/60" data-testid="lightbox-resolution">
               원본 {natural.w}×{natural.h}

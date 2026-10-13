@@ -34,7 +34,7 @@ export function FitEquippedPanel({ activeParts, onRemove }) {
             <li key={p.partId} className="flex items-center gap-2 rounded-md border border-ridefit-primary/30 bg-ridefit-card px-2 py-1.5" data-testid={`fit-equipped-${p.partId}`}>
               {thumb(p, 'h-9 w-9')}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-medium text-ridefit-text" title={p.name}>{p.name}</span>
+                <span className="wrap-name block text-xs font-medium text-ridefit-text">{p.name}</span>
                 <span className="block text-[11px] text-ridefit-text-secondary">
                   <Check aria-hidden="true" className="mr-0.5 inline h-3 w-3 text-ridefit-primary" />장착 중 · {p.category} · {p.status}
                 </span>
@@ -96,7 +96,7 @@ export function FitFavoritesPanel({ items, onToggleEquip, onUnfavorite, error })
                 <Heart aria-hidden="true" className="h-3.5 w-3.5" fill="currentColor" />
               </button>
               {thumb(it, 'h-16 w-full')}
-              <span className="line-clamp-2 min-h-[2rem] break-keep text-[11px] font-medium leading-4 text-ridefit-text" title={it.name}>{it.name}</span>
+              <span className="wrap-name min-h-[2rem] text-[11px] font-medium leading-4 text-ridefit-text">{it.name}</span>
               <span className={`text-[11px] ${it.active ? 'font-semibold text-ridefit-primary' : 'text-ridefit-text-secondary'}`}>
                 {!it.compatible ? '호환 확인 안 됨' : it.active ? <><Check aria-hidden="true" className="mr-0.5 inline h-3 w-3" />장착 중</> : '미장착'}
               </span>
@@ -106,7 +106,7 @@ export function FitFavoritesPanel({ items, onToggleEquip, onUnfavorite, error })
                   onClick={() => onToggleEquip(it.partId)}
                   aria-pressed={it.active}
                   aria-label={`${it.name} ${it.active ? '빼기' : '장착'}`}
-                  className={`rounded-md px-2 py-1 text-xs font-semibold transition ${
+                  className={`mt-auto rounded-md px-2 py-1 text-xs font-semibold transition ${
                     it.active
                       ? 'border border-ridefit-primary text-ridefit-primary hover:bg-ridefit-primary/15'
                       : 'bg-ridefit-primary text-white hover:brightness-110'
@@ -116,7 +116,7 @@ export function FitFavoritesPanel({ items, onToggleEquip, onUnfavorite, error })
                   {it.active ? <><X aria-hidden="true" className="mr-0.5 inline h-3 w-3" />빼기</> : '장착'}
                 </button>
               ) : (
-                <p className="text-[10px] leading-snug text-ridefit-text-secondary" data-testid={`fit-fav-incompatible-${it.partId}`}>
+                <p className="mt-auto text-[10px] leading-snug text-ridefit-text-secondary" data-testid={`fit-fav-incompatible-${it.partId}`}>
                   이 차량과 호환이 확인되지 않아 장착할 수 없어요.
                 </p>
               )}

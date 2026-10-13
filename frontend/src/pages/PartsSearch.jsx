@@ -75,7 +75,7 @@ function PricePreview({ part, summary, detailTo }) {
             const host = s.productUrl ? hostOf(s.productUrl) : null
             const row = (
               <>
-                <span className="min-w-0 truncate">{s.sellerName}</span>
+                <span className="wrap-name min-w-0">{s.sellerName}</span>
                 <span className="shrink-0 font-semibold text-ridefit-text">
                   {s.price != null ? `${s.price.toLocaleString()}원` : '가격 확인 필요'}
                   {s.productUrl && <Ico as={ExternalLink} className="ml-1 text-ridefit-text-secondary" />}
@@ -650,7 +650,7 @@ function PartsSearch() {
                       <ul className="mt-2 flex flex-col gap-1.5">
                         {otherMatches.map((m) => (
                           <li key={m.myVehicleId} className="flex items-center justify-between gap-2">
-                            <span className="min-w-0 truncate text-xs text-ridefit-text">
+                            <span className="wrap-name min-w-0 text-xs text-ridefit-text">
                               {m.label} · {m.count}개
                             </span>
                             <button
@@ -705,7 +705,7 @@ function PartsSearch() {
                           <div className="min-w-0 flex-1">
                             <Link
                               to={`/parts/${part.partId}?vehicleId=${vehicleId}`}
-                              className="line-clamp-2 text-[15px] font-semibold leading-snug text-ridefit-text hover:underline"
+                              className="wrap-name text-[15px] font-semibold leading-snug text-ridefit-text hover:underline"
                               title={part.name}
                             >
                               {part.name}
@@ -723,7 +723,7 @@ function PartsSearch() {
                             </p>
                             {/* 이 차종에서 이 부품이 장착 가능한 연식(compatibility 기준). 상세는 부품 상세의 "호환 차량". */}
                             {formatFitmentYears(part.sameModelFitments) && (
-                              <p className="mt-0.5 truncate text-[11px] text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>
+                              <p className="mt-0.5 text-[11px] text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>
                                 적용 연식: {formatFitmentYears(part.sameModelFitments)}
                               </p>
                             )}

@@ -383,8 +383,9 @@ function Vehicle360Viewer({
         data-current-index={currentIndex}
       >
         <ViewerStage {...stageProps} testid="vehicle-360-stage" />
+        {/* 안내는 왼쪽 아래, 오른쪽 아래 [자동 회전] 버튼 폭(약 7rem)만큼 비워 둔다 - 가운데 한 줄로 두면 좁은 무대에서 버튼과 겹쳤다. 좁으면 두 줄로. */}
         {interactive && showControls && !hasInteracted && (
-          <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-ridefit-border bg-ridefit-bg/85 px-3 py-1 text-xs text-ridefit-text-secondary backdrop-blur">
+          <span className="wrap-name pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-7.5rem)] rounded-2xl border border-ridefit-border bg-ridefit-bg/85 px-3 py-1 text-xs text-ridefit-text-secondary backdrop-blur">
             <Ico as={MoveHorizontal} className="mr-1" />드래그해서 차량을 돌려보세요
           </span>
         )}

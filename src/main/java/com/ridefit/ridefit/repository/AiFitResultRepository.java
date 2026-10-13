@@ -14,6 +14,10 @@ public interface AiFitResultRepository extends JpaRepository<AiFitResult, Long> 
     // 같은 조합으로 여러 번 만들 수 있으므로 가장 최근 결과를 쓴다.
     Optional<AiFitResult> findFirstByCacheKeyOrderByCreatedAtDescIdDesc(String cacheKey);
 
+    // 직접 합성 저장은 "내가 이 차량으로 저장한 결과"만 재사용한다(다른 회원/다른 차량의 저장 결과를 돌려주지 않는다).
+    Optional<AiFitResult> findFirstByCacheKeyAndRequestedByMemberIdAndMyVehicleIdOrderByCreatedAtDescIdDesc(
+            String cacheKey, Long requestedByMemberId, Long myVehicleId);
+
     long countByCreatedAtAfter(LocalDateTime since);
 
     // 서비스 전체 일일 AI 생성 한도용 - 직접 합성(model = excludedModel, AI 호출 없음) 결과는 세지 않는다.

@@ -107,7 +107,7 @@ function GuideArticle() {
                   <VehicleImage vehicle={vehicle} className="h-16 w-24 shrink-0 rounded-lg bg-ridefit-bg" />
                   <div className="min-w-0">
                     <p className="text-xs text-ridefit-primary">{vehicle.manufacturerName}</p>
-                    <p className="truncate font-semibold text-ridefit-text">{vehicle.name}</p>
+                    <p className="wrap-name font-semibold text-ridefit-text">{vehicle.name}</p>
                     <p className="text-xs text-ridefit-text-secondary">호환 등록 부품 {partNames.length}개</p>
                   </div>
                 </Link>

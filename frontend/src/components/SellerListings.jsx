@@ -128,9 +128,11 @@ function SellerListings({ partId }) {
           {listings.map((l) => {
             const link = l.sample ? null : productLink(l.sourceUrl)
             return (
+            // 좁은 화면: [이미지 | 판매처·상품명] 아래 줄에 [가격 ... 상품 보기]를 둔다 - 가격 칸을 오른쪽에 세로로 두면 상품명 칸이
+            // 110px 남짓으로 줄어 긴 상품명이 5~10줄이 됐다. sm 이상은 예전처럼 한 줄(가격은 오른쪽).
             <li
               key={l.id}
-              className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
+              className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2 sm:flex-nowrap ${
                 l.lowestPrice ? 'border-ridefit-primary bg-ridefit-primary/5' : 'border-ridefit-border bg-ridefit-bg'
               }`}
             >
@@ -155,15 +157,15 @@ function SellerListings({ partId }) {
                 </p>
                 {/* 표시명(displayName)이 있으면 그것을, 없으면 판매처 원본 상품명을 보여준다(원본은 DB에 보존). */}
                 {(l.displayName || l.productName) && (
-                  <p className="truncate text-xs text-ridefit-text-secondary">{l.displayName || l.productName}</p>
+                  <p className="wrap-name text-xs text-ridefit-text-secondary">{l.displayName || l.productName}</p>
                 )}
                 {/* 어느 쇼핑몰 주소인지 바로 보이게 도메인을 같이 표시한다. */}
-                {link && <p className="truncate text-[11px] text-ridefit-text-secondary/80">{link.hostname.replace(/^www\./, '')}</p>}
+                {link && <p className="wrap-name text-[11px] text-ridefit-text-secondary/80">{link.hostname.replace(/^www\./, '')}</p>}
                 {formatDate(l.checkedAt) && (
                   <p className="text-[11px] text-ridefit-text-secondary/80">확인일 {formatDate(l.checkedAt)}</p>
                 )}
               </div>
-              <div className="flex shrink-0 flex-col items-end gap-1">
+              <div className="flex w-full shrink-0 items-center justify-between gap-2 border-t border-ridefit-border/60 pt-2 sm:w-auto sm:flex-col sm:items-end sm:justify-start sm:gap-1 sm:border-0 sm:pt-0">
                 {l.price != null ? (
                   <span className="font-bold text-ridefit-text">{l.price.toLocaleString()}원</span>
                 ) : (

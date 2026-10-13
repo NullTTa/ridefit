@@ -156,6 +156,27 @@ class CompositeFitTest {
             assertThat(s.count()).isEqualTo(filesBefore);
         }
 
+        // 다른 회원이 같은 차종/연식 + 같은 조합을 저장하면 그 회원의 새 결과가 생긴다(앞 회원의 결과를 돌려주지 않는다).
+        Member admin = memberRepository.findByEmail("admin@ridefit.dev").orElseThrow();
+        MyVehicle adminCub25 = myVehicleRepository.save(MyVehicle.builder().member(admin).modelYear(year).build());
+        JsonNode other = json(mockMvc.perform(compose(adminCub25.getId(), wheel.getId(), good).header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(other.get("cached").asBoolean()).isFalse();
+        assertThat(other.get("id").asLong()).isNotEqualTo(saved.getId());
+        AiFitResult otherSaved = aiFitResultRepository.findById(other.get("id").asLong()).orElseThrow();
+        assertThat(otherSaved.getRequestedByMemberId()).isEqualTo(admin.getId());
+        assertThat(otherSaved.getMyVehicleId()).isEqualTo(adminCub25.getId());
+        // 같은 회원이 다른 차량(같은 연식)으로 저장해도 그 차량의 결과가 따로 생긴다.
+        MyVehicle secondCub25 = myVehicleRepository.save(MyVehicle.builder().member(user).modelYear(year).build());
+        JsonNode second = json(mockMvc.perform(compose(secondCub25.getId(), wheel.getId(), good).header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(second.get("cached").asBoolean()).isFalse();
+        assertThat(aiFitResultRepository.findById(second.get("id").asLong()).orElseThrow().getMyVehicleId()).isEqualTo(secondCub25.getId());
+        aiFitResultRepository.deleteById(otherSaved.getId());
+        aiFitResultRepository.deleteById(second.get("id").asLong());
+        myVehicleRepository.deleteById(adminCub25.getId());
+        myVehicleRepository.deleteById(secondCub25.getId());
+
         // 삭제된(없는) 업로드 파일은 404
         mockMvc.perform(get("/uploads/ai-fit/does-not-exist.png"))
                 .andExpect(status().isNotFound());

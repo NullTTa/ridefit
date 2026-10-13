@@ -228,21 +228,21 @@ function Community() {
                     <span className={`rounded-full border px-2 py-0.5 font-medium ${BADGE_STYLE[post.category] ?? BADGE_STYLE.FREE}`}>
                       {post.categoryLabel}
                     </span>
-                    {post.topic && <span className="truncate text-ridefit-text-secondary">{post.topic}</span>}
+                    {post.topic && <span className="wrap-name min-w-0 text-ridefit-text-secondary">{post.topic}</span>}
                     {post.hasImage && !post.imageUrl && (
                       <span className="text-ridefit-text-secondary" title="사진 첨부">
                         <Ico as={ImageIcon} />
                       </span>
                     )}
                   </div>
-                  <p className="line-clamp-2 font-semibold leading-snug text-ridefit-text group-hover:text-ridefit-primary">{post.title}</p>
+                  <p className="wrap-name font-semibold leading-snug text-ridefit-text group-hover:text-ridefit-primary">{post.title}</p>
                   {rideBuildOf(post.imageUrl) && (
-                    <p className="mt-1 truncate text-xs text-ridefit-text-secondary" data-testid={`community-build-${post.id}`}>
+                    <p className="wrap-name mt-1 text-xs text-ridefit-text-secondary" data-testid={`community-build-${post.id}`}>
                       {[rideBuildOf(post.imageUrl).vehicle, ...rideBuildOf(post.imageUrl).parts].join(' · ')}
                     </p>
                   )}
                   <div className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-ridefit-text-secondary">
-                    <span className="min-w-0 truncate">
+                    <span className="wrap-name min-w-0">
                       {post.authorName} · {formatDate(post.createdAt)}
                     </span>
                     <span className="flex shrink-0 items-center gap-3">

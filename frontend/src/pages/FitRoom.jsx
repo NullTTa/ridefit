@@ -678,9 +678,10 @@ function FitRoom() {
               >
                 <Maximize2 aria-hidden="true" className="h-3.5 w-3.5" />크게 보기
               </button>
-              {/* 안내 문구는 한 줄(전체 문구는 title). */}
-              <figcaption className="mt-2 text-center text-xs text-ridefit-text-secondary">
-                <span className="line-clamp-1" title={`${aiResult.title} · 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있습니다.`}>{aiResult.title} · 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있습니다.</span>
+              {/* 안내 문구: 자르지 않고 줄바꿈한다. 데스크톱에서는 고정 영역(차량 무대)이 너무 높아지지 않게 두 줄 높이까지만 늘고 그 이상은 이 칸 안에서 스크롤
+                  (부품 이름은 바로 아래 "현재 장착 중"과 내 저장 목록에도 전부 보인다). */}
+              <figcaption className="fit-scroll mt-2 text-center text-xs text-ridefit-text-secondary lg:max-h-8 lg:overflow-y-auto">
+                <span className="wrap-name">{aiResult.title} · 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있습니다.</span>
               </figcaption>
             </figure>
           ) : viewMode === '360' && vehicle360Frames ? (
@@ -1006,7 +1007,7 @@ function FitRoom() {
                           <button
                             type="button"
                             onClick={() => handleLoadPreset(preset)}
-                            className="min-w-0 flex-1 truncate text-left text-xs font-medium text-ridefit-text hover:text-ridefit-primary hover:underline"
+                            className="wrap-name min-w-0 flex-1 text-left text-xs font-medium text-ridefit-text hover:text-ridefit-primary hover:underline"
                             title={`불러오기 · 부품 ${preset.partIds.length}개`}
                           >
                             {preset.name} <span className="text-ridefit-text-secondary">· {preset.partIds.length}개</span>
@@ -1095,7 +1096,7 @@ function FitRoom() {
                       <div className="min-w-0 flex-1">
                         <Link
                           to={`/parts/${part.partId}?vehicleId=${myVehicleId}`}
-                          className="text-sm font-medium text-ridefit-text hover:underline"
+                          className="wrap-name text-sm font-medium text-ridefit-text hover:underline"
                         >
                           {part.name}
                         </Link>

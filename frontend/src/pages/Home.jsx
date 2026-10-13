@@ -377,10 +377,10 @@ function Home() {
               <Reveal key={g.slug} delay={i * 0.06}>
                 <Link to={`/guide/${g.slug}`} className="flex h-full gap-4 rounded-xl border border-ridefit-border bg-ridefit-card p-5 transition hover:-translate-y-1 hover:border-ridefit-primary/60">
                   <GuideIcon type={g.type} slug={g.slug} className="h-7 w-7 shrink-0 text-ridefit-primary" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-medium text-ridefit-primary">{{ PART: '부품 정보', CONSUMABLE: '소모품 정보', DIY: 'DIY 가이드' }[g.type]}</p>
                     <p className="mt-0.5 font-semibold text-ridefit-text">{g.title}</p>
-                    <p className="mt-1 line-clamp-2 text-sm text-ridefit-text-secondary">{g.summary}</p>
+                    <p className="mt-1 text-sm text-ridefit-text-secondary">{g.summary}</p>
                   </div>
                 </Link>
               </Reveal>
@@ -469,7 +469,7 @@ function Home() {
                         <Link to={`/community/${post.id}`} className="flex items-center justify-between gap-3 py-3 transition hover:text-ridefit-primary">
                           <span className="min-w-0">
                             <span className="block text-xs text-ridefit-text-secondary">{post.categoryLabel}</span>
-                            <span className="block truncate text-sm font-medium text-ridefit-text">{post.title}</span>
+                            <span className="wrap-name block text-sm font-medium text-ridefit-text">{post.title}</span>
                           </span>
                           <span className="shrink-0 text-xs text-ridefit-text-secondary">
                             <Ico as={ThumbsUp} className="mr-0.5" /> {post.likeCount} · <Ico as={MessageCircle} className="mr-0.5" /> {post.commentCount}

@@ -31,9 +31,12 @@ export function FitSaveAction({ fitSave, savedCount = 0, onJumpToList }) {
   const { canSave, included, excluded, hasParts, note } = fitSave
   return (
     <div className="mt-3 rounded-lg border border-ridefit-primary/40 bg-ridefit-bg px-3 py-2" data-testid="fit-save-panel">
-      <div className="flex items-center gap-3">
+      {/* 좁은 화면: 안내 문구를 한 줄 전체 폭으로 두고 버튼은 그 아래 오른쪽에(한 줄에 두면 문구 칸이 0px까지 줄어 안 보였다).
+          sm 이상: 한 줄. 부품 이름은 자르지 않고 전부 줄바꿈해 보여주되, 데스크톱 고정 영역(차량 무대 + 이 줄)이 너무 높아지지 않게
+          lg에서는 세 줄 높이까지만 늘리고 그 이상은 이 칸 안에서 스크롤한다(같은 부품은 바로 아래 "현재 장착 중"에도 전부 보인다). */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <p
-          className="line-clamp-2 min-w-0 flex-1 text-[11px] leading-snug text-ridefit-text-secondary"
+          className="fit-scroll wrap-name min-w-0 text-[11px] leading-snug text-ridefit-text-secondary sm:flex-1 lg:max-h-[4.125em] lg:overflow-y-auto"
           title={canSave ? [included.map((p) => p.name).join(', '), excluded.length ? `위치 표시만: ${excluded.map((p) => p.name).join(', ')}` : ''].filter(Boolean).join(' / ') : undefined}
           data-testid="fit-save-included"
         >
@@ -41,11 +44,12 @@ export function FitSaveAction({ fitSave, savedCount = 0, onJumpToList }) {
             ? '부품 목록에서 [장착해보기]를 누르면 차량 위에 표시되고, 지금 모습을 이미지로 저장할 수 있어요.'
             : canSave
               ? <>저장 이미지에 들어가는 부품: <span className="text-ridefit-text">{included.map((p) => p.name).join(', ')}</span></>
-              : '지금 장착한 부품은 미리 준비한 장착 이미지가 없어 바로 저장할 수 없어요. 아래 ‘장착한 모습 만들기’를 확인해 주세요.'}
+              : '장착 이미지가 아직 없는 부품이라 바로 저장할 수 없어요. 아래 ‘장착한 모습 만들기’를 확인해 주세요.'}
           {canSave && excluded.length > 0 && (
             <span> · 위치 표시만(이미지에 안 들어감): {excluded.map((p) => p.name).join(', ')}</span>
           )}
         </p>
+        <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
         {onJumpToList && (
           <button
             type="button"
@@ -60,6 +64,7 @@ export function FitSaveAction({ fitSave, savedCount = 0, onJumpToList }) {
           </button>
         )}
         <SaveButton fitSave={fitSave} />
+        </div>
       </div>
       {note && (
         <p className={`mt-1.5 text-xs ${note.kind === 'error' ? 'text-ridefit-danger' : 'text-ridefit-primary'}`} role={note.kind === 'error' ? 'alert' : 'status'} data-testid="fit-save-note">
@@ -96,10 +101,12 @@ export default function FitSavedList({ fitSave, myVehicleId, savedResults, activ
                   active ? 'border-ridefit-primary ring-1 ring-ridefit-primary' : 'border-ridefit-border hover:border-ridefit-primary/60'
                 }`}
               >
+                {/* 좁은 화면: [썸네일 | 저장 시각·부품 수] 아래에 부품 이름을 전체 폭으로 - 썸네일 옆 좁은 칸에 두면 긴 이름이 10줄 가까이 됐다.
+                    sm 이상: 예전처럼 썸네일 왼쪽, 오른쪽에 이름 + 저장 시각. */}
                 <button
                   type="button"
                   onClick={() => onOpen(r)}
-                  className="flex min-w-0 flex-1 items-center gap-3 p-2 text-left"
+                  className="grid min-w-0 flex-1 grid-cols-[5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 p-2 text-left [grid-template-areas:'thumb_meta'_'title_title'] sm:[grid-template-areas:'thumb_title'_'thumb_meta'] sm:gap-y-0.5"
                   title={`${title} - 눌러서 이 모습과 장착 부품 불러오기`}
                   aria-pressed={active}
                   data-testid={`ai-fit-history-${r.id}`}
@@ -107,16 +114,14 @@ export default function FitSavedList({ fitSave, myVehicleId, savedResults, activ
                   <SafeImage
                     src={r.imageUrl}
                     alt={`${title} 장착 모습`}
-                    className="aspect-[4/3] w-20 shrink-0 rounded bg-ridefit-bg object-contain"
-                    fallbackClassName="aspect-[4/3] w-20 shrink-0 rounded text-[9px]"
+                    className="aspect-[4/3] w-20 shrink-0 rounded bg-ridefit-bg object-contain [grid-area:thumb]"
+                    fallbackClassName="aspect-[4/3] w-20 shrink-0 rounded text-[9px] [grid-area:thumb]"
                     fallbackText="이미지 없음"
                   />
-                  <span className="min-w-0">
-                    <span className="line-clamp-2 break-keep text-xs font-medium text-ridefit-text">{title}</span>
-                    <span className="mt-0.5 block text-[11px] text-ridefit-text-secondary">
-                      {formatSavedAt(r.createdAt)} 저장 · 부품 {r.partIds.length}개
-                      {!thisVehicle && ' · 같은 차종 예전 결과'}
-                    </span>
+                  <span className="wrap-name block min-w-0 self-end text-xs font-medium text-ridefit-text [grid-area:title] max-sm:self-start">{title}</span>
+                  <span className="block min-w-0 self-start text-[11px] text-ridefit-text-secondary [grid-area:meta] max-sm:self-center">
+                    {formatSavedAt(r.createdAt)} 저장 · 부품 {r.partIds.length}개
+                    {!thisVehicle && ' · 같은 차종 예전 결과'}
                   </span>
                 </button>
                 <button

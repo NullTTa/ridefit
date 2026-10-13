@@ -41,10 +41,10 @@ function PartRow({ part, active, ok, badge, badgeActive, onToggle }) {
         fallbackClassName="h-8 w-8 shrink-0 rounded border border-ridefit-border text-[8px] leading-tight"
         fallbackText="없음"
       />
-      {/* 좁은 화면에서는 이름을 두 줄까지 보여주고 배지를 이름 아래로 내린다(한 줄에 배지+버튼까지 넣으면 이름이 몇 글자만 남았다). */}
+      {/* 좁은 화면에서는 배지를 이름 아래로 내린다(한 줄에 배지+버튼까지 넣으면 이름이 몇 글자만 남았다). 이름은 자르지 않고 줄바꿈한다. */}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
         <span
-          className={`min-w-0 break-keep text-xs leading-snug line-clamp-2 sm:flex-1 sm:truncate ${active && ok ? 'text-ridefit-text' : 'text-ridefit-text-secondary'} ${active && !ok ? 'line-through decoration-ridefit-text-secondary/50' : ''}`}
+          className={`wrap-name min-w-0 text-xs leading-snug sm:flex-1 ${active && ok ? 'text-ridefit-text' : 'text-ridefit-text-secondary'} ${active && !ok ? 'line-through decoration-ridefit-text-secondary/50' : ''}`}
           title={part.name}
         >
           {part.name}

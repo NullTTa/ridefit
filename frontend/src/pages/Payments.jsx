@@ -37,7 +37,7 @@ function Payments() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-xs text-ridefit-primary">{ORDER_TYPE_LABEL[p.orderType] ?? p.orderType}</p>
-                <p className="truncate font-semibold text-ridefit-text" title={p.orderName}>{p.orderName}</p>
+                <p className="wrap-name font-semibold text-ridefit-text">{p.orderName}</p>
                 <p className="text-xs text-ridefit-text-secondary">{formatDateTime(p.paidAt ?? p.createdAt)}</p>
               </div>
               <div className="text-right">

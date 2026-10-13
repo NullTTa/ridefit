@@ -399,7 +399,10 @@ public class AiFitService {
         List<Long> partIds = parts.stream().map(Part::getId).sorted().toList();
         String key = sha256(String.join("|", "composite", version, vehicleImagePath,
                 String.valueOf(vehicle.getModelYear().getId()), partIds.toString()));
-        Optional<AiFitResult> cached = usableCached(key);
+        // 저장은 회원 본인의 기록이라 같은 회원 + 같은 차량의 결과만 재사용한다. 키(조합)만 보면 다른 회원이 먼저 저장한 결과를
+        // 돌려줘서, 새 회원의 "내 저장 목록"에는 아무것도 생기지 않고 남의 결과가 열렸다(AI 생성 캐시와 달리 비용 절감 대상이 아님).
+        Optional<AiFitResult> cached = usable(aiFitResultRepository
+                .findFirstByCacheKeyAndRequestedByMemberIdAndMyVehicleIdOrderByCreatedAtDescIdDesc(key, memberId, vehicle.getId()));
         if (cached.isPresent()) {
             log.info("직접 합성: 저장된 결과 재사용 resultId={}, partIds={}, myVehicleId={}", cached.get().getId(), partIds, vehicle.getId());
             return toResponse(cached.get(), true);
@@ -561,7 +564,12 @@ public class AiFitService {
     // 실패한 요청은 DB에 저장되지 않으므로(성공해서 파일을 저장한 뒤에만 행을 만든다) 여기 나오지 않는다.
     // 파일이 지워졌거나 경로가 깨진 결과는 재사용하지 않고 새로 만들게 한다(DB 행은 지우지 않는다).
     private Optional<AiFitResult> usableCached(String key) {
-        return aiFitResultRepository.findFirstByCacheKeyOrderByCreatedAtDescIdDesc(key)
+        return usable(aiFitResultRepository.findFirstByCacheKeyOrderByCreatedAtDescIdDesc(key));
+    }
+
+    // 저장 결과의 이미지 파일이 실제로 있을 때만 재사용한다.
+    private Optional<AiFitResult> usable(Optional<AiFitResult> found) {
+        return found
                 .filter(r -> {
                     boolean exists = r.getGeneratedImage() != null
                             && Files.isRegularFile(Path.of(imageStorageService.absolutePathOf(r.getGeneratedImage())));

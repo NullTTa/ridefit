@@ -175,7 +175,7 @@ function PartDetail() {
             ].map(([label, value]) => (
               <div key={label} className="min-w-0">
                 <dt className="text-ridefit-text-secondary">{label}</dt>
-                <dd className={`truncate font-medium ${value ? 'text-ridefit-text' : 'text-ridefit-text-secondary/70'}`} title={value ?? undefined}>
+                <dd className={`wrap-name font-medium ${value ? 'text-ridefit-text' : 'text-ridefit-text-secondary/70'}`} title={value ?? undefined}>
                   {value ?? '정보 없음'}
                 </dd>
               </div>

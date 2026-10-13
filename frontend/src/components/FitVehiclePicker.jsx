@@ -92,7 +92,7 @@ function FitVehiclePicker({ partId, vehicles: givenVehicles, currentVehicleId, c
                     onClick={() => navigate(fitRoomPath(v.id, partId))}
                     className="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-ridefit-border bg-ridefit-card px-3 py-2 text-left text-sm text-ridefit-text transition hover:border-ridefit-primary"
                   >
-                    <span className="min-w-0 truncate">
+                    <span className="wrap-name min-w-0">
                       {v.nickname || v.modelYearLabel}
                       {v.nickname && <span className="ml-1 text-xs text-ridefit-text-secondary">{v.modelYearLabel}</span>}
                     </span>
