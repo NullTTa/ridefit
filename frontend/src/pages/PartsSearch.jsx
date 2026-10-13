@@ -18,13 +18,8 @@ import { josa } from '../lib/korean'
 import { loadFitBuild, saveFitBuild, toggleFitBuildPart } from '../lib/fitBuild'
 import { formatFitmentYears } from '../lib/fitment'
 import { loadPartCategorySlugs } from '../lib/guide'
+import { COMPAT_TEXT, compatDisplay, UNVERIFIED_HINT } from '../lib/compatStatus'
 import { groupCategories, groupLabelOf } from '../constants/partCategoryGroups'
-
-const STATUS_STYLE = {
-  호환가능: 'text-ridefit-success',
-  브라켓필요: 'text-ridefit-warning',
-  호환불가: 'text-ridefit-danger',
-}
 
 const PAGE_SIZE = 12
 
@@ -404,7 +399,7 @@ function PartsSearch() {
     <div className="mx-auto max-w-6xl px-4 py-16">
       <h1 className="mb-1 text-2xl font-bold text-ridefit-text">부품 찾아보기</h1>
       <p className="mb-6 text-sm text-ridefit-text-secondary">
-        내 차량 기준으로 이미 호환이 확인된 부품만 켜고 끄면서 조합을 맞춰볼 수 있어요.{' '}
+        내 차량의 호환 데이터가 있는 부품만 켜고 끄면서 조합을 맞춰볼 수 있어요.{' '}
         <Link to="/guide" className="font-medium text-ridefit-primary hover:underline">
           부품 · 소모품 정보
         </Link>
@@ -642,11 +637,11 @@ function PartsSearch() {
                   <p className="text-ridefit-text">
                     {keyword.trim() || category
                       ? `현재 선택한 ${vehicleName}에는 확인된 호환 ${keyword.trim() || category} 부품이 없습니다.`
-                      : `아직 ${vehicleName}에 대해 호환이 확인된 부품이 없어요.`}
+                      : `아직 ${vehicleName}에 대해 호환 데이터가 있는 부품이 없어요.`}
                   </p>
                   {otherMatches.length > 0 && (
                     <div className="mt-3" data-testid="parts-other-vehicles">
-                      <p className="text-xs text-ridefit-text-secondary">내 다른 차량에는 호환이 확인된 부품이 있어요.</p>
+                      <p className="text-xs text-ridefit-text-secondary">내 다른 차량에는 호환 데이터가 있는 부품이 있어요.</p>
                       <ul className="mt-2 flex flex-col gap-1.5">
                         {otherMatches.map((m) => (
                           <li key={m.myVehicleId} className="flex items-center justify-between gap-2">
@@ -683,6 +678,7 @@ function PartsSearch() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="parts-grid">
                   {visibleParts.map((part) => {
                     const isActive = selectedPartIds.has(part.partId)
+                    const compat = compatDisplay(part.status, part.note)
                     return (
                       <div
                         key={part.partId}
@@ -711,8 +707,13 @@ function PartsSearch() {
                               {part.name}
                             </Link>
                             <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-                              <span className={`font-semibold ${STATUS_STYLE[part.status] ?? 'text-ridefit-text-secondary'}`}>
-                                {vehicle?.vehicleModelName ?? '내 차량'} {part.status}
+                              <span
+                                className={`font-semibold ${COMPAT_TEXT[compat.key] ?? 'text-ridefit-text-secondary'}`}
+                                title={compat.unverified ? UNVERIFIED_HINT : undefined}
+                                data-testid={`parts-compat-${part.partId}`}
+                                data-compat={compat.key}
+                              >
+                                {vehicle?.vehicleModelName ?? '내 차량'} {compat.label}
                               </span>
                               <span className="text-ridefit-text-secondary">{part.category}</span>
                               {part.stats?.ratingCount > 0 && (

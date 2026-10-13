@@ -13,17 +13,12 @@ import { josa } from '../lib/korean'
 import { formatFitment, groupFitmentsByModel } from '../lib/fitment'
 import { fitRoomPath } from '../lib/fitRoom'
 import { loadPartCategorySlugs } from '../lib/guide'
+import { COMPAT_CHIP, compatDisplay, UNVERIFIED_HINT, UNVERIFIED_LABEL } from '../lib/compatStatus'
 
 const FEEDBACK_LABEL = { MATCHED: '맞았어요', NOT_MATCHED: '안 맞았어요' }
 
 // 부품 구분(part_type) 화면 라벨. DB 값은 OEM/AFTERMARKET/UNIVERSAL, 없으면 "정보 없음".
 const PART_TYPE_LABEL = { OEM: '순정', AFTERMARKET: '애프터마켓', UNIVERSAL: '범용' }
-
-const FITMENT_STATUS_STYLE = {
-  호환가능: 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success',
-  브라켓필요: 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning',
-  호환불가: 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger',
-}
 
 function formatDate(iso) {
   if (!iso) return ''
@@ -140,6 +135,7 @@ function PartDetail() {
 
   const stats = part.stats
   const totalFeedback = stats.positiveFeedbackCount + stats.negativeFeedbackCount
+  const checkUnverified = !!checkResult && compatDisplay(checkResult.status, checkResult.note).unverified
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
@@ -235,17 +231,27 @@ function PartDetail() {
           {checkResult && (
             <div
               className={`mt-2 rounded-lg border px-3 py-2 text-sm font-medium ${
-                checkResult.proceedAllowed
-                  ? 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success'
-                  : checkResult.status === '호환불가'
-                    ? 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger'
-                    : 'border-ridefit-border bg-ridefit-card text-ridefit-text-secondary'
+                checkUnverified
+                  ? 'border-dashed border-ridefit-border bg-ridefit-card text-ridefit-text'
+                  : checkResult.proceedAllowed
+                    ? 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success'
+                    : checkResult.status === '호환불가'
+                      ? 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger'
+                      : 'border-ridefit-border bg-ridefit-card text-ridefit-text-secondary'
               }`}
               data-testid="part-compat"
               data-status={checkResult.status}
+              data-compat={checkUnverified ? 'unverified' : checkResult.status}
             >
-              {/* 판정은 기존 /check(CompatibilityCheckService = DB compatibility) 결과를 그대로 쓴다. 데이터가 없으면 "호환"이라고 하지 않는다. */}
-              {checkResult.proceedAllowed ? (
+              {/* 판정은 기존 /check(CompatibilityCheckService = DB compatibility) 결과를 그대로 쓴다. 데이터가 없으면 "호환"이라고 하지 않는다.
+                  "호환가능"이어도 근거 메모가 없으면 "장착 가능"이라고 단정하지 않는다(장착해보기는 그대로 가능). */}
+              {checkUnverified ? (
+                <>
+                  <Ico as={CircleHelp} className="mr-1" />
+                  {UNVERIFIED_LABEL} · {myVehicle ? myVehicle.nickname || myVehicle.modelYearLabel : '내 차량'}
+                  <span className="mt-1 block text-xs font-normal text-ridefit-text-secondary">{UNVERIFIED_HINT}</span>
+                </>
+              ) : checkResult.proceedAllowed ? (
                 <>
                   <Ico as={Check} className="mr-1" />
                   장착 가능 · {myVehicle ? myVehicle.nickname || myVehicle.modelYearLabel : '내 차량'}
@@ -335,19 +341,23 @@ function PartDetail() {
                 <ul className="flex flex-col gap-1.5">
                   {g.rows.map((f) => {
                     const isMine = myVehicle && f.modelYearId === myVehicle.modelYearId
+                    const compat = compatDisplay(f.status, f.note)
                     return (
                       <li
                         key={f.modelYearId}
                         className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-3 py-2 text-sm ${
                           isMine ? 'border-ridefit-primary bg-ridefit-primary/10' : 'border-ridefit-border bg-ridefit-bg'
                         }`}
+                        data-testid={`part-fitment-${f.modelYearId}`}
+                        data-compat={compat.key}
                       >
                         <span className="font-medium text-ridefit-text">{formatFitment(f)}</span>
-                        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${FITMENT_STATUS_STYLE[f.status] ?? 'border-ridefit-border text-ridefit-text-secondary'}`}>
-                          {f.status}
+                        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${COMPAT_CHIP[compat.key] ?? 'border-ridefit-border text-ridefit-text-secondary'}`}>
+                          {compat.label}
                         </span>
                         {isMine && <span className="text-[11px] font-semibold text-ridefit-primary">내 차량</span>}
                         {f.note && <span className="w-full text-xs text-ridefit-text-secondary">{f.note}</span>}
+                        {compat.unverified && <span className="w-full text-xs text-ridefit-text-secondary">{UNVERIFIED_HINT}</span>}
                       </li>
                     )
                   })}

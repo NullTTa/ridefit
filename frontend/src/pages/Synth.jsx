@@ -34,7 +34,7 @@ function Synth() {
     <div className="mx-auto max-w-2xl px-4 py-16 text-center">
       <h1 className="mb-2 text-2xl font-bold text-ridefit-text">장착 미리보기</h1>
       <p className="mb-8 text-sm text-ridefit-text-secondary">
-        호환이 확인된 부품을 실제로 장착했을 때의 모습을 미리 확인해요.
+        호환 데이터가 있는 부품을 실제로 장착했을 때의 모습을 미리 확인해요.
       </p>
 
       {!missingParams && !result && !loading && (

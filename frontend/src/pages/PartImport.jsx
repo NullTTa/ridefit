@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import VehicleCascadeSelect from '../components/VehicleCascadeSelect'
 import { api } from '../lib/api'
+import { compatDisplay, UNVERIFIED_HINT } from '../lib/compatStatus'
 
 const inputClass =
   'rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary'
@@ -11,6 +12,7 @@ const STATUS_BADGE = {
   브라켓필요: 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning',
   호환불가: 'border-ridefit-danger-border bg-ridefit-danger-bg text-ridefit-danger',
   정보없음: 'border-ridefit-border bg-ridefit-bg text-ridefit-text-secondary',
+  unverified: 'border-dashed border-ridefit-border bg-ridefit-bg text-ridefit-text',
 }
 
 function PartImport() {
@@ -281,10 +283,17 @@ function PartImport() {
           {checking && <p className="text-sm text-ridefit-text-secondary">확인 중...</p>}
 
           {checkResult && (
-            <div className={`rounded-lg border px-4 py-3 text-sm font-medium ${STATUS_BADGE[checkResult.status] ?? STATUS_BADGE.정보없음}`}>
+            <div className={`rounded-lg border px-4 py-3 text-sm font-medium ${STATUS_BADGE[compatDisplay(checkResult.status, checkResult.note).key] ?? STATUS_BADGE.정보없음}`}>
               {checkResult.proceedAllowed ? (
                 <>
-                  <p>호환됩니다 ({checkResult.status})</p>
+                  {compatDisplay(checkResult.status, checkResult.note).unverified ? (
+                    <>
+                      <p>호환가능으로 등록되어 있지만 근거가 아직 없어요</p>
+                      <p className="mt-1 text-xs font-normal text-ridefit-text-secondary">{UNVERIFIED_HINT}</p>
+                    </>
+                  ) : (
+                    <p>호환됩니다 ({checkResult.status})</p>
+                  )}
                   {checkResult.note && <p className="mt-1 text-xs opacity-80">{checkResult.note}</p>}
                   <Link
                     to={`/synth?partId=${part.id}&vehicleId=${selectedVehicleId}`}

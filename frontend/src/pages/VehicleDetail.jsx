@@ -12,12 +12,7 @@ import { useAuth } from '../context/useAuth'
 import { api } from '../lib/api'
 import { loadPartCategorySlugs } from '../lib/guide'
 import { addRecentVehicle } from '../lib/recentVehicles'
-
-const STATUS_STYLE = {
-  호환가능: 'text-ridefit-success',
-  브라켓필요: 'text-ridefit-warning',
-  호환불가: 'text-ridefit-danger',
-}
+import { COMPAT_TEXT, compatDisplay, UNVERIFIED_HINT } from '../lib/compatStatus'
 
 // 차량 상세: 스펙/성향 -> 관심 차량·내 차고 추가 -> 호환 부품 -> 비슷한 차량으로 이어지는 허브 화면.
 function VehicleDetail() {
@@ -361,13 +356,20 @@ function VehicleDetail() {
                         {/* 연식이 많은 차량(6개)은 한 줄에 다 안 들어가 가로 스크롤을 유발했음 - 배지가
                             자체적으로 줄바꿈되도록 flex-wrap으로 바꿈(375px 모바일에서 실제 확인). */}
                         <span className="flex flex-wrap justify-end gap-x-2 gap-y-1 text-xs">
-                          {[...part.years].sort((a, b) => (a.year ?? Infinity) - (b.year ?? Infinity)).map((y, i) => (
+                          {[...part.years].sort((a, b) => (a.year ?? Infinity) - (b.year ?? Infinity)).map((y, i) => {
+                            const compat = compatDisplay(y.status, y.note)
                             // 연식(year)이 비어있는 레거시 ModelYear 로우가 같은 부품에 여러 번 걸려 있으면
                             // year만으로는 key가 중복(둘 다 null)될 수 있어 배열 인덱스를 함께 섞는다.
-                            <span key={`${y.year ?? 'na'}-${y.status}-${i}`} className={STATUS_STYLE[y.status] ?? 'text-ridefit-text-secondary'}>
-                              {y.year} {y.status}
-                            </span>
-                          ))}
+                            return (
+                              <span
+                                key={`${y.year ?? 'na'}-${y.status}-${i}`}
+                                className={COMPAT_TEXT[compat.key] ?? 'text-ridefit-text-secondary'}
+                                title={compat.unverified ? UNVERIFIED_HINT : undefined}
+                              >
+                                {y.year} {compat.label}
+                              </span>
+                            )
+                          })}
                         </span>
                       </Link>
                     </li>

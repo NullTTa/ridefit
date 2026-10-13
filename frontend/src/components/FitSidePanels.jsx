@@ -1,6 +1,7 @@
 import { Check, Heart, X } from 'lucide-react'
 import { displayImageUrl } from '../constants/productImages'
 import { wheelToHorizontal } from '../lib/fitScroll'
+import { compatDisplay } from '../lib/compatStatus'
 import SafeImage from './SafeImage'
 
 // FitRoom 왼쪽(차량 미리보기 아래) 패널 2개. 둘 다 상태를 따로 갖지 않는다 - FitRoom의 activePartIds(장착)와
@@ -36,7 +37,7 @@ export function FitEquippedPanel({ activeParts, onRemove }) {
               <span className="min-w-0 flex-1">
                 <span className="wrap-name block text-xs font-medium text-ridefit-text">{p.name}</span>
                 <span className="block text-[11px] text-ridefit-text-secondary">
-                  <Check aria-hidden="true" className="mr-0.5 inline h-3 w-3 text-ridefit-primary" />장착 중 · {p.category} · {p.status}
+                  <Check aria-hidden="true" className="mr-0.5 inline h-3 w-3 text-ridefit-primary" />장착 중 · {p.category} · {compatDisplay(p.status, p.note).label}
                 </span>
               </span>
               <button

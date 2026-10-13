@@ -88,7 +88,7 @@ public class VehicleController {
                 byPart.computeIfAbsent(part.getId(), k -> new VehiclePartResponse(
                                 part.getId(), part.getCategory(), part.getName(), part.getPrice(), part.getImageUrl(),
                                 new ArrayList<>()))
-                        .years().add(new YearStatus(year.getYear(), c.getStatus()));
+                        .years().add(new YearStatus(year.getYear(), c.getStatus(), c.getNote()));
             }
         }
         return new ArrayList<>(byPart.values());
@@ -109,7 +109,8 @@ public class VehicleController {
         return Math.max(1, Math.min(MAX_SIMILAR_LIMIT, limit));
     }
 
-    public record YearStatus(Integer year, String status) {
+    // note: 호환 근거 메모(없으면 null) - 화면에서 "호환 근거 미확인"을 구분하는 데 쓴다.
+    public record YearStatus(Integer year, String status, String note) {
     }
 
     public record VehiclePartResponse(Long partId, String category, String name, Integer price, String imageUrl,

@@ -25,6 +25,7 @@ import { deleteFitPreset, listFitPresets, loadFitBuild, saveFitBuild, saveFitPre
 import { formatFitmentYears } from '../lib/fitment'
 import { useFitSave } from '../lib/useFitSave'
 import { containWheel, LG_QUERY, padForSticky } from '../lib/fitScroll'
+import { COMPAT_TEXT, compatDisplay } from '../lib/compatStatus'
 
 // 검색용 정규화: 대소문자/띄어쓰기 무시("사이드 백" = "사이드백").
 const normText = (s) => (s ?? '').toLowerCase().replace(/s+/g, '')
@@ -32,6 +33,8 @@ const normText = (s) => (s ?? '').toLowerCase().replace(/s+/g, '')
 const STATUS_STYLE = {
   호환가능: 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success',
   브라켓필요: 'border-ridefit-warning-border bg-ridefit-warning-bg text-ridefit-warning',
+  // 호환 근거 미확인(호환가능 + 근거 메모 없음) - 장착 중이어도 근거 있는 호환과 같은 초록으로 보이지 않게
+  unverified: 'border-ridefit-primary bg-ridefit-primary/10',
 }
 
 function FitRoom() {
@@ -957,7 +960,7 @@ function FitRoom() {
             <div>
                 {/* 짧은 데스크톱 화면(높이 700px 이하)에서는 이 도움말을 숨겨 첫 부품 카드가 보이게 한다(같은 뜻이 버튼 이름/툴팁에 있음). */}
                 <p className="text-xs text-ridefit-text-secondary lg:[@media(max-height:700px)]:hidden">
-                  이 차량과 호환이 확인된 부품만 보여요. [장착해보기]는 이 화면에서만 붙여 보는 것이고, [♡ 저장하기]한 부품만 내 차고와 왼쪽 즐겨찾기에 남아요.
+                  이 차량의 호환 데이터(호환가능·브라켓필요)가 있는 부품만 보여요. ‘호환 근거 미확인’ 부품은 구매 전에 판매처나 제조사에 장착 가능 여부를 확인해 주세요. [장착해보기]는 이 화면에서만 붙여 보는 것이고, [♡ 저장하기]한 부품만 내 차고와 왼쪽 즐겨찾기에 남아요.
                 </p>
                 {/* "저장한 구성" - 지금 장착 중인 조합에 이름을 붙여 저장해두고 나중에 그대로 불러온다(이 브라우저에만 저장).
                     접어 두어(기본 닫힘) 첫 부품 카드가 목록 맨 위에 바로 보이게 한다. */}
@@ -1042,7 +1045,7 @@ function FitRoom() {
           )}
           {parts.length === 0 && (
             <p className="text-sm text-ridefit-text-secondary">
-              이 차량에 호환이 확인된 부품이 아직 없어요.{' '}
+              이 차량의 호환 데이터가 있는 부품이 아직 없어요.{' '}
               <Link to="/parts/import" className="text-ridefit-primary hover:underline">
                 부품 링크로 확인하러 가기
               </Link>
@@ -1080,12 +1083,13 @@ function FitRoom() {
                 {categoryParts.map((part) => {
                   const isActive = activePartIds.has(part.partId)
                   const isSaved = savedPartIds.has(part.partId)
+                  const compat = compatDisplay(part.status, part.note)
                   return (
                     <div
                       key={part.partId}
                       className={`flex items-start gap-3 rounded-xl border px-3 py-3 transition ${
                         isActive
-                          ? (STATUS_STYLE[part.status] ?? 'border-ridefit-primary bg-ridefit-primary/10')
+                          ? (STATUS_STYLE[compat.key] ?? 'border-ridefit-primary bg-ridefit-primary/10')
                           : 'border-ridefit-border bg-ridefit-card'
                       }`}
                       data-testid={`fit-part-${part.partId}`}
@@ -1101,7 +1105,14 @@ function FitRoom() {
                           {part.name}
                         </Link>
                         <p className="text-xs text-ridefit-text-secondary">
-                          {part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 준비중'} · {part.status}
+                          {part.price != null ? `${part.price.toLocaleString()}원` : '가격 정보 준비중'} ·{' '}
+                          <span
+                            className={COMPAT_TEXT[compat.key]}
+                            data-testid={`fit-compat-${part.partId}`}
+                            data-compat={compat.key}
+                          >
+                            {compat.label}
+                          </span>
                         </p>
                         {formatFitmentYears(part.sameModelFitments) && (
                           <p className="text-[11px] text-ridefit-text-secondary" data-testid={`fit-years-${part.partId}`}>

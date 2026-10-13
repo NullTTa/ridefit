@@ -12,6 +12,7 @@ import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehic
 import { getStageScale } from '../constants/vehicleFitPositions'
 import { api } from '../lib/api'
 import { loadFitBuild } from '../lib/fitBuild'
+import { COMPAT_TEXT, compatDisplay } from '../lib/compatStatus'
 
 const formatPrice = (price) => (price != null ? `${price.toLocaleString()}원` : '가격 정보 준비중')
 const formatDateTime = (value) =>
@@ -85,7 +86,7 @@ function Garage() {
   const [vehicleData, setVehicleData] = useState({ id: null })
   const current = vehicleData.id === vehicleId ? vehicleData : {}
   const favorites = current.favorites ?? null
-  const compatStatusById = current.compatStatusById ?? null
+  const compatById = current.compatById ?? null
   const recommended = current.recommended ?? null
   const savedFits = current.savedFits ?? null
   const setFavorites = (update) => setVehicleData((prev) => patchVehicleData(prev, vehicleId, 'favorites', update))
@@ -108,10 +109,10 @@ function Garage() {
       .get(`/api/my-vehicles/${vehicleId}/compatible-parts`)
       .then((data) => {
         if (!alive) return
-        set('compatStatusById')(new Map(data.map((p) => [p.partId, p.status])))
+        set('compatById')(new Map(data.map((p) => [p.partId, p])))
         setCompatParts(data)
       })
-      .catch(() => set('compatStatusById')(new Map()))
+      .catch(() => set('compatById')(new Map()))
     api
       .get(`/api/my-vehicles/${vehicleId}/recommended-parts?limit=8`)
       .then(set('recommended'))
@@ -250,7 +251,7 @@ function Garage() {
                   <p className="text-xs font-semibold text-ridefit-text">
                     <Ico as={Wrench} className="mr-1 text-ridefit-primary" />현재 구성{currentBuild.length > 0 ? ` (${currentBuild.length})` : ''}
                   </p>
-                  {compatStatusById === null ? (
+                  {compatById === null ? (
                     <p className="mt-1 text-[11px] text-ridefit-text-secondary">불러오는 중...</p>
                   ) : currentBuild.length > 0 ? (
                     <ul className="mt-1.5 flex flex-wrap gap-1.5">
@@ -345,7 +346,9 @@ function Garage() {
               {favorites?.length > 0 && (
                 <ul className="grid max-h-[26rem] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
                   {favorites.map((f) => {
-                    const status = compatStatusById?.get(f.partId)
+                    const compat = compatById?.get(f.partId)
+                    const status = compat?.status
+                    const shown = compatDisplay(status, compat?.note)
                     return (
                       <li key={f.partId}>
                         <Link
@@ -361,19 +364,13 @@ function Garage() {
                             <p className="mt-0.5 text-[11px] text-ridefit-text-secondary">
                               {f.category} · {formatPrice(f.price)}
                             </p>
-                            {compatStatusById && (
+                            {compatById && (
                               <p
-                                className={`mt-0.5 text-[11px] font-medium ${
-                                  status === '호환가능'
-                                    ? 'text-ridefit-success'
-                                    : status === '브라켓필요'
-                                      ? 'text-ridefit-warning'
-                                      : status === '호환불가'
-                                        ? 'text-ridefit-danger'
-                                        : 'text-ridefit-text-secondary'
-                                }`}
+                                className={`mt-0.5 text-[11px] font-medium ${COMPAT_TEXT[shown.key] ?? 'text-ridefit-text-secondary'}`}
+                                data-testid={`garage-favorite-compat-${f.partId}`}
+                                data-compat={status ? shown.key : 'none'}
                               >
-                                {status ? `이 차량: ${status}` : '이 차량 호환 미확인'}
+                                {status ? `이 차량: ${shown.label}` : '이 차량 호환 미확인'}
                               </p>
                             )}
                           </div>
@@ -565,6 +562,8 @@ function Garage() {
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {recommended.map((p) => {
                   const s = p.stats
+                  // 추천 응답에는 근거 메모가 없어서, 같은 차량의 호환 목록(compatible-parts)에서 메모를 찾아 표시를 맞춘다.
+                  const shown = compatDisplay(p.status, compatById?.get(p.partId)?.note)
                   const reasons = [
                     s.viewCount > 0 && `조회 ${s.viewCount}`,
                     s.fitSelectionCount > 0 && `장착해보기 ${s.fitSelectionCount}`,
@@ -582,7 +581,7 @@ function Garage() {
                         <div className="p-3">
                           <p className="text-[11px] text-ridefit-text-secondary">
                             {p.category} ·{' '}
-                            <span className={p.status === '호환가능' ? 'text-ridefit-success' : 'text-ridefit-warning'}>{p.status}</span>
+                            <span className={COMPAT_TEXT[shown.key] ?? 'text-ridefit-text-secondary'}>{shown.label}</span>
                           </p>
                           <p className="wrap-name mt-0.5 text-sm font-medium text-ridefit-text">
                             {p.name}

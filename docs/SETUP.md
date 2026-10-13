@@ -18,8 +18,11 @@ Copy-Item src/main/resources/application-local.properties.example src/main/resou
 
 - 주소: `http://localhost:8080`, API 문서: `http://localhost:8080/swagger-ui/index.html`
 - `application-local.properties`는 `.gitignore`에 포함되어 커밋되지 않는다. 실제 비밀번호·키를 다른 파일에 적지 않는다.
-- 첫 실행 때 시더가 차량/부품/호환/샘플 콘텐츠와 테스트 계정(`user@ridefit.dev`, `admin@ridefit.dev`)을 넣는다. 비밀번호는 `DataSeeder` 참고.
-  이 비밀번호는 코드에 공개된 개발용 값이므로, 외부에 공개하는 서버에서는 시더 계정 비밀번호를 바꾸거나 계정을 지운다.
+- 첫 실행 때 시더가 차량/부품/호환/정보글/매장 같은 카탈로그 데이터를 넣는다.
+- 테스트 계정(`user@ridefit.dev`, `admin@ridefit.dev` 등)과 샘플 게시글은 **`ridefit.seed.demo-accounts=true`일 때만** 만든다(기본값 `false`).
+  비밀번호가 `DataSeeder`에 공개된 개발용 값이라, 로컬 `application-local.properties`에서만 켜고 외부에 공개하는 서버에서는 켜지 않는다.
+  예전에 만든 로컬 DB에는 계정이 이미 있으므로 이 값이 없어도 로그인은 그대로 된다(새 DB에서만 차이가 난다). 테스트(`application-test.properties`)는 켜 둔다.
+- 관리자 지정: `ridefit.seed.admin-emails=a@example.com,b@example.com` - **이미 가입한** 회원의 역할만 ADMIN으로 바꾸고, 계정을 새로 만들지 않는다.
 - 업로드 파일(저장한 장착 모습 등)은 `uploads/`(`UPLOAD_DIR`로 변경 가능)에 저장되며 커밋되지 않는다.
 
 ### 백엔드 환경 변수(선택)
