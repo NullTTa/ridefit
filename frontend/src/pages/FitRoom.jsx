@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, ArrowUp, Bookmark, Check, ChevronDown, Heart, Maximize2, Redo2, Search, Star, Trash2, Undo2, X } from 'lucide-react'
+import { ArrowRight, ArrowUp, Bookmark, Check, ChevronDown, Heart, Redo2, Search, Star, Trash2, Undo2, X } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import AiFitPanel from '../components/AiFitPanel'
-import FitSavedList, { FitSaveAction } from '../components/FitSavePanel'
+import FitSavedList, { FitComposeBar, FitComposeDock, FitTryButton } from '../components/FitSavePanel'
+import FitResultStage from '../components/FitResultStage'
 import { FitEquippedPanel, FitFavoritesPanel } from '../components/FitSidePanels'
 import CategoryMenu from '../components/CategoryMenu'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -10,7 +11,6 @@ import { Ico } from '../components/Icon'
 import { ImageLightbox, Lightbox } from '../components/Lightbox'
 import PartBadges from '../components/PartBadges'
 import ProductImage from '../components/ProductImage'
-import SafeImage from '../components/SafeImage'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import VehicleFitStage from '../components/VehicleFitStage'
 import VehicleYearBadge, { ModelImageNotice } from '../components/VehicleYearBadge'
@@ -23,7 +23,7 @@ import { api } from '../lib/api'
 import { josa } from '../lib/korean'
 import { deleteFitPreset, listFitPresets, loadFitBuild, saveFitBuild, saveFitPreset, toggleFitBuildPart } from '../lib/fitBuild'
 import { formatFitmentYears } from '../lib/fitment'
-import { useFitSave } from '../lib/useFitSave'
+import { useFitComposite } from '../lib/useFitComposite'
 import { containWheel, LG_QUERY, padForSticky } from '../lib/fitScroll'
 import { COMPAT_TEXT, compatDisplay } from '../lib/compatStatus'
 
@@ -39,10 +39,10 @@ const STATUS_STYLE = {
 
 // 부품 카드의 "장착하면 차량 위에 그려지는 것" 안내(getPartLayerKind 값별)
 const LAYER_KIND_TEXT = {
-  layer: '장착 이미지 있음 · 차량 위에 그려지고 저장 이미지에 들어가요',
+  layer: '장착 이미지 있음 · [입혀보기]하면 차량 이미지에 그려져요',
   photo: '간이 미리보기 · 상품 사진을 장착 자리에 겹친 근사치예요(실제 장착 모습과 다를 수 있어요)',
-  illustration: '간이 일러스트 · 상품 사진이 없어 단순한 그림으로 보여 줘요(실제 제품 모습 아님)',
-  pin: '장착 이미지 준비 중 · 차량 위에는 부착 위치만 표시돼요',
+  illustration: '간이 일러스트 · 상품 사진이 없어 단순한 그림으로 표시돼요(실제 제품 모습 아님)',
+  pin: '장착 이미지 없음 · 입혀보기 이미지에서 빠지고 부착 위치만 표시돼요',
 }
 
 function FitRoom() {
@@ -76,23 +76,24 @@ function FitRoom() {
   const [presetNotice, setPresetNotice] = useState(null)
   const [conflicts, setConflicts] = useState([])
   const [checkingConflicts, setCheckingConflicts] = useState(false)
+  // 왼쪽 보기: 'fit' = 2D 합성(결과 이미지 또는 원본), '360' = 360° 보기
   const [viewMode, setViewMode] = useState('fit')
-  // 합성 전/후 비교: 'after' = 지금 장착한 부품을 모두 얹은 무대, 'before' = 부품 없이 원본 차량만.
-  // CSS로 가리는 것이 아니라 무대에 넘기는 부품 목록 자체를 바꾼다(전 = 빈 목록) - 마스크/레이어도 함께 빠진다.
+  // 원본/입혀보기 결과 비교: 'after' = 입혀보기 결과, 'before' = 부품 없는 원본 차량. 입혀보기 결과가 있을 때만 보인다.
   const [compare, setCompare] = useState('after')
-  // "장착해보기" 결과({ imageUrl, cached, title }). 없으면 "장착 모습" 탭 자체를 숨긴다.
-  const [aiResult, setAiResult] = useState(null)
   // 이 차량으로 만든 장착 결과 전체(서버에 저장된 것, 최신순). 만들 때마다 늘어나고 지워지지 않는다.
   const [savedResults, setSavedResults] = useState([])
-  // 저장된 장착 모습 개별 삭제(합성 결과 이미지만 - 부품 저장/장착해보기 선택과는 무관)
+  // 저장된 장착 모습 개별 삭제(입혀보기 결과 이미지만 - 부품 저장/장착해보기 선택과는 무관)
   const [resultToDelete, setResultToDelete] = useState(null)
   // 저장 결과를 불러왔는데 그때 장착했던 부품 중 지금은 호환 후보가 아닌 것이 있으면 알린다.
   const [restoreNotice, setRestoreNotice] = useState(null)
   const [deletingResult, setDeletingResult] = useState(false)
   const [resultDeleteError, setResultDeleteError] = useState('')
   const [aiCheckKey, setAiCheckKey] = useState(0)
-  // "크게 보기"(전체 화면)로 연 장착 결과. null이면 닫힘.
+  // "크게 보기"(전체 화면)로 연 입혀보기 결과. null이면 닫힘.
   const [zoomed, setZoomed] = useState(null)
+  // 모바일/태블릿: 차량 무대가 화면에 보이는지(안 보이면 화면 아래 [입혀보기] 바를 띄운다)
+  const stageRef = useRef(null)
+  const [stageInView, setStageInView] = useState(true)
   // 위치 미리보기 크게 보기(원본 이미지들을 큰 무대에 다시 배치 - 작은 화면을 늘리는 것이 아님)
   const [stageZoom, setStageZoom] = useState(false)
   // 목록 카테고리 필터(null = 전체). 장착 상태와 무관 - 다른 카테고리에서 장착한 부품은 그대로 장착돼 있다.
@@ -197,11 +198,8 @@ function FitRoom() {
     try {
       await api.del(`/api/ai-fit/results/${target.id}`)
       setSavedResults((prev) => prev.filter((r) => r.id !== target.id))
-      // 지금 크게 보고 있던 결과면 기본 장착 화면으로 돌아가고, AI 패널은 캐시 상태를 다시 확인한다.
-      if (aiResult?.imageUrl === target.imageUrl) {
-        setAiResult(null)
-        setViewMode('fit')
-      }
+      // 지금 왼쪽에 보이던 결과를 지웠으면 결과를 비운다(선택한 부품은 그대로 - 다시 합성할 수 있다). AI 패널은 캐시 상태를 다시 확인한다.
+      if (fit.result?.id === target.id) fit.clear()
       setAiCheckKey((k) => k + 1)
     } catch (err) {
       setResultDeleteError(err.message || '삭제하지 못했어요.')
@@ -306,30 +304,39 @@ function FitRoom() {
     return new Map(parts.map((p) => [p.partId, layout ? getPartLayerKind(p, layout) : null]))
   }, [vehicle, parts])
   const activeParts = useMemo(() => parts.filter((p) => activePartIds.has(p.partId)), [parts, activePartIds])
-  // [현재 모습 저장] - 버튼(미리보기 고정 영역)과 내 저장 목록이 같은 저장 상태를 쓴다. 저장하면 목록을 다시 읽고 그 결과를 연다.
-  const fitSave = useFitSave({
-    vehicle,
-    myVehicleId,
-    activeParts,
-    onSaved: (result, includedParts) => {
-      loadSavedResults()
-      setAiResult({ id: result.id, imageUrl: result.imageUrl, cached: result.cached, title: includedParts.map((p) => p.name).join(' + ') })
-      setViewMode('ai')
-      setCompare('after')
-    },
-  })
-  // 무대(위치 미리보기/360°/크게 보기)에 넘기는 부품: 합성 전이면 빈 목록(원본 차량), 합성 후면 지금 장착한 부품 전부.
-  const showBefore = compare === 'before' && activeParts.length > 0
-  const stageParts = showBefore ? [] : activeParts
+  // [입혀보기]/[저장하기]/저장 결과 불러오기 - 선택(activePartIds)과 입혀보기 결과를 따로 관리한다(lib/useFitComposite).
+  // 저장하면 목록을 다시 읽는다(왼쪽 결과는 그대로 "저장된 결과"로 바뀐다).
+  const fit = useFitComposite({ vehicle, myVehicleId, activeParts, onSaved: () => loadSavedResults() })
+  const resultDone = fit.result?.status === 'done'
+  // [원본] 비교: 입혀보기 결과가 있을 때만 의미가 있다.
+  const showBefore = compare === 'before' && resultDone
+  // 입혀보기 결과에 들어간 부품(360°도 이 부품들로 그린다 - 2D 결과와 360°가 서로 다른 상태를 보여주지 않게).
+  const resultParts = resultDone ? parts.filter((p) => fit.result.partIds.includes(p.partId)) : []
+  const stageParts = showBefore ? [] : resultParts
   const vehicle360Frames = getVehicle360Frames(vehicle)
-  // 360 보기: 장착한 부품 중 8개 각도 레이어가 완성된 것만 레이어로 겹치고, 나머지는 "360° 장착 이미지 준비 중"으로 알린다.
-  // (장착 상태는 위치 미리보기/360/장착 모습 만들기가 모두 같은 activePartIds 하나를 쓴다)
+  // 360 보기: 합성한 부품 중 8개 각도 레이어가 완성된 것만 레이어로 겹치고, 나머지는 "360° 장착 이미지 준비 중"으로 알린다.
   const layers360 = vehicle360Frames
-    ? activeParts
-        .map((p) => ({ key: p.partId, ...get360PartLayerInfo(vehicle.modelImageUrl, p.name, vehicle360Frames.length, activeParts.map((x) => x.name)) }))
+    ? stageParts
+        .map((p) => ({ key: p.partId, ...get360PartLayerInfo(vehicle.modelImageUrl, p.name, vehicle360Frames.length, stageParts.map((x) => x.name)) }))
         .filter((l) => l.frames)
     : []
-  const pending360 = vehicle360Frames && !showBefore ? activeParts.filter((p) => !layers360.some((l) => l.key === p.partId)) : []
+  const pending360 = vehicle360Frames && !showBefore ? stageParts.filter((p) => !layers360.some((l) => l.key === p.partId)) : []
+
+  // 모바일/태블릿: 차량 무대가 화면 밖이면(부품 목록을 내려 고르는 중) 화면 아래 [입혀보기] 바를 띄운다.
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined
+    const io = new IntersectionObserver(([entry]) => setStageInView(entry.isIntersecting), { threshold: 0.25 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [loading])
+  const composeAndShow = () => {
+    if (!fit.upToDate) fit.compose()
+    setViewMode('fit')
+    setCompare('after')
+    const el = stageRef.current
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' })
+  }
 
   const checkConflicts = async (nextIds) => {
     if (nextIds.size < 2) {
@@ -351,15 +358,22 @@ function FitRoom() {
   // 업데이트 함수 안에 두면 React StrictMode(개발 모드)가 함수를 두 번 실행해 집계가 2배로 쌓인다.
   // 같은 자리(같은 카테고리, 예: 사이드백 121과 122)에는 하나만 장착된다 - 새로 켜면 기존 것을 빼고 바꿔 끼운 것을 알린다.
   // 이 규칙(toggleFitBuildPart)은 PartsSearch(부품 찾아보기)도 똑같이 쓴다 - 어느 화면에서 켜고 꺼도 같게 동작한다.
-  // 장착 상태를 바꿀 때 공통: 빠진 부품은 패널의 "다시 장착" 목록에 남기고, 화면은 바뀐 결과(합성 후)로 돌린다.
-  // 저장된 장착 모습(이전 조합의 이미지)을 보고 있었다면 지금 조합을 그리는 위치 미리보기로 돌아간다(이미지를 새로 만들지 않음).
+  // 선택을 바꿀 때 공통: 선택만 바뀌고 입혀보기 결과 이미지는 그대로다 - 결과가 지금 선택과 다르면 왼쪽에 "이전 선택 기준"으로 표시되고
+  // [다시 입혀보기]를 눌러야 반영된다(useFitComposite stale). 선택을 되돌려 결과와 같아지면 다시 최신 결과로 보인다.
   const applyActive = (next) => {
     setActivePartIds(next)
     saveFitBuild(myVehicleId, next)
     checkConflicts(next)
     setCompare('after')
     setRestoreNotice(null)
-    if (viewMode === 'ai') setViewMode('fit')
+  }
+
+  // [초기화]: 선택한 부품을 모두 빼고 입혀보기 결과를 지운다(실행 취소로 선택은 되돌릴 수 있음). 저장된 결과는 지우지 않는다.
+  const resetAll = () => {
+    if (activePartIds.size > 0) setHistory((h) => ({ past: [...h.past, activePartIds].slice(-50), future: [] }))
+    setReplaced(null)
+    applyActive(new Set())
+    fit.clear()
   }
 
   const togglePart = (partId) => {
@@ -414,6 +428,11 @@ function FitRoom() {
   // 이미지만 바뀌고 장착 체크 상태는 그대로인 일이 없게. 부품 상태는 구성 불러오기와 같은 경로(실행 취소 이력 + 현재 구성 저장)로 바꾼다.
   // 지금도 이 차량의 호환 후보인 부품만 켠다(빠진 게 있으면 알린다). 저장 결과의 partIds = 그 이미지에 실제로 들어간 부품.
   const restoreSaved = (r) => {
+    // 다른 차량에서 저장한 결과는 이 차량에 적용하지 않는다(차량 id가 없는 예전 결과는 서버가 같은 회원·같은 차종 것만 준다).
+    if (r.myVehicleId != null && String(r.myVehicleId) !== String(myVehicleId)) {
+      setRestoreNotice({ wrongVehicle: true })
+      return
+    }
     const valid = r.partIds.filter((id) => parts.some((p) => p.partId === id))
     const next = new Set(valid)
     const same = next.size === activePartIds.size && valid.every((id) => activePartIds.has(id))
@@ -423,9 +442,9 @@ function FitRoom() {
       applyActive(next)
     }
     setRestoreNotice(valid.length < r.partIds.length ? { skipped: r.partIds.length - valid.length } : null)
-    setAiResult({ id: r.id, imageUrl: r.imageUrl, cached: true, title: r.partNames.join(' + ') })
+    fit.openSaved(r, valid)
     setCompare('after')
-    setViewMode('ai')
+    setViewMode('fit')
   }
 
   const confirmDeletePreset = () => {
@@ -527,29 +546,29 @@ function FitRoom() {
     // 모바일/태블릿(~lg)은 예전처럼 위아래로 이어지는 배치 그대로.
     <div className="mx-auto max-w-5xl px-4 py-12 lg:flex lg:h-[calc(100dvh-4rem)] lg:flex-col lg:py-6" data-testid="fit-room">
       {zoomed && (
-        // 전체 화면 보기: 저장된 원본 결과 이미지를 그대로(썸네일 아님). 기본은 원본보다 크게 늘리지 않는 화면 맞춤, 큰 원본은 1:1로도 본다.
+        // 전체 화면 보기: 입혀보기 결과 원본 이미지를 그대로(썸네일 아님). 기본은 원본보다 크게 늘리지 않는 화면 맞춤, 큰 원본은 1:1로도 본다.
         <ImageLightbox
           src={zoomed.imageUrl}
-          alt={`${zoomed.title} 장착 모습`}
+          alt={`${zoomed.title} 입혀보기 결과`}
           title={zoomed.title}
           onClose={() => setZoomed(null)}
           testid="ai-fit-lightbox"
         />
       )}
       {stageZoom && (
-        // 위치 미리보기 크게 보기: 같은 원본 이미지(차량 1829px, 부품 레이어)를 큰 무대에 다시 배치한다 - 원본 픽셀보다 크게는 늘리지 않는다.
+        // 원본 차량 크게 보기: 같은 원본 이미지(차량 1829px)를 큰 무대에 다시 배치한다 - 원본 픽셀보다 크게는 늘리지 않는다.
         <Lightbox
-          label="위치 미리보기 크게 보기"
+          label="차량 크게 보기"
           onClose={() => setStageZoom(false)}
           testid="fit-stage-lightbox"
-          footer={<p className="w-full text-xs text-white/80">{showBefore ? '합성 전 · 원본 차량' : `${activeParts.map((p) => p.name).join(' + ') || '순정'} · 위치 미리보기`}</p>}
+          footer={<p className="w-full text-xs text-white/80">원본 차량(입혀보기 전)</p>}
         >
           <div
             className="w-full overflow-hidden rounded-lg bg-ridefit-card"
             style={{ maxWidth: `min(100%, calc((100vh - 9rem) * ${getVehicleStageAspectRatio(vehicle)}))` }}
             onClick={(e) => e.stopPropagation()}
           >
-            <VehicleFitStage vehicle={vehicle} parts={stageParts} conflictPartIds={conflictPartIds} large />
+            <VehicleFitStage vehicle={vehicle} parts={[]} conflictPartIds={conflictPartIds} large />
           </div>
         </Lightbox>
       )}
@@ -559,7 +578,9 @@ function FitRoom() {
         {vehicle.nickname ? `${vehicle.nickname} · ` : ''}
         {vehicle.manufacturerName} {vehicle.modelYearLabel}
       </h1>
-      <p className="mb-8 mt-1 text-sm text-ridefit-text-secondary lg:mb-5">이 차량에 장착 가능한 부품을 골라 직접 장착해보세요.</p>
+      <p className="mb-8 mt-1 text-sm text-ridefit-text-secondary lg:mb-5">
+        ① 부품 선택 → ② [입혀보기]로 차량 이미지에 적용 → ③ [저장하기]로 내 차고에 보관. 다른 자리 부품은 여러 개를 함께 고를 수 있어요.
+      </p>
 
       {preselect && (
         <div
@@ -572,75 +593,57 @@ function FitRoom() {
         >
           {preselect.build
             ? preselect.ok
-              ? `홈에서 본 구성 중 이 차량에 호환되는 부품(${preselect.name})을 장착한 상태로 열었어요. [360° 보기]로 돌려보거나 하나씩 빼볼 수 있어요.`
-              : `홈에서 본 구성은 ${josa(vehicle.nickname || vehicle.modelYearLabel, '과', '와')} 호환이 확인되지 않아 장착하지 않았어요. 부품 목록의 호환 부품으로 직접 장착해보세요.`
+              ? `홈에서 본 구성 중 이 차량에 호환되는 부품(${preselect.name})을 선택한 상태로 열었어요. [입혀보기]를 누르면 차량 이미지에 적용돼요.`
+              : `홈에서 본 구성은 ${josa(vehicle.nickname || vehicle.modelYearLabel, '과', '와')} 호환이 확인되지 않아 선택하지 않았어요. 부품 목록의 호환 부품을 직접 선택해 보세요.`
             : preselect.ok
-            ? `${josa(`'${preselect.name}'`, '을', '를')} 장착한 상태로 열었어요. 아래 "장착한 모습" 패널에서 장착 결과 이미지도 만들 수 있어요.`
+            ? `${josa(`'${preselect.name}'`, '을', '를')} 선택한 상태로 열었어요. 다른 부품을 더 고른 뒤 [입혀보기]를 누르면 차량 이미지에 적용돼요.`
             : `${preselect.name ? `${josa(`'${preselect.name}'`, '은', '는')} ` : '선택한 부품은 '}${josa(
                 vehicle.nickname || vehicle.modelYearLabel,
                 '과',
                 '와',
-              )} 호환이 확인되지 않아 자동으로 장착하지 않았어요. 부품 목록의 호환 부품은 그대로 사용할 수 있어요.`}
+              )} 호환이 확인되지 않아 선택하지 않았어요(장착 가능한 부품처럼 입혀보지 않아요). 부품 상세에서 호환 차량을 확인해 주세요. 지금 선택해 둔 다른 부품은 그대로예요.`}
         </div>
       )}
 
       <div className="grid gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[1.1fr_1fr] lg:gap-6">
-        {/* 차량 이미지 + 장착된 부품 이미지 오버레이(오버레이 이미지가 없는 부품은 배지) */}
-        {/* 위치 미리보기 / 360° / 장착 모습 모두 같은 카드·같은 무대 크기(보기를 바꿔도 배치와 차량 크기가 그대로). 장착 모습 원본 크기는 "크게 보기". */}
-        {/* lg: 카드 높이 = 남은 화면 높이. 카드 안에서만 스크롤되고(overscroll-contain: 끝에 닿아도 페이지로 넘기지 않음),
-            보기 버튼·합성 전후·차량 무대는 카드 맨 위에 붙어(sticky) 있어 아래 패널(장착 모습 저장/저장된 장착 모습)을 내려 봐도 차량이 그대로 보인다. */}
+        {/* 왼쪽: 입혀보기 결과(또는 원본 차량) / 360° + 합성 바 + 선택한 부품 + 즐겨찾기 + 내 저장 목록.
+            lg: 카드 높이 = 남은 화면 높이. 카드 안에서만 스크롤되고, 보기 버튼·무대·합성 바는 카드 맨 위에 붙어(sticky) 있어
+            아래 패널을 내려 봐도 차량과 [입혀보기]가 그대로 보인다. */}
         <div
           className="fit-scroll relative self-start overflow-hidden rounded-xl border border-ridefit-border bg-ridefit-card p-6 lg:h-full lg:self-auto lg:overflow-y-auto lg:overscroll-contain lg:pt-0"
           data-testid="fit-preview-pane"
           ref={containWheel}
         >
           <div className="lg:sticky lg:top-0 lg:z-10 lg:-mx-6 lg:bg-ridefit-card lg:px-6 lg:pb-3 lg:pt-6" data-testid="fit-preview-stage" ref={padForSticky}>
-          {/* 보기 전환 + [합성 전/후]를 한 줄에 둔다(데스크톱에서 고정 영역 높이를 줄여 아래 내 저장 목록이 보이는 높이를 확보).
-              합성 전/후: 같은 무대에 넘기는 부품 목록만 바꾼다(전 = 원본 차량, 후 = 지금 장착한 부품 전부). 서버/이미지 생성 호출 없음.
-              360° 보기에서도 같은 규칙(전 = 부품 레이어 없음). 저장된 장착 모습을 보는 중이면 "전"은 원본 차량 무대로 보여준다.
-              부품이 없을 때(합성 전/후 없음)도 lg에서는 같은 높이를 비워 둬, 첫 부품을 켤 때 차량이 밀려 내려가지 않는다. */}
+          {/* 보기 전환(2D 합성 / 360°) + [원본 / 입혀보기 결과] 비교를 한 줄에. 결과가 없을 때도 lg에서는 같은 높이를 비워 둔다(차량이 밀리지 않게). */}
           <div className="mb-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-          {(vehicle360Frames || aiResult) && (
+          {vehicle360Frames && (
             <div className="flex justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setViewMode('fit')}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                  viewMode === 'fit' ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
-                }`}
-              >
-                위치 미리보기
-              </button>
-              {vehicle360Frames && (
-              <button
-                type="button"
-                onClick={() => setViewMode('360')}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                  viewMode === '360' ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
-                }`}
-              >
-                360° 보기
-              </button>
-              )}
-              {aiResult && (
+              {[
+                ['fit', '2D 미리보기'],
+                ['360', '360° 보기'],
+              ].map(([mode, text]) => (
                 <button
+                  key={mode}
                   type="button"
-                  onClick={() => setViewMode('ai')}
+                  onClick={() => setViewMode(mode)}
+                  aria-pressed={viewMode === mode}
+                  data-testid={`fit-view-${mode}`}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                    viewMode === 'ai' ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
+                    viewMode === mode ? 'bg-ridefit-primary text-white' : 'bg-ridefit-bg text-ridefit-text-secondary hover:bg-ridefit-border'
                   }`}
                 >
-                  장착 모습
+                  {text}
                 </button>
-              )}
+              ))}
             </div>
           )}
-          {activeParts.length > 0 ? (
+          {resultDone ? (
             <div className="flex justify-center" data-testid="fit-compare">
-              <div className="inline-flex rounded-lg border border-ridefit-border bg-ridefit-bg p-0.5" role="group" aria-label="합성 전후 비교">
+              <div className="inline-flex rounded-lg border border-ridefit-border bg-ridefit-bg p-0.5" role="group" aria-label="원본과 입혀보기 결과 비교">
                 {[
-                  ['before', '합성 전'],
-                  ['after', '합성 후'],
+                  ['before', '원본'],
+                  ['after', '입혀보기 결과'],
                 ].map(([value, text]) => (
                   <button
                     key={value}
@@ -662,89 +665,51 @@ function FitRoom() {
           )}
           </div>
 
-          {/* 위치 미리보기 / 360° / 장착 모습 모두 같은 무대 폭(max-w-2xl)과 종횡비(getVehicleStageAspectRatio)를 쓴다 - 보기를 바꿔도 차량 크기가 같다.
+          {/* 2D 합성 / 360° 모두 같은 무대 폭(max-w-2xl)과 종횡비(getVehicleStageAspectRatio)를 쓴다 - 보기를 바꿔도 차량 크기가 같다.
               isolate: 무대 안의 z-index(연식 배지 z-50 등)가 스크롤 시 상단 헤더(z-50) 위로 올라오지 않게 가둔다. */}
-          <div className="fit-stage-cap relative isolate mx-auto w-full max-w-2xl" style={{ '--fit-stage-ar': getVehicleStageAspectRatio(vehicle) }}>
+          <div ref={stageRef} className="fit-stage-cap relative isolate mx-auto w-full max-w-2xl" style={{ '--fit-stage-ar': getVehicleStageAspectRatio(vehicle) }}>
           <VehicleYearBadge vehicle={vehicle} />
-          {viewMode === 'ai' && aiResult && !showBefore ? (
-            // 결과 이미지는 차량 주변만 남기고 잘린 사진(차량이 약 89%)이라, 더 넓은 박스에 꽉 채우면 위치 미리보기/360°보다 차량이 2배 가까이
-            // 커 보였다. 같은 무대(폭/종횡비) 안에 object-contain으로 넣어 차량 크기를 다른 보기와 맞춘다. 원본 크기는 "크게 보기"로 본다.
-            <figure data-testid="ai-fit-result" className="relative">
-              <button
-                type="button"
-                onClick={() => setZoomed(aiResult)}
-                className="block w-full cursor-zoom-in"
-                aria-label="장착 모습 크게 보기"
-              >
-                {/* 이미지는 absolute로 넣어 원본 픽셀 크기가 열(grid) 폭을 밀어내지 않게 한다 - 보기를 바꿔도 무대 폭이 그대로. */}
-                <div className="relative w-full overflow-hidden rounded-lg bg-black" style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}>
-                  <SafeImage
-                    src={aiResult.imageUrl}
-                    alt={`${aiResult.title} 장착 모습`}
-                    className="absolute inset-0 block h-full w-full object-contain"
-                    fallbackClassName="absolute inset-0 h-full w-full rounded-lg"
-                    fallbackText="장착 모습을 불러오지 못했어요"
-                  />
-                </div>
-              </button>
-              {/* [크게 보기]는 위치 미리보기와 같이 이미지 오른쪽 위에 둔다(아래 줄을 없애 고정 영역 높이를 줄임). */}
-              <button
-                type="button"
-                onClick={() => setZoomed(aiResult)}
-                className="absolute right-2 top-2 z-[60] flex items-center gap-1 rounded-full border border-ridefit-border bg-ridefit-bg/85 px-2.5 py-1.5 text-xs font-medium text-ridefit-text shadow-lg backdrop-blur transition hover:border-ridefit-primary hover:text-ridefit-primary"
-                data-testid="ai-fit-zoom"
-              >
-                <Maximize2 aria-hidden="true" className="h-3.5 w-3.5" />크게 보기
-              </button>
-              {/* 안내 문구: 자르지 않고 줄바꿈한다. 데스크톱에서는 고정 영역(차량 무대)이 너무 높아지지 않게 두 줄 높이까지만 늘고 그 이상은 이 칸 안에서 스크롤
-                  (부품 이름은 바로 아래 "현재 장착 중"과 내 저장 목록에도 전부 보인다). */}
-              <figcaption className="fit-scroll mt-2 text-center text-xs text-ridefit-text-secondary lg:max-h-8 lg:overflow-y-auto">
-                <span className="wrap-name">{aiResult.title} · 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있습니다.</span>
-              </figcaption>
-            </figure>
-          ) : viewMode === '360' && vehicle360Frames ? (
-            // "부품 장착" 무대와 같은 종횡비를 써서 두 보기 모드를 오갈 때 차량 크기가 달라 보이지 않게 한다.
-            // 대표 사진과 같은 각도의 프레임부터 시작하고, 프레임별 차량 높이/바닥선을 대표 사진에 맞춘다.
-            <Vehicle360Viewer
-              frames={vehicle360Frames}
-              alt={vehicle.nickname || vehicle.modelYearLabel}
-              className="mx-auto w-full max-w-2xl"
-              style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
-              fillScale={getStageScale(vehicle)}
-              startIndex={getVehicle360StartIndex(vehicle.modelImageUrl)}
-              normalizeTo={vehicle.modelImageUrl}
-              layers={showBefore ? [] : layers360}
-              expandable
-            />
-          ) : getFitLayout(vehicle) ? (
-            // 누르면 크게 보기(원본 이미지로 다시 그린 큰 무대)
-            <div className="relative">
-              <button type="button" onClick={() => setStageZoom(true)} className="block w-full cursor-zoom-in" aria-label="위치 미리보기 크게 보기" data-testid="fit-stage-zoom-area">
-                <VehicleFitStage vehicle={vehicle} parts={stageParts} conflictPartIds={conflictPartIds} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setStageZoom(true)}
-                className="absolute right-2 top-2 z-[60] flex items-center gap-1 rounded-full border border-ridefit-border bg-ridefit-bg/85 px-2.5 py-1.5 text-xs font-medium text-ridefit-text shadow-lg backdrop-blur transition hover:border-ridefit-primary hover:text-ridefit-primary"
-                data-testid="fit-stage-zoom"
-              >
-                <Maximize2 aria-hidden="true" className="h-3.5 w-3.5" />크게 보기
-              </button>
-            </div>
+          {viewMode === '360' && vehicle360Frames ? (
+            // 2D 무대와 같은 종횡비. 대표 사진과 같은 각도의 프레임부터 시작하고, 프레임별 차량 높이/바닥선을 대표 사진에 맞춘다.
+            <>
+              <Vehicle360Viewer
+                frames={vehicle360Frames}
+                alt={vehicle.nickname || vehicle.modelYearLabel}
+                className="mx-auto w-full max-w-2xl"
+                style={{ aspectRatio: getVehicleStageAspectRatio(vehicle) }}
+                fillScale={getStageScale(vehicle)}
+                startIndex={getVehicle360StartIndex(vehicle.modelImageUrl)}
+                normalizeTo={vehicle.modelImageUrl}
+                layers={showBefore ? [] : layers360}
+                expandable
+              />
+              <p className="mt-2 text-center text-xs text-ridefit-text-secondary" data-testid="fit-360-status">
+                {showBefore
+                  ? '원본 차량(입혀보기 전)을 돌려 보고 있어요.'
+                  : !resultDone
+                    ? '360°에는 [입혀보기]한 부품이 반영돼요. 아직 입혀본 결과가 없어 순정 차량이 보여요.'
+                    : layers360.length > 0
+                      ? `360° 반영: ${stageParts.filter((p) => layers360.some((l) => l.key === p.partId)).map((p) => p.name).join(', ')}${fit.stale ? ' (이전 입혀보기 기준)' : ''}`
+                      : '입혀본 부품 중 360° 각도별 이미지가 있는 부품이 없어요.'}
+              </p>
+            </>
           ) : (
-            <VehicleFitStage vehicle={vehicle} parts={stageParts} conflictPartIds={conflictPartIds} />
+            <FitResultStage
+              vehicle={vehicle}
+              fit={fit}
+              selectedParts={activeParts}
+              showOriginal={showBefore}
+              conflictPartIds={conflictPartIds}
+              onZoomResult={() => fit.result?.imageUrl && setZoomed({ imageUrl: fit.result.imageUrl, title: fit.result.title })}
+              onZoomStage={() => setStageZoom(true)}
+            />
           )}
           </div>
-          {showBefore && (
-            <p className="mt-2 text-center text-xs text-ridefit-text-secondary" data-testid="fit-compare-before-note">
-              합성 전 · 부품 없이 원본 차량만 보여드려요. [합성 후]를 누르면 장착한 {activeParts.length}개 부품이 다시 보여요.
-            </p>
-          )}
 
           {viewMode === '360' && pending360.length > 0 && (
             <p className="mt-3 rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-center text-xs text-ridefit-text-secondary" data-testid="fit-360-pending">
-              360° 장착 이미지 준비 중: {pending360.map((p) => p.name).join(', ')}
-              <span className="mt-0.5 block">장착 상태는 그대로예요. [위치 미리보기]나 [장착한 모습 만들기]에서 확인할 수 있어요.</span>
+              360° 장착 이미지 준비 중(360°에는 안 보임): {pending360.map((p) => p.name).join(', ')}
+              <span className="mt-0.5 block">이 부품들은 [2D 미리보기] 결과에서 확인할 수 있어요.</span>
             </p>
           )}
           {replaced && (
@@ -752,9 +717,10 @@ function FitRoom() {
               {josa(replaced.category, '은', '는')} 한 자리에 하나만 장착돼요 - {replaced.from} 대신 {josa(replaced.to, '으로', '로')} 바꿨어요.
             </p>
           )}
-          {/* 부품이 없을 때 안내("[장착해보기]를 누르면 차량 위에 표시")는 아래 [현재 모습 저장] 줄이 함께 보여준다. */}
-          <FitSaveAction
-            fitSave={fitSave}
+          <FitComposeBar
+            fit={fit}
+            selectedCount={activeParts.length}
+            onReset={resetAll}
             savedCount={savedResults.length}
             onJumpToList={jumpToSavedList}
           />
@@ -762,28 +728,35 @@ function FitRoom() {
           {/* 대표 사진 안내는 고정 영역 밖(데스크톱에서 고정 영역 높이를 줄인다) */}
           <ModelImageNotice vehicle={vehicle} className="mt-2" />
 
-          {/* 현재 장착 중 / 즐겨찾기 부품 - 상태는 activePartIds·savedPartIds 하나뿐이고 버튼은 오른쪽 목록과 같은 togglePart/toggleSaved를 부른다. */}
+          {/* 선택한 부품 / 즐겨찾기 부품 - 상태는 activePartIds·savedPartIds 하나뿐이고 버튼은 오른쪽 목록과 같은 togglePart/toggleSaved를 부른다. */}
 
-          <FitEquippedPanel activeParts={activeParts} onRemove={togglePart} />
+          <FitEquippedPanel
+            activeParts={activeParts}
+            onRemove={togglePart}
+            layerKindById={layerKindById}
+            resultPartIds={fit.upToDate ? fit.result.partIds : null}
+            action={<FitTryButton fit={fit} onComposeAndShow={composeAndShow} testid="fit-compose-panel" />}
+          />
 
           <FitFavoritesPanel items={favoriteItems} onToggleEquip={togglePart} onUnfavorite={toggleSaved} error={favoriteError?.text} />
 
           {restoreNotice && (
             <p className="mt-2 text-xs text-ridefit-warning" data-testid="fit-restore-notice">
-              저장할 때 장착했던 부품 중 {restoreNotice.skipped}개는 지금은 이 차량의 호환 후보가 아니라 빼고 불러왔어요.
+              {restoreNotice.wrongVehicle
+                ? '다른 차량에서 저장한 결과라 이 차량에서는 열 수 없어요.'
+                : `저장할 때 입혀봤던 부품 중 ${restoreNotice.skipped}개는 지금은 이 차량의 호환 후보가 아니라 선택에서 뺐어요(저장된 이미지에는 남아 있어요).`}
             </p>
           )}
-          {/* 내 저장 목록 - [현재 모습 저장] 버튼(위 고정 영역) 바로 아래. 데스크톱에서는 이 아래만 미리보기 카드 안에서 스크롤된다. */}
+          {/* 내 저장 목록 - 합성 바 바로 아래. 데스크톱에서는 이 아래만 미리보기 카드 안에서 스크롤된다. */}
           <FitSavedList
-            fitSave={fitSave}
-            myVehicleId={myVehicleId}
+            fit={fit}
             savedResults={savedResults}
-            activeResultId={viewMode === 'ai' ? aiResult?.id : null}
+            activeResultId={fit.result?.id ?? null}
             onOpen={restoreSaved}
             onDelete={setResultToDelete}
           />
 
-          {/* 미리 준비한 장착 이미지가 없는 부품의 "장착한 모습 만들기"(직접 합성 부품을 장착 중이면 이 패널은 숨는다). */}
+          {/* 미리 준비한 장착 이미지가 없는 부품의 "장착한 모습 만들기"(AI, 버튼을 눌렀을 때만 요청). 2D 합성 부품을 고르면 이 패널은 숨는다. */}
           <AiFitPanel
             vehicle={vehicle}
             myVehicleId={myVehicleId}
@@ -793,8 +766,9 @@ function FitRoom() {
             onGenerated={loadSavedResults}
             refreshKey={aiCheckKey}
             onShowResult={(result) => {
-              setAiResult(result)
-              setViewMode('ai')
+              fit.showAiResult(result)
+              setCompare('after')
+              setViewMode('fit')
             }}
           />
           {resultDeleteError && (
@@ -803,7 +777,7 @@ function FitRoom() {
           <ConfirmDialog
             open={!!resultToDelete}
             title="저장된 장착 모습을 삭제할까요?"
-            message="이 합성 결과 이미지를 삭제합니다."
+            message="이 입혀보기 결과 이미지를 삭제합니다."
             confirmLabel="삭제"
             cancelLabel="취소"
             danger
@@ -844,7 +818,7 @@ function FitRoom() {
                   onClick={undo}
                   disabled={history.past.length === 0}
                   aria-label="실행 취소"
-                  title="방금 장착/제거를 취소"
+                  title="방금 선택/빼기를 취소"
                   data-testid="fit-undo"
                   className="rounded-full border border-ridefit-border px-2.5 py-1 font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -867,8 +841,10 @@ function FitRoom() {
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs" data-testid="fit-summary">
                 <span className="rounded-full border border-ridefit-border px-2.5 py-1 text-ridefit-text-secondary">호환 {parts.length}개</span>
                 <span className="rounded-full border border-ridefit-primary/50 bg-ridefit-primary/10 px-2.5 py-1 font-medium text-ridefit-primary" data-testid="fit-summary-active">
-                  <Ico as={Check} className="mr-1" />입혀보는 중 {activePartIds.size}개
+                  <Ico as={Check} className="mr-1" />선택 {activePartIds.size}개
                 </span>
+                {/* 목록에서 고르다가 바로 입혀볼 수 있게 - 왼쪽 무대 옆 [입혀보기]와 같은 동작 */}
+                <FitTryButton fit={fit} onComposeAndShow={composeAndShow} testid="fit-compose-list" />
                 <button
                   type="button"
                   onClick={() => setSavedOnly((v) => !v)}
@@ -975,7 +951,7 @@ function FitRoom() {
             <div>
                 {/* 짧은 데스크톱 화면(높이 700px 이하)에서는 이 도움말을 숨겨 첫 부품 카드가 보이게 한다(같은 뜻이 버튼 이름/툴팁에 있음). */}
                 <p className="text-xs text-ridefit-text-secondary lg:[@media(max-height:700px)]:hidden">
-                  이 차량의 호환 데이터(호환가능·브라켓필요)가 있는 부품만 보여요. ‘호환 근거 미확인’ 부품은 구매 전에 판매처나 제조사에 장착 가능 여부를 확인해 주세요. [장착해보기]는 이 화면에서만 붙여 보는 것이고, [♡ 저장하기]한 부품만 내 차고와 왼쪽 즐겨찾기에 남아요.
+                  이 차량의 호환 데이터(호환가능·브라켓필요)가 있는 부품만 보여요. ‘호환 근거 미확인’ 부품은 구매 전에 판매처나 제조사에 장착 가능 여부를 확인해 주세요. [선택]한 부품은 왼쪽 [입혀보기]를 눌러야 차량 이미지에 적용돼요. 같은 자리(카테고리) 부품은 하나만 선택되고, [♡ 저장하기]한 부품은 내 차고와 왼쪽 즐겨찾기에 남아요.
                 </p>
                 {/* "저장한 구성" - 지금 장착 중인 조합에 이름을 붙여 저장해두고 나중에 그대로 불러온다(이 브라우저에만 저장).
                     접어 두어(기본 닫힘) 첫 부품 카드가 목록 맨 위에 바로 보이게 한다. */}
@@ -1164,7 +1140,7 @@ function FitRoom() {
                                 : 'bg-ridefit-primary text-white hover:brightness-110'
                             }`}
                           >
-                            {isActive ? <><Ico as={Check} className="mr-1" />장착 중 · 빼기</> : '장착해보기'}
+                            {isActive ? <><Ico as={Check} className="mr-1" />선택됨 · 빼기</> : '선택'}
                           </button>
                           <button
                             type="button"
@@ -1222,7 +1198,7 @@ function FitRoom() {
           {/* [맨 위로] - 목록 박스 맨 아래에 붙어(sticky) 있다가, 목록을 400px 넘게 내리면 보인다(모바일은 목록 시작이 화면 위로 지나가면).
               데스크톱은 목록 박스만, 모바일은 목록 시작 위치로 올린다. 숨어 있을 때는 invisible이라 Tab으로도 가지 않는다.
               모바일은 카드의 [저장하기] 버튼을 가리지 않게 글자 없는 작은 원형으로 화면 오른쪽 여백 쪽에 둔다(이름은 aria-label). */}
-          <div className="pointer-events-none sticky bottom-3 -mr-3.5 -mt-4 flex justify-end lg:bottom-0 lg:mr-0">
+          <div className={`pointer-events-none sticky -mr-3.5 -mt-4 flex justify-end lg:bottom-0 lg:mr-0 ${!stageInView ? 'bottom-20' : 'bottom-3'}`}>
             <button
               type="button"
               onClick={() => scrollPartsTop('smooth')}
@@ -1237,6 +1213,9 @@ function FitRoom() {
           </div>
         </div>
       </div>
+      {/* 모바일/태블릿: 부품 목록을 내려 차량 무대가 안 보일 때 화면 아래 [입혀보기] 바(목록 마지막 카드가 바에 가리지 않게 여백) */}
+      <div aria-hidden="true" className="h-16 lg:hidden" />
+      <FitComposeDock fit={fit} selectedCount={activeParts.length} visible={!stageInView} onComposeAndShow={composeAndShow} />
     </div>
   )
 }

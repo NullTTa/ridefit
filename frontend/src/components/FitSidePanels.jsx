@@ -18,26 +18,44 @@ const thumb = (part, size = 'h-10 w-10') => (
   />
 )
 
-// 현재 장착 중: 지금 차량에 얹은 부품 + 개별 [빼기]. 많아지면 패널 안에서만 스크롤한다.
-export function FitEquippedPanel({ activeParts, onRemove }) {
+// 이미지 종류별 짧은 표시(vehicleFitPositions.getPartLayerKind 값)
+const KIND_SHORT = { layer: '장착 이미지', photo: '간이(상품 사진)', illustration: '간이(일러스트)' }
+
+// 선택한 부품: 지금 고른 부품 + 개별 [빼기] + 부품마다 "입혀보기 결과에 들어갔는지"(합성됨 / 합성 대기 / 위치 표시만).
+// resultPartIds: 지금 선택과 같은 최신 입혀보기 결과에 들어간 부품 id(결과가 없거나 선택이 바뀌었으면 null). 많아지면 패널 안에서만 스크롤한다.
+export function FitEquippedPanel({ activeParts, onRemove, layerKindById, resultPartIds, action }) {
   return (
     <section className="mt-4 rounded-lg border border-ridefit-border bg-ridefit-bg p-3 text-left" data-testid="fit-equipped-panel" aria-labelledby="fit-equipped-title">
-      <p id="fit-equipped-title" className="mb-2 px-1 text-sm font-semibold text-ridefit-text">
-        현재 장착 중 <span className="font-normal text-ridefit-text-secondary">({activeParts.length})</span>
-      </p>
+      <div className="mb-2 flex items-center justify-between gap-2 px-1">
+        <p id="fit-equipped-title" className="text-sm font-semibold text-ridefit-text">
+          선택한 부품 <span className="font-normal text-ridefit-text-secondary">({activeParts.length})</span>
+        </p>
+        {action}
+      </div>
       {activeParts.length === 0 ? (
         <p className="rounded-md border border-dashed border-ridefit-border px-3 py-3 text-xs text-ridefit-text-secondary" data-testid="fit-equipped-empty">
-          아직 장착한 부품이 없어요. 오른쪽 부품 목록이나 아래 즐겨찾기에서 [장착]을 눌러 보세요.
+          아직 선택한 부품이 없어요. 오른쪽 부품 목록이나 아래 즐겨찾기에서 [선택]을 눌러 보세요.
         </p>
       ) : (
         <ul className="fit-scroll flex max-h-48 flex-col gap-1.5 overflow-y-auto overscroll-contain pr-1">
-          {activeParts.map((p) => (
+          {activeParts.map((p) => {
+            const kind = layerKindById?.get(p.partId)
+            const merged = resultPartIds?.includes(p.partId)
+            const state = !kind ? '위치 표시만(이미지 없음)' : merged ? `적용됨 · ${KIND_SHORT[kind]}` : `입혀보기 대기 · ${KIND_SHORT[kind]}`
+            return (
             <li key={p.partId} className="flex items-center gap-2 rounded-md border border-ridefit-primary/30 bg-ridefit-card px-2 py-1.5" data-testid={`fit-equipped-${p.partId}`}>
               {thumb(p, 'h-9 w-9')}
               <span className="min-w-0 flex-1">
                 <span className="wrap-name block text-xs font-medium text-ridefit-text">{p.name}</span>
                 <span className="block text-[11px] text-ridefit-text-secondary">
-                  <Check aria-hidden="true" className="mr-0.5 inline h-3 w-3 text-ridefit-primary" />장착 중 · {p.category} · {compatDisplay(p.status, p.note).label}
+                  <Check aria-hidden="true" className="mr-0.5 inline h-3 w-3 text-ridefit-primary" />{p.category} · {compatDisplay(p.status, p.note).label}
+                </span>
+                <span
+                  className={`block text-[11px] ${merged ? 'text-ridefit-success' : kind ? 'text-ridefit-warning' : 'text-ridefit-text-secondary'}`}
+                  data-testid={`fit-equipped-state-${p.partId}`}
+                  data-state={!kind ? 'pin' : merged ? 'merged' : 'pending'}
+                >
+                  {state}
                 </span>
               </span>
               <button
@@ -50,7 +68,8 @@ export function FitEquippedPanel({ activeParts, onRemove }) {
                 빼기
               </button>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
     </section>
@@ -93,7 +112,7 @@ export function FitFavoritesPanel({ items, onToggleEquip, onUnfavorite, error })
                 onClick={() => onUnfavorite(it.partId)}
                 className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-ridefit-warning transition hover:text-ridefit-danger"
                 aria-label={`${it.name} 즐겨찾기 해제`}
-                title="즐겨찾기 해제 (장착 상태는 그대로)"
+                title="즐겨찾기 해제 (선택 상태는 그대로)"
                 data-testid={`fit-fav-unsave-${it.partId}`}
               >
                 <Heart aria-hidden="true" className="h-3.5 w-3.5" fill="currentColor" />
@@ -101,14 +120,14 @@ export function FitFavoritesPanel({ items, onToggleEquip, onUnfavorite, error })
               {thumb(it, 'h-16 w-full')}
               <span className="wrap-name min-h-[2rem] text-[11px] font-medium leading-4 text-ridefit-text">{it.name}</span>
               <span className={`text-[11px] ${it.active ? 'font-semibold text-ridefit-primary' : 'text-ridefit-text-secondary'}`}>
-                {!it.compatible ? '호환 확인 안 됨' : it.active ? <><Check aria-hidden="true" className="mr-0.5 inline h-3 w-3" />장착 중</> : '미장착'}
+                {!it.compatible ? '호환 확인 안 됨' : it.active ? <><Check aria-hidden="true" className="mr-0.5 inline h-3 w-3" />선택됨</> : '선택 안 함'}
               </span>
               {it.compatible ? (
                 <button
                   type="button"
                   onClick={() => onToggleEquip(it.partId)}
                   aria-pressed={it.active}
-                  aria-label={`${it.name} ${it.active ? '빼기' : '장착'}`}
+                  aria-label={`${it.name} ${it.active ? '빼기' : '선택'}`}
                   className={`mt-auto rounded-md px-2 py-1 text-xs font-semibold transition ${
                     it.active
                       ? 'border border-ridefit-primary text-ridefit-primary hover:bg-ridefit-primary/15'
@@ -116,11 +135,11 @@ export function FitFavoritesPanel({ items, onToggleEquip, onUnfavorite, error })
                   }`}
                   data-testid={`fit-fav-toggle-${it.partId}`}
                 >
-                  {it.active ? <><X aria-hidden="true" className="mr-0.5 inline h-3 w-3" />빼기</> : '장착'}
+                  {it.active ? <><X aria-hidden="true" className="mr-0.5 inline h-3 w-3" />빼기</> : '선택'}
                 </button>
               ) : (
                 <p className="mt-auto text-[10px] leading-snug text-ridefit-text-secondary" data-testid={`fit-fav-incompatible-${it.partId}`}>
-                  이 차량과 호환이 확인되지 않아 장착할 수 없어요.
+                  이 차량과 호환이 확인되지 않아 선택할 수 없어요.
                 </p>
               )}
             </li>

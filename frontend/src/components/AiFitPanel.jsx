@@ -131,8 +131,10 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
   const title = included.map((p) => p.name).join(' + ')
 
   const generate = async (regenerate) => {
+    // partIds = 이 이미지에 실제로 들어간 부품(FitRoom이 선택과 비교해 "이전 선택 기준 결과"를 구분한다)
+    const partIds = included.map((p) => p.partId)
     if (!regenerate && check?.code === 'CACHED' && check.cachedImageUrl) {
-      onShowResult({ imageUrl: check.cachedImageUrl, cached: true, title })
+      onShowResult({ imageUrl: check.cachedImageUrl, cached: true, title, partIds })
       return
     }
     setGenerating(true)
@@ -144,7 +146,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
         regenerate,
       })
       setCheck((prev) => ({ ...prev, code: 'CACHED', canGenerate: true, cachedImageUrl: res.imageUrl, cachedAt: res.createdAt }))
-      onShowResult({ imageUrl: res.imageUrl, cached: res.cached, title })
+      onShowResult({ imageUrl: res.imageUrl, cached: res.cached, title, partIds })
       onGenerated?.()
     } catch (err) {
       setError(plain(err.message))
@@ -161,7 +163,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
     : checking
       ? '이미지에 넣을 수 있는지 확인 중이에요.'
       : check?.code === 'NOT_CONFIGURED'
-        ? '이미지 만들기는 아직 준비 중이에요. 장착/해제와 합성 전·후 비교는 위 미리보기에서 바로 볼 수 있어요.'
+        ? '이미지 만들기는 아직 준비 중이에요. 장착/해제와 입혀보기 전·후 비교는 위 미리보기에서 바로 볼 수 있어요.'
         : null
 
   // 미리 준비한 장착 이미지가 있는 부품(직접 합성)은 FitRoom 왼쪽의 [현재 모습 저장](FitSavePanel, lib/fitComposite saveFitComposite)이 저장한다.
@@ -209,14 +211,14 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
 
       {activeParts.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {/* 이미 위치 미리보기를 보고 있을 때는 눌러도 바뀌는 게 없으므로, 다른 보기일 때만 보여준다. */}
+          {/* 360° 보기 중일 때만 2D 결과 보기로 돌아가는 버튼을 보여준다. */}
           {viewMode !== 'fit' && (
             <button
               type="button"
               onClick={onShowBasic}
               className="rounded-lg border border-ridefit-border px-3 py-2 text-xs font-semibold text-ridefit-text-secondary transition hover:border-ridefit-primary"
             >
-              위치 미리보기로 돌아가기
+              2D 보기로 돌아가기
             </button>
           )}
           <button
@@ -261,7 +263,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
         </p>
       )}
       <p className="mt-3 text-[11px] text-ridefit-text-secondary">
-        장착 모습은 참고용 합성 이미지이며 실제 장착 상태와 차이가 있을 수 있어요. 버튼을 눌렀을 때만 만들어지고, 만든 결과는 모두 위 '내 저장 목록'에 남아요.
+        장착 모습은 참고용 생성 이미지이며 실제 장착 상태와 차이가 있을 수 있어요. 버튼을 눌렀을 때만 만들어지고, 만든 결과는 모두 위 '내 저장 목록'에 남아요.
       </p>
     </div>
   )

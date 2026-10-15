@@ -1,4 +1,4 @@
-import { getFitLayout, getPartOverlays, getStageScale, isDirectCompositePart } from '../constants/vehicleFitPositions'
+import { getFitLayout, getPartOverlays, getStageScale } from '../constants/vehicleFitPositions'
 import { api } from './api'
 
 // "직접 합성" 장착 모습(AI 없음): 위치 미리보기(VehicleFitStage)와 같은 배치를 브라우저 canvas에 차량 대표 사진의
@@ -17,7 +17,7 @@ const loadImage = (src) =>
   new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('합성에 쓸 이미지를 불러오지 못했어요.'))
+    img.onerror = () => reject(new Error('입혀보기에 쓸 이미지를 불러오지 못했어요.'))
     img.src = src
   })
 
@@ -27,35 +27,38 @@ export function compositeIncludedParts(vehicle, parts) {
   return layout ? parts.filter((p) => getPartOverlays(p, layout).length > 0) : []
 }
 
-// 지금 장착한 부품으로 "현재 모습"을 직접 합성해 저장할 수 있는지(미리 준비한 장착 이미지가 있는 부품이 하나라도 있어야 한다).
-export function canSaveFitComposite(vehicle, parts) {
+// [입혀보기] 전에 "무엇이 이미지에 들어가는지" 판단한다(FitRoom 합성 바·선택한 부품 목록이 같이 쓴다).
+// reason: 합성할 수 없을 때 이유 - 'no-parts'(선택 없음) | 'no-layout'(이 차량 사진은 2D 배치가 없음) | 'no-image'(선택한 부품 모두 위치 표시만) | 'too-many'
+export function planFitComposite(vehicle, parts) {
   const layout = getFitLayout(vehicle)
-  return !!layout && parts.some((p) => isDirectCompositePart(p, layout))
+  const included = layout ? compositeIncludedParts(vehicle, parts) : []
+  const excluded = parts.filter((p) => !included.some((x) => x.partId === p.partId))
+  const reason = parts.length === 0
+    ? 'no-parts'
+    : !layout
+      ? 'no-layout'
+      : included.length === 0
+        ? 'no-image'
+        : included.length > MAX_COMPOSITE_PARTS
+          ? 'too-many'
+          : null
+  return { included, excluded, reason }
 }
 
-// "현재 모습 저장": 위치 미리보기와 같은 배치로 그린 PNG를 POST /api/ai-fit/composite로 저장한다(AI 없음).
+// 화면에서 이미 그린 합성 PNG(blob)를 그대로 저장한다 - 보이는 결과와 저장되는 이미지가 같은 파일이다(AI 없음).
 // 서버는 같은 조합 + 같은 COMPOSITE_VERSION이면 새 파일 없이 기존 결과를 돌려준다(cached: true).
-// 반환: { result: 서버 응답(id/imageUrl/cached/partIds...), includedParts: 이미지에 들어간 부품 }
-export async function saveFitComposite(vehicle, myVehicleId, parts) {
-  const includedParts = compositeIncludedParts(vehicle, parts)
-  if (includedParts.length === 0) throw new Error('저장 이미지에 넣을 수 있는 부품이 없어요.')
-  // 서버 한도(AiFitService.MAX_COMPOSITE_PARTS)와 같다 - 이미지를 만들기 전에 알려 준다.
-  if (includedParts.length > MAX_COMPOSITE_PARTS) {
-    throw new Error(`저장 이미지에는 부품을 ${MAX_COMPOSITE_PARTS}개까지 넣을 수 있어요. 몇 개를 빼고 다시 저장해 주세요.`)
-  }
-  const blob = await renderFitComposite(vehicle, includedParts)
+export async function uploadFitComposite(myVehicleId, includedParts, blob) {
   const form = new FormData()
   form.append('myVehicleId', String(myVehicleId))
   includedParts.map((p) => p.partId).sort((a, b) => a - b).forEach((id) => form.append('partIds', String(id)))
   form.append('version', COMPOSITE_VERSION)
   form.append('image', blob, 'fit-composite.png')
-  const result = await api.post('/api/ai-fit/composite', form)
-  return { result, includedParts }
+  return api.post('/api/ai-fit/composite', form)
 }
 
 export async function renderFitComposite(vehicle, parts) {
   const layout = getFitLayout(vehicle)
-  if (!layout) throw new Error('이 차량 사진은 직접 합성을 지원하지 않아요.')
+  if (!layout) throw new Error('이 차량 사진은 입혀보기를 지원하지 않아요.')
   const vehicleImg = await loadImage(vehicle.modelImageUrl)
   const nw = vehicleImg.naturalWidth
   const nh = vehicleImg.naturalHeight

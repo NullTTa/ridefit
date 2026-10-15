@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, ChevronDown, Heart, Images, Trash2, Wrench } from 'lucide-react'
+import { ArrowRight, ChevronDown, Heart, Images, Maximize2, Trash2, Wrench } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { Ico } from '../components/Icon'
+import { ImageLightbox } from '../components/Lightbox'
 import ProductImage from '../components/ProductImage'
 import SafeImage from '../components/SafeImage'
 import SimilarVehicles from '../components/SimilarVehicles'
@@ -44,8 +45,10 @@ function Garage() {
   const [savingPartId, setSavingPartId] = useState(null)
   // 이 차량의 호환 부품(이름/카테고리) - "현재 구성" 부품 이름을 보여주는 데 쓴다.
   const [compatParts, setCompatParts] = useState([])
-  // 저장된 장착 모습 삭제 확인 창(부품 저장 해제와는 별개 - 합성 결과 이미지만 지운다)
+  // 저장된 장착 모습 삭제 확인 창(부품 저장 해제와는 별개 - 입혀보기 결과 이미지만 지운다)
   const [fitToDelete, setFitToDelete] = useState(null)
+  // 저장한 입혀보기 결과 크게 보기(원본 이미지 그대로). null이면 닫힘.
+  const [zoomFit, setZoomFit] = useState(null)
   const [deletingFit, setDeletingFit] = useState(false)
   const [fitDeleteError, setFitDeleteError] = useState('')
 
@@ -433,7 +436,7 @@ function Garage() {
             </section>
           </div>
 
-          {/* 저장한 장착 모습: 이 차량으로 부품 입혀보기에서 [현재 모습 저장]한 결과(최신순). 조회/다시 열기/삭제만 하고 새로 만들지 않는다.
+          {/* 저장한 장착 모습: 이 차량으로 부품 입혀보기에서 [입혀보기] → [저장하기]한 결과(최신순). 조회/다시 열기/삭제만 하고 새로 만들지 않는다.
               즐겨찾기와는 별개 데이터 - 즐겨찾기를 해제해도 남고, 여기서 지워도 즐겨찾기는 그대로다. */}
           <section className="mt-5 rounded-xl border border-ridefit-border bg-ridefit-card p-5 shadow-lg" data-testid="garage-saved-fits">
             <div className="mb-3 flex items-baseline justify-between gap-2">
@@ -459,7 +462,7 @@ function Garage() {
                 data-testid="garage-saved-fits-empty"
               >
                 <p className="text-sm text-ridefit-text">아직 저장한 장착 모습이 없어요.</p>
-                <p className="text-xs text-ridefit-text-secondary">부품 입혀보기에서 부품을 장착하고 [현재 모습 저장]을 누르면 여기에 모여요.</p>
+                <p className="text-xs text-ridefit-text-secondary">부품 입혀보기에서 부품을 선택하고 [입혀보기] → [저장하기]를 누르면 여기에 모여요.</p>
                 <Link to={`/garage/${vehicle.id}/fit`} className="text-sm font-medium text-ridefit-primary hover:underline">
                   부품 입혀보기 <Ico as={ArrowRight} />
                 </Link>
@@ -481,6 +484,16 @@ function Garage() {
                         data-testid={`garage-saved-fit-delete-${r.id}`}
                       >
                         <Trash2 aria-hidden="true" className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setZoomFit({ imageUrl: r.imageUrl, title })}
+                        className="absolute left-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white transition hover:border-ridefit-primary hover:text-ridefit-primary"
+                        aria-label={`${title || '장착 모습'} 크게 보기`}
+                        title="크게 보기"
+                        data-testid={`garage-saved-fit-zoom-${r.id}`}
+                      >
+                        <Maximize2 aria-hidden="true" className="h-4 w-4" />
                       </button>
                       <Link
                         to={`/garage/${vehicle.id}/fit?result=${r.id}`}
@@ -511,10 +524,13 @@ function Garage() {
             {fitDeleteError && (
               <p className="mt-2 text-sm text-ridefit-danger" role="alert" data-testid="garage-saved-fit-delete-error">{fitDeleteError}</p>
             )}
+            {zoomFit && (
+              <ImageLightbox src={zoomFit.imageUrl} alt={`${zoomFit.title} 입혀보기 결과`} title={zoomFit.title} onClose={() => setZoomFit(null)} testid="garage-saved-fit-lightbox" />
+            )}
             <ConfirmDialog
               open={!!fitToDelete}
               title="저장된 장착 모습을 삭제할까요?"
-              message="이 합성 결과 이미지를 삭제합니다."
+              message="이 입혀보기 결과 이미지를 삭제합니다."
               confirmLabel="삭제"
               cancelLabel="취소"
               danger
