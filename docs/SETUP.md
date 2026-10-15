@@ -75,6 +75,6 @@ cd frontend; npm run lint; npm run build
 | `Port 5173 is in use` 로 프런트가 안 뜸 | 이미 실행 중인 Vite가 있음. 기존 창을 닫거나 그 서버를 그대로 사용 |
 | 정비소 상세에서 지도가 안 보임 | `VITE_KAKAO_MAP_KEY` 없음 또는 Kakao 콘솔에 현재 주소(예: `http://localhost:5173`) 미등록 |
 | 로그인 직후 바로 로그아웃됨 | 백엔드가 401 응답 - `jwt.secret` 변경 후 예전 토큰 사용. 다시 로그인 |
-| "장착한 모습 만들기" 버튼이 비활성 | 외부 이미지 생성 API 키가 없음(정상). 레이어가 있는 부품은 [현재 모습 저장]으로 저장 |
+| "장착한 모습 만들기" 버튼이 비활성 | 외부 이미지 생성 API 키가 없음(정상). 레이어가 있는 부품은 [입혀보기] → [저장하기]로 저장 |
 | 결제 화면에 "결제 설정이 아직 되지 않았어요" | `VITE_TOSS_CLIENT_KEY` / `TOSS_SECRET_KEY` 미설정(테스트 키만 사용) |
 | 백엔드 시작 시 DB 접속 오류 | MySQL 미실행 또는 `application-local.properties` 계정 정보 확인 |
