@@ -37,20 +37,16 @@ public class PartPopularityService {
     private final SellerListingRepository sellerListingRepository;
     private final PartRepository partRepository;
 
+    // 원자적 +1(PartRepository.incrementViewCount). 동시에 여러 번 불려도 빠지지 않는다.
     @Transactional
     public void recordView(Long partId) {
-        partRepository.findById(partId).ifPresent(part -> {
-            part.setViewCount(part.getViewCount() + 1);
-            partRepository.save(part);
-        });
+        partRepository.incrementViewCount(partId);
     }
 
+    // 장착 시도 수(조회수와 별개 지표)도 같은 방식으로 원자적 +1.
     @Transactional
     public void recordFitSelection(Long partId) {
-        partRepository.findById(partId).ifPresent(part -> {
-            part.setFitSelectionCount(part.getFitSelectionCount() + 1);
-            partRepository.save(part);
-        });
+        partRepository.incrementFitSelectionCount(partId);
     }
 
     // parts: 같은 차종+같은 카테고리로 묶인 peer group. 이 그룹 안에서만 순위를 비교해 배지를 붙인다.

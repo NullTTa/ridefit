@@ -58,13 +58,20 @@ function PartDetail() {
   useEffect(() => {
     let cancelled = false
     // 부품 정보/후기/호환 차량은 vehicleId와 무관하게 항상 받을 수 있다(먼저, 반드시 성공하는 것만 Promise.all로 묶는다).
-    // myVehicleId가 붙는 호출(getPart 보강, /check, 내 차량 찾기)은 그 값이 지금 로그인한 사용자의 차량이
+    // myVehicleId가 붙는 호출(차량 기준 상세, /check, 내 차량 찾기)은 그 값이 지금 로그인한 사용자의 차량이
     // 아니면(다른 사람 차량 id를 북마크/공유 링크로 열었거나, 로그아웃 후 다시 로그인한 경우 등) 서버가
     // 403/404를 던진다 - 이걸 여기서 개별로 흡수하지 않으면 페이지 전체가 에러로 빠져서 "장착해보기"
     // 버튼까지 통째로 사라진다(실제로는 버튼 비활성화가 아니라 페이지 전체 에러). 실패하면 그 vehicleId를
     // 쓰지 않은 것(차량 미지정)과 같게 처리하고, 기본 부품 정보는 그대로 보여준다.
+    // 부품 상세(조회수 +1)는 한 번만 요청한다. 차량 기준(vehicleId)이 있으면 그 차량 기준 상세(경쟁 배지 포함) 하나만 보내고,
+    // 그 차량이 내 차량이 아니라서 403/404면 차량 없이 다시 받는다 - 서버는 403/404 요청을 조회수로 세지 않으므로 어느 쪽이든 1번만 센다.
+    // (예전에는 기본 상세 + 차량 기준 상세를 둘 다 보내 조회수가 2씩 올랐고, 같은 부품 행을 동시에 갱신해 /check 500의 원인이 됐다.)
+    // 개발 모드에서는 StrictMode가 effect를 두 번 실행해 요청이 2번 보일 수 있다(운영 빌드는 1번).
+    const loadPart = vehicleId
+      ? api.get(`/api/parts/${partId}?myVehicleId=${vehicleId}`).catch(() => api.get(`/api/parts/${partId}`))
+      : api.get(`/api/parts/${partId}`)
     Promise.all([
-      api.get(`/api/parts/${partId}`),
+      loadPart,
       api.get(`/api/parts/${partId}/reviews`, { auth: false }),
       api.get(`/api/parts/${partId}/compatibilities`, { auth: false }).catch(() => []),
     ])
@@ -81,16 +88,13 @@ function PartDetail() {
           return
         }
         Promise.all([
-          api.get(`/api/parts/${partId}?myVehicleId=${vehicleId}`).catch(() => null),
           api.get(`/api/parts/${partId}/check?myVehicleId=${vehicleId}`).catch(() => null),
           api
             .get('/api/my-vehicles')
             .then((list) => list.find((v) => String(v.id) === String(vehicleId)) ?? null)
             .catch(() => null),
-        ]).then(([vehicleScopedPart, checkData, vehicleData]) => {
+        ]).then(([checkData, vehicleData]) => {
           if (cancelled) return
-          // 성공했을 때만 경쟁 배지가 포함된 버전으로 바꾼다(실패하면 위에서 받은 기본 정보를 그대로 둔다).
-          if (vehicleScopedPart) setPart(vehicleScopedPart)
           setCheckResult(checkData)
           setMyVehicle(vehicleData)
         })

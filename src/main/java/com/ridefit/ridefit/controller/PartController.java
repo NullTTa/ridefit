@@ -70,20 +70,29 @@ public class PartController {
     // 없으면 비교 맥락이 없다는 뜻이라 실측치만 보여주고 경쟁 배지는 붙이지 않는다.
     @GetMapping("/api/parts/{id}")
     public PartDetailResponse getPart(@PathVariable Long id, @RequestParam(required = false) Long myVehicleId) {
-        Part part = partRepository.findById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "부품 정보를 찾을 수 없습니다."));
-
-        partPopularityService.recordView(id);
-        part.setViewCount(part.getViewCount() + 1); // 방금 기록한 조회수를 응답에도 바로 반영
-
-        PartPopularityStats stats;
+        if (!partRepository.existsById(id)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "부품 정보를 찾을 수 없습니다.");
+        }
+        // 차량 확인을 조회수 기록보다 먼저 한다 - 403/404로 끝나는 요청은 조회로 세지 않는다.
+        Long modelYearId = null;
         if (myVehicleId != null) {
             MyVehicle myVehicle = myVehicleRepository.findById(myVehicleId)
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "차량 정보를 찾을 수 없습니다."));
             if (!myVehicle.getMember().getId().equals(currentMember.id())) {
                 throw new ApiException(HttpStatus.FORBIDDEN, "본인이 등록한 차량만 기준으로 확인할 수 있습니다.");
             }
-            List<Part> peers = compatibilityRepository.findByModelYearId(myVehicle.getModelYear().getId()).stream()
+            // 조회수 기록(영속성 컨텍스트를 비움) 전에 필요한 값만 꺼내 둔다.
+            modelYearId = myVehicle.getModelYear().getId();
+        }
+
+        // 원자적 +1 뒤에 부품을 읽어, 응답 조회수가 방금 기록한 값까지 포함한 DB 값이 되게 한다(엔티티를 직접 +1 하지 않음).
+        partPopularityService.recordView(id);
+        Part part = partRepository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "부품 정보를 찾을 수 없습니다."));
+
+        PartPopularityStats stats;
+        if (modelYearId != null) {
+            List<Part> peers = compatibilityRepository.findByModelYearId(modelYearId).stream()
                     .map(c -> c.getPart())
                     .filter(p -> p.getCategory().equals(part.getCategory()))
                     .toList();
