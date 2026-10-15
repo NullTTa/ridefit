@@ -16,10 +16,14 @@ public class WebConfig implements WebMvcConfigurer {
     @Value("${app.upload-dir:uploads}")
     private String uploadDir;
 
+    // 배포 서버에서는 CORS_ALLOWED_ORIGINS(쉼표 구분, 예: https://ridefit.example.com)로 실제 주소를 넣는다.
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:5174,http://localhost:5175}")
+    private String[] allowedOrigins;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175")
+                .allowedOrigins(allowedOrigins)
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE")
                 .allowedHeaders("*");
     }
