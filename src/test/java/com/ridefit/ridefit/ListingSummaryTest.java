@@ -34,13 +34,16 @@ class ListingSummaryTest {
         long many = createPart("판매처 많은 부품", token);
         long single = createPart("판매처 하나 부품", token);
         long none = createPart("판매처 없는 부품", token);
+        // 공개 판매처 등록은 관리자만 할 수 있다(SecurityConfig). 부품 등록은 일반 회원도 가능.
+        String admin = send(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"admin@ridefit.dev\",\"password\":\"admin1234!\"}"), null, 200).get("token").asText();
 
-        addListing(many, "판매처C", 30000, "https://shop-c.example.com/products/3", token);
-        addListing(many, "판매처A", 10000, "https://shop-a.example.com/products/1", token);
-        addListing(many, "판매처B", 20000, "https://shop-b.example.com/products/2", token);
-        addListing(many, "판매처D", 40000, "https://shop-d.example.com/products/4", token);
-        addListing(many, "예시 판매처", 5000, "https://sample.test/item/1", token);      // 예시 - 제외(최저가도 아님)
-        addListing(single, "단독 판매처", 15000, "ftp://not-a-product-link/1", token);  // http(s) 아님 - 링크 없음
+        addListing(many, "판매처C", 30000, "https://shop-c.example.com/products/3", admin);
+        addListing(many, "판매처A", 10000, "https://shop-a.example.com/products/1", admin);
+        addListing(many, "판매처B", 20000, "https://shop-b.example.com/products/2", admin);
+        addListing(many, "판매처D", 40000, "https://shop-d.example.com/products/4", admin);
+        addListing(many, "예시 판매처", 5000, "https://sample.test/item/1", admin);      // 예시 - 제외(최저가도 아님)
+        addListing(single, "단독 판매처", 15000, "ftp://not-a-product-link/1", admin);  // http(s) 아님 - 링크 없음
 
         JsonNode rows = send(get("/api/parts/listings-summary?partIds=%d,%d,%d".formatted(many, single, none)), null, 200);
         assertThat(rows).hasSize(3);

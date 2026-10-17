@@ -7,6 +7,7 @@ import com.ridefit.ridefit.dto.auth.ResetPasswordRequest;
 import com.ridefit.ridefit.dto.auth.SignupRequest;
 import com.ridefit.ridefit.dto.auth.TokenResponse;
 import com.ridefit.ridefit.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,11 +30,11 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
+        return ResponseEntity.ok(authService.login(request, http.getRemoteAddr()));
     }
 
-    // 비밀번호를 알려주는 게 아니라, 본인 확인 후 새 비밀번호 설정 화면으로 넘어가기 위한 단기 토큰을 내려준다.
+    // 비밀번호 찾기/재설정: 이메일 인증을 붙이기 전까지 임시 중단(항상 503, AuthService 참고).
     @PostMapping("/find-password/verify")
     public ResponseEntity<FindPasswordResponse> verifyForPasswordReset(@Valid @RequestBody FindPasswordRequest request) {
         return ResponseEntity.ok(authService.verifyForPasswordReset(request));

@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 // 내 차고(garage): 로그인한 사용자의 차량 등록/조회/삭제 + "내 차량 기준 호환 부품 조회".
@@ -87,7 +88,7 @@ public class MyVehicleController {
             myVehicle.setNickname(request.nickname().isBlank() ? null : request.nickname());
         }
         if (request.photoUrl() != null) {
-            myVehicle.setPhotoUrl(request.photoUrl().isBlank() ? null : request.photoUrl());
+            myVehicle.setPhotoUrl(request.photoUrl().isBlank() ? null : requireUploadedPhoto(request.photoUrl().trim()));
         }
 
         MyVehicle saved = myVehicleRepository.save(myVehicle);
@@ -216,6 +217,17 @@ public class MyVehicleController {
             throw new ApiException(HttpStatus.FORBIDDEN, "본인이 등록한 차량만 조회할 수 있습니다.");
         }
         return myVehicle;
+    }
+
+    // 내 차량 사진은 이 서버에 올린 사진(/api/uploads가 돌려준 "/uploads/<무작위 이름>.<이미지 확장자>")만 받는다.
+    // 외부 주소를 받으면 차고/FitRoom을 열 때마다 다른 사이트로 요청이 나가 접속 정보가 새거나, 엉뚱한 이미지가 걸릴 수 있다.
+    private static final Pattern UPLOADED_PHOTO = Pattern.compile("^/uploads/[A-Za-z0-9-]{1,64}\\.(png|jpe?g|webp|gif)$");
+
+    private static String requireUploadedPhoto(String photoUrl) {
+        if (!UPLOADED_PHOTO.matcher(photoUrl).matches()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "차량 사진은 사진 올리기로 업로드한 이미지만 사용할 수 있어요.");
+        }
+        return photoUrl;
     }
 
     public record MyVehicleRequest(Long modelYearId) {

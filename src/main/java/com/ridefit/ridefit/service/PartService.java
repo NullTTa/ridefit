@@ -54,11 +54,14 @@ public class PartService {
         }
 
         for (ModelYear year : targetYears) {
+            // 근거 메모(note)는 비워 둔다 - 화면은 "호환가능 + 메모 없음"을 "호환 근거 미확인"으로 보여 준다(compatStatus.js).
+            // 예전에는 "사용자가 등록한 링크 기반 커스텀 부품"이라는 메모가 근거처럼 들어가 확정 호환(초록)으로 보였다.
+            // 관리자가 근거를 확인한 뒤 관리자 호환 관리(PUT /api/admin/compatibilities/{id})에서 메모를 넣으면 확정 표시가 된다.
+            // 커스텀 부품인지는 Part.sourceUrl로 구분한다.
             Compatibility compatibility = Compatibility.builder()
                     .modelYear(year)
                     .part(saved)
                     .status(COMPATIBLE)
-                    .note("사용자가 등록한 링크 기반 커스텀 부품")
                     .build();
             compatibilityRepository.save(compatibility);
         }

@@ -4,6 +4,26 @@
 
 ---
 
+## 19차 - 보안 점검 후속 수정 (2026-10-17, main, 커밋+push, 운영 미배포)
+
+- **비밀번호 재설정 토큰을 로그인 토큰으로 쓸 수 있던 문제**: 인증 필터가 서명/만료만 확인해 `purpose` 클레임이 있는
+  재설정 토큰도 통과시켰다. `JwtTokenProvider.isAccessToken()`으로 특수 목적 토큰을 거부한다.
+- **비밀번호 찾기 임시 중단**: 이메일+닉네임(닉네임은 커뮤니티에 공개)만으로 재설정 토큰을 줬다. 이메일 인증을 붙이기 전까지
+  `/api/auth/find-password/verify`, `/api/auth/reset-password`는 503, 화면(`/find-password`)은 안내만 표시.
+- **로그인 시도 제한**(`LoginAttemptService`, 서버 메모리): 같은 이메일 15분 5회 실패 또는 같은 IP 15분 30회 실패 시 429.
+- **판매처 등록은 관리자만**: `POST /api/parts/{id}/listings`를 ADMIN 전용으로(SecurityConfig), 부품 상세/검색의 등록 칸도 관리자에게만 표시.
+- **회원이 등록한 부품의 호환 = 근거 미확인**: 자동 메모("사용자가 등록한 링크 기반 커스텀 부품")가 근거처럼 보여 초록 호환으로
+  표시되던 것을 메모 없이 저장. 관리자가 호환 관리에서 근거 메모를 넣으면 확정 표시.
+  (시드 `verified-parts.json`의 기존 행 1건에는 같은 메모가 남아 있음 - 데이터 확인 필요)
+- **내 차량 사진 주소**: `/uploads/<이름>.<png|jpg|jpeg|webp|gif>`만 저장(외부 주소/경로 조작 400).
+- **Swagger**: local 프로필에서만 켜짐, 그 외 기본 꺼짐(`SWAGGER_ENABLED`로 직접 지정 가능).
+- **.gitignore**: `.env`/`.env.*`(`.env.example` 제외), `application-prod.*` 추가.
+- **이 문서의 민감정보 마스킹**: 로컬 DB 계정, 개인 이메일, 데모 계정 비밀번호 → `[REDACTED]`.
+  과거 커밋(2026-09-20~10-14)에는 원래 값이 남아 있다(공개 저장소). Git 기록 재작성은 하지 않았다 - 같은 DB 비밀번호를
+  다른 곳에서 쓰고 있다면 바꿀 것.
+- 테스트: 기존 2개(`ListingSummaryTest`, `ProductAndAiFitFlowTest`)는 판매처 등록을 관리자 토큰으로 바꾸고 일반 회원 403 확인 추가,
+  `SecurityHardeningTest` 6개 신규. `gradlew.bat test` 55/55 통과, `npm run lint` 0, `npm run build` 성공.
+
 ## 18차 - FitRoom UX 전면 개선 + Hero 사이드백 통일 + 360 머플러/사이드백 레이어 + 서비스 상세 지도 (2026-10-12~13, main, 커밋+push)
 
 - **서비스 상세 지도**: `/services/:id`에 카카오 지도(매장 1곳, 확대 4단계). 키는 `frontend/.env.local`의 `VITE_KAKAO_MAP_KEY`(git 제외,
@@ -920,7 +940,7 @@ console error 0건, network 4xx/5xx 0건, 깨진 이미지 0건 확인. 백엔�
    Burgman Street125(국내 2023년 첫 출시 — 이전 연식 삭제하고 2023/2025로 수정), Z125(BR125
    코드 확인). 코드 없는 것(Tricity125/Ninja125/Address125 코드 등)은 지어내지 않고 null 유지.
    세대에 맞춰 Compatibility도 재검토(범용부품 vs 세대전용부품 구분).
-6. **관리자 계정 지정 + 헤더 버튼** — 이미 가입된 `sk05ek@naver.com`을 DataSeeder에서
+6. **관리자 계정 지정 + 헤더 버튼** — 이미 가입된 `[REDACTED: 개인 이메일]`을 DataSeeder에서
    idempotent하게 ADMIN으로 승격(계정 없으면 아무 것도 안 함). 헤더 프로필 옆에 ADMIN만
    보이는 "관리자" 버튼 추가. 관리자 회원 목록 API로 role이 ADMIN으로 바뀐 것 직접 확인함
    (본인 계정 비밀번호는 몰라서 직접 로그인 테스트는 못 함 — 한 번 로그인해서 버튼이 실제로
@@ -950,7 +970,7 @@ console error 0건, network 4xx/5xx 0건, 깨진 이미지 0건 확인. 백엔�
 5. **AI 이미지 합성 (핵심)** — `AI_SYNTH_MODE=mock|live`, 기본 mock(고정 SVG 샘플 반환). live 코드는 Pollinations `/v1/images/edits` 호출로 구성해뒀지만 **이번 세션에선 호출 안 함** (지시대로 mock 유지). 서버가 호환성 통과 여부를 다시 검증한 뒤에만 합성 실행. 크롤링+합성 합산 일일 20회 RateLimit. 실패 시 "지금은 이미지를 만들 수 없어요..." 안내로 감쌈.
 6. **커뮤니티** — 목록(페이지네이션)/상세(댓글)/글쓰기. 장착 부품 + 호환 여부(맞았어요/안맞았어요) 기록 구조만 마련(Compatibility 자동 반영 로직은 스펙대로 안 만듦).
 7. **관리자 CRUD (핵심)** — Compatibility/PartConflict 표 CRUD(둘 다 페이지네이션), 회원 목록(role 조회만, 변경 API는 의도적으로 없음 — ADMIN 전환은 DB 직접 수정 정책), 대시보드 통계 카드(17번도 같이 됨).
-8. **시드 데이터 (핵심)** — DataSeeder(CommandLineRunner). Honda Super Cub 110 / PCX, 부품 9개, Compatibility(호환가능/브라켓필요/호환불가 다 포함), PartConflict 2건. 테스트 계정: `user@ridefit.dev` / `user1234!` (USER), `admin@ridefit.dev` / `admin1234!` (ADMIN).
+8. **시드 데이터 (핵심)** — DataSeeder(CommandLineRunner). Honda Super Cub 110 / PCX, 부품 9개, Compatibility(호환가능/브라켓필요/호환불가 다 포함), PartConflict 2건. 테스트 계정: `user@ridefit.dev` / `[REDACTED]` (USER), `admin@ridefit.dev` / `[REDACTED]` (ADMIN).
 9. **품질 다듬기** — 호환성 판정/PartConflict 필터링 단위 테스트. 실제 MySQL 없이 테스트가 돌아가도록 H2 기반 `test` 프로필 추가. 이 과정에서 `ModelYear.year` 컬럼명이 SQL 예약어와 충돌하던 실버그를 발견해 수정(`model_year_value`로 변경). springdoc-openapi는 이미 추가돼 있어서 별도 설정 없이 `/swagger-ui/index.html` 동작.
 11. **Home/로그인/회원가입 애니메이션** — 차량 아이콘 중심 부품 라벨 5개가 8초 주기로 라운드로빈 표시 + 은은한 글로우, 차량 펄스 효과(tailwind keyframes). 로그인/회원가입 좌우 분할, Home은 같은 구조를 풀스크린 히어로로 재사용(비로그인 시 오른쪽에 실제 로그인 폼). 차량 이미지 경로는 `constants/images.js`로 분리해둠 — 나중에 실물 사진으로 교체 시 이 파일만 바꾸면 됨.
 12. **화면 다듬기** — 404 페이지 추가. 빈 상태/로딩/유효성 메시지는 각 화면 구현 시점에 함께 처리함(별도 단계로 안 미뤘음).
@@ -965,7 +985,7 @@ console error 0건, network 4xx/5xx 0건, 깨진 이미지 0건 확인. 백엔�
 
 ## 막히거나 확인이 필요한 부분
 
-- ~~로컬 MySQL 연결을 실제로 테스트하지 못했음~~ → **[추가 세션에서 해결됨]** 실제 로컬 MySQL(root/1234)로 접속 정보를 받아서 `application-local.properties`에 채우고, JDBC URL에 `createDatabaseIfNotExist=true`를 추가해 `ridefit` 스키마를 앱이 직접 생성하도록 했습니다. `./gradlew bootRun`으로 실제 MySQL에 붙여서 기동 확인, 시드 데이터(제조사/부품 한글 포함) 정상 조회, `user@ridefit.dev` 로그인, Swagger UI(`/swagger-ui/index.html`) 전부 실제로 확인했습니다. `application-local.properties`는 `.gitignore`되어 있어 이 계정 정보는 커밋되지 않았습니다 — 필요하면 직접 다른 계정으로 바꿔도 됩니다.
+- ~~로컬 MySQL 연결을 실제로 테스트하지 못했음~~ → **[추가 세션에서 해결됨]** 실제 로컬 MySQL([REDACTED: 로컬 DB 계정])로 접속 정보를 받아서 `application-local.properties`에 채우고, JDBC URL에 `createDatabaseIfNotExist=true`를 추가해 `ridefit` 스키마를 앱이 직접 생성하도록 했습니다. `./gradlew bootRun`으로 실제 MySQL에 붙여서 기동 확인, 시드 데이터(제조사/부품 한글 포함) 정상 조회, `user@ridefit.dev` 로그인, Swagger UI(`/swagger-ui/index.html`) 전부 실제로 확인했습니다. `application-local.properties`는 `.gitignore`되어 있어 이 계정 정보는 커밋되지 않았습니다 — 필요하면 직접 다른 계정으로 바꿔도 됩니다.
 - ~~브라우저 스크린샷으로 UI를 직접 보지 못했음~~ → **[추가 세션에서 해결됨]** Playwright(headless Chromium)를 별도로 설치해서 로그인/회원가입/홈/부품찾아보기/커뮤니티/마이페이지/관리자 화면을 데스크톱(1280px)과 모바일(390px) 양쪽에서 실제로 렌더링해서 확인했습니다. 이 과정에서 실제 버그를 하나 찾아서 고쳤습니다: `/login`, `/signup` 페이지가 모바일에서는 왼쪽 애니메이션 패널이 숨겨지는데 `min-h-[calc(100vh-4rem)]`는 그대로 적용돼서, 폼이 화면 한가운데 붕 뜨고 위아래로 큰 빈 공간이 생기는 문제였습니다 → `md:` 브레이크포인트부터만 최소 높이를 적용하도록 수정(커밋 `f38ca97`). 그 외 화면들은 스크린샷상 깨진 곳 없음을 확인했습니다.
 - **AI_SYNTH_MODE는 계속 mock입니다.** live 전환용 Pollinations 호출 코드(`AiSynthService.callPollinations`)는 작성해뒀지만, 정확한 요청/응답 스키마는 Pollinations 공식 문서를 보고 검증된 게 아니라 합리적으로 추정해서 작성한 것입니다. 실제로 live로 켜기 전에 응답 파싱 부분(`json.path("data").path(0).path("url")`)이 실제 API 응답 구조와 맞는지 한 번 확인해주세요.
 - **차량 사진은 여전히 임시 아이콘(`frontend/src/assets/hero.png`)입니다.** `frontend/src/constants/images.js` 파일 하나만 실제 사진으로 바꾸면 Garage 카드/애니메이션 전체에 반영됩니다.
@@ -1003,7 +1023,7 @@ PartConflict **2건 → 7건**(신규 5건): 트리시티 캐리어+스크린 �
 
 ### 4. 커뮤니티 샘플 게시글
 
-게시글 **0개 → 9개**(후기 4 / 호환여부공유 3 / 질문 2 톤 혼합), 댓글 9개. 작성자 다양화를 위해 테스트 회원 4명 추가(`rider_min@ridefit.dev`, `scooter_fan@ridefit.dev`, `commuter_kim@ridefit.dev`, `newbie_park@ridefit.dev`, 비밀번호 전부 `rider1234!`). 일부 글에는 실제 존재하는 유튜브 영상(혼다코리아 PCX 리뷰, 슈퍼커브 머플러 튜닝 영상 등, 검색으로 확인한 실제 URL)을 연결해서 "관련 영상" 섹션이 비어 보이지 않게 함.
+게시글 **0개 → 9개**(후기 4 / 호환여부공유 3 / 질문 2 톤 혼합), 댓글 9개. 작성자 다양화를 위해 테스트 회원 4명 추가(`rider_min@ridefit.dev`, `scooter_fan@ridefit.dev`, `commuter_kim@ridefit.dev`, `newbie_park@ridefit.dev`, 비밀번호 전부 `[REDACTED]`). 일부 글에는 실제 존재하는 유튜브 영상(혼다코리아 PCX 리뷰, 슈퍼커브 머플러 튜닝 영상 등, 검색으로 확인한 실제 URL)을 연결해서 "관련 영상" 섹션이 비어 보이지 않게 함.
 
 ### 5. 관리자 대시보드 숫자 확인
 

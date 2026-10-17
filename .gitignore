@@ -58,3 +58,14 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+
+### Environment / production settings (never commit real values) ###
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+application-prod.properties
+application-prod.yml
+application-*.local.properties

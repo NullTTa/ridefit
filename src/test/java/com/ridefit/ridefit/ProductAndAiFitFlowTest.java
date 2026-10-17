@@ -89,19 +89,22 @@ class ProductAndAiFitFlowTest {
                 .andExpect(status().isBadRequest());
 
         // ---- 2) 가격비교: 가격 확인된 판매처 2곳 이상일 때만 최저가 배지 ----
+        // 공개 판매처 등록은 관리자만 - 일반 회원은 403.
         postJson("/api/parts/" + partId + "/listings",
-                "{\"sellerName\":\"판매처A\",\"price\":39800,\"sourceUrl\":\"https://a.example.com/p\"}", userToken, 201);
+                "{\"sellerName\":\"판매처A\",\"price\":39800,\"sourceUrl\":\"https://a.example.com/p\"}", userToken, 403);
+        postJson("/api/parts/" + partId + "/listings",
+                "{\"sellerName\":\"판매처A\",\"price\":39800,\"sourceUrl\":\"https://a.example.com/p\"}", adminToken, 201);
         JsonNode oneComparable = getJson("/api/parts/" + partId + "/listings", null, 200);
         assertThat(oneComparable.findValuesAsText("lowestPrice")).doesNotContain("true");
         postJson("/api/parts/" + partId + "/listings",
-                "{\"sellerName\":\"판매처B\",\"price\":31200,\"sourceUrl\":\"https://b.example.com/p\"}", userToken, 201);
+                "{\"sellerName\":\"판매처B\",\"price\":31200,\"sourceUrl\":\"https://b.example.com/p\"}", adminToken, 201);
         JsonNode twoComparable = getJson("/api/parts/" + partId + "/listings", null, 200);
         assertThat(twoComparable.get(0).get("sellerName").asText()).isEqualTo("판매처B");
         assertThat(twoComparable.get(0).get("lowestPrice").asBoolean()).isTrue();
         assertThat(twoComparable.get(1).get("lowestPrice").asBoolean()).isFalse();
         // 가격 0원은 거부
         postJson("/api/parts/" + partId + "/listings",
-                "{\"sellerName\":\"판매처C\",\"price\":0,\"sourceUrl\":\"https://c.example.com/p\"}", userToken, 400);
+                "{\"sellerName\":\"판매처C\",\"price\":0,\"sourceUrl\":\"https://c.example.com/p\"}", adminToken, 400);
 
         // ---- 3) AI: 참조 이미지 없음 → REFERENCE_MISSING ----
         JsonNode missing = getJson("/api/ai-fit/status?partId=%d&myVehicleId=%d".formatted(partId, myVehicleId), userToken, 200);

@@ -64,6 +64,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/finder/result", "/api/posts/*/view").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/uploads/**", "/mock/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // 부품 상세에 공개되는 판매처(가격/구매 링크) 등록은 관리자만 - 일반 회원이 가짜 가격·링크를 붙이지 못하게.
+                        .requestMatchers(HttpMethod.POST, "/api/parts/*/listings").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

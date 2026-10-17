@@ -59,6 +59,16 @@ public class JwtTokenProvider {
         }
     }
 
+    // 로그인(API 인증)용 토큰인지 확인한다. 서명/만료가 맞아도 purpose 클레임이 붙은 특수 목적 토큰
+    // (비밀번호 재설정 등)은 일반 API 인증에 쓸 수 없다.
+    public boolean isAccessToken(String token) {
+        try {
+            return parseClaims(token).get("purpose") == null;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     public Long getMemberId(String token) {
         return Long.valueOf(parseClaims(token).getSubject());
     }

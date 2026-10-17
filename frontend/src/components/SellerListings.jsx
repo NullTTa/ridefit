@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
+import { useAuth } from '../context/useAuth'
 import { api } from '../lib/api'
 import { FOREIGN_TEXT_WARNING, hasForeignText } from '../lib/foreignText'
 import { Ico } from './Icon'
@@ -28,6 +29,7 @@ function productLink(sourceUrl) {
 //  - "최저가" 배지는 서버가 "가격 확인된 실제 판매처 2곳 이상"일 때만 붙인다(하드코딩 없음).
 //  - 예약 도메인(.test)의 예시 판매처는 링크 없이 "예시 데이터"로 구분한다.
 function SellerListings({ partId }) {
+  const { isAdmin } = useAuth()
   const [listings, setListings] = useState([])
   // 목록이 어느 부품(partId)의 것인지 저장한다 - 부품이 바뀌면 새 응답이 올 때까지 '불러오는 중'.
   const [loadedPartId, setLoadedPartId] = useState(null)
@@ -192,7 +194,8 @@ function SellerListings({ partId }) {
         </ul>
       )}
 
-      {!draft ? (
+      {/* 판매처 등록은 관리자만(서버도 POST /api/parts/{id}/listings 는 ADMIN 전용) - 일반 회원에게는 입력칸을 보여 주지 않는다. */}
+      {isAdmin && (!draft ? (
         <form onSubmit={handleCrawl} className="flex gap-1 text-xs">
           <input
             type="url"
@@ -274,7 +277,7 @@ function SellerListings({ partId }) {
             </button>
           </div>
         </form>
-      )}
+      ))}
     </div>
   )
 }
