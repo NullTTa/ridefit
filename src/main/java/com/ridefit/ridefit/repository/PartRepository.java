@@ -31,4 +31,9 @@ public interface PartRepository extends JpaRepository<Part, Long> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Part p set p.fitSelectionCount = p.fitSelectionCount + 1 where p.id = :id")
     int incrementFitSelectionCount(@Param("id") Long id);
+
+    // 장착 모습 이미지 파일을 지우기 전에 같은 주소를 쓰는 부품이 있는지 본다(AiFitImageReferences).
+    boolean existsByImageUrl(String imageUrl);
+
+    boolean existsByAiReferenceImageUrl(String aiReferenceImageUrl);
 }

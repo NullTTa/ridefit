@@ -129,6 +129,7 @@ public class AiFitService {
     private final RateLimitService rateLimitService;
     private final ImageStorageService imageStorageService;
     private final AiImageProvider aiImageProvider;
+    private final AiFitImageReferences aiFitImageReferences;
 
     @Value("${openai.image.daily-limit:30}")
     private int globalDailyLimit;
@@ -467,18 +468,44 @@ public class AiFitService {
         String image = r.getGeneratedImage();
         aiFitResultRepository.delete(r);
         aiFitResultRepository.flush();
-        boolean shared = image != null && aiFitResultRepository.countByGeneratedImage(image) > 0;
-        log.info("장착 모습 삭제: resultId={}, memberId={}, image={}, 파일 공유 중={}", resultId, memberId, image, shared);
-        if (image == null || shared) return;
+        log.info("장착 모습 삭제: resultId={}, memberId={}, image={}", resultId, memberId, image);
+        deleteUnreferencedImagesAfterCommit(image == null ? List.of() : List.of(image));
+    }
+
+    // 차량 삭제 때 그 차량의 저장된 장착 모습을 함께 지운다(MyVehicleController.deleteMyVehicle과 같은 트랜잭션).
+    // 대상 = myVehicleId가 이 차량이고 요청 회원이 차량 주인인 결과만. 다른 차량/다른 회원/차량 id가 없는 예전 결과는 건드리지 않는다.
+    // 이미지 파일은 DB 커밋이 끝난 뒤에, 아무 데서도 참조하지 않는 것만 지운다(DB가 롤백되면 파일도 그대로).
+    // 파일 삭제가 실패하면 파일만 남는다(로그 WARN) - DB가 없는 파일을 가리키는 일은 생기지 않는다.
+    @Transactional
+    public int deleteResultsForVehicle(Long myVehicleId, Long ownerMemberId) {
+        List<AiFitResult> results = aiFitResultRepository.findByMyVehicleIdAndRequestedByMemberId(myVehicleId, ownerMemberId);
+        if (results.isEmpty()) return 0;
+        List<String> images = results.stream().map(AiFitResult::getGeneratedImage).filter(java.util.Objects::nonNull).distinct().toList();
+        aiFitResultRepository.deleteAll(results);
+        aiFitResultRepository.flush();
+        log.info("차량 삭제로 장착 모습 삭제: myVehicleId={}, memberId={}, results={}, images={}", myVehicleId, ownerMemberId, results.size(), images.size());
+        deleteUnreferencedImagesAfterCommit(images);
+        return results.size();
+    }
+
+    // 지운 행이 쓰던 이미지 중, 남은 데이터(다른 장착 결과/부품/게시글/차종/판매처)가 참조하지 않는 파일만 커밋 뒤에 지운다.
+    // 참조 여부는 지금(커밋 전, flush 후) 판단한다. "/uploads/ai-fit/" 밖의 파일은 ImageStorageService가 거부한다.
+    private void deleteUnreferencedImagesAfterCommit(List<String> images) {
+        List<String> targets = images.stream().filter(img -> !aiFitImageReferences.isReferenced(img)).toList();
+        if (targets.size() < images.size()) {
+            log.info("다른 데이터가 쓰는 장착 모습 이미지는 남김: {}개", images.size() - targets.size());
+        }
+        if (targets.isEmpty()) return;
+        Runnable delete = () -> targets.forEach(imageStorageService::deleteAiFitImage);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    imageStorageService.deleteAiFitImage(image);
+                    delete.run();
                 }
             });
         } else {
-            imageStorageService.deleteAiFitImage(image);
+            delete.run();
         }
     }
 

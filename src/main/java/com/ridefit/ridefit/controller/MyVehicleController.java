@@ -49,6 +49,7 @@ public class MyVehicleController {
     private final com.ridefit.ridefit.repository.PurchaseOrderRepository purchaseOrderRepository;
     private final com.ridefit.ridefit.repository.PostRepository postRepository;
     private final com.ridefit.ridefit.repository.RecentPartCheckRepository recentPartCheckRepository;
+    private final com.ridefit.ridefit.service.AiFitService aiFitService;
 
     @GetMapping("/api/my-vehicles")
     public List<MyVehicleResponse> getMyVehicles() {
@@ -111,6 +112,8 @@ public class MyVehicleController {
         recentPartCheckRepository.deleteByMyVehicleId(myVehicleId);
         // 이 차량에 저장한 부품(즐겨찾기)은 차량과 함께 지운다(다른 차량/차량 미지정 저장은 그대로).
         favoriteRepository.deleteByMyVehicleId(myVehicleId);
+        // 이 차량으로 저장한 장착 모습도 지운다(차량 주인이 만든 것만, 이미지 파일은 커밋 뒤 참조가 없을 때만 - AiFitService).
+        aiFitService.deleteResultsForVehicle(myVehicleId, myVehicle.getMember().getId());
         myVehicleRepository.delete(myVehicle);
         return ResponseEntity.noContent().build();
     }

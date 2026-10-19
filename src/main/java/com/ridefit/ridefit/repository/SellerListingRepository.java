@@ -24,4 +24,6 @@ public interface SellerListingRepository extends JpaRepository<SellerListing, Lo
     // 판매처 이름 선택지(이미 등록된 판매처 이름, 중복 제거)
     @Query("select distinct l.sellerName from SellerListing l where l.sellerName is not null order by l.sellerName")
     List<String> findDistinctSellerNames();
+
+    boolean existsByThumbnailUrlOrOriginalImageUrl(String thumbnailUrl, String originalImageUrl);
 }

@@ -32,6 +32,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     boolean existsByTitle(String title);
 
+    boolean existsByImageUrl(String imageUrl);
+
     @Modifying
     @Query("update Post p set p.viewCount = p.viewCount + 1 where p.id = :id")
     int incrementViewCount(@Param("id") Long id);
