@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import VehicleCascadeSelect from '../components/VehicleCascadeSelect'
+import VehicleDeleteButton from '../components/VehicleDeleteButton'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
 import { api } from '../lib/api'
 
@@ -143,6 +144,12 @@ function VehicleEdit() {
 
         {error && <p className="text-sm text-ridefit-danger">{error}</p>}
       </form>
+
+      <div className="mt-6 rounded-xl border border-ridefit-danger-border bg-ridefit-card p-5" data-testid="vehicle-edit-delete">
+        <p className="text-sm font-semibold text-ridefit-text">차량 삭제</p>
+        <p className="mb-3 mt-1 text-xs text-ridefit-text-secondary">내 차고에서 이 차량을 지워요.</p>
+        <VehicleDeleteButton vehicle={vehicle} onDeleted={() => navigate('/garage', { replace: true })} />
+      </div>
     </div>
   )
 }

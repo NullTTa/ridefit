@@ -25,7 +25,7 @@ function ConfirmDialog({ open, title, message, confirmLabel = '확인', cancelLa
         data-testid="confirm-dialog"
       >
         <p id="confirm-dialog-title" className="text-base font-semibold text-ridefit-text">{title}</p>
-        {message && <p className="mt-1.5 text-sm text-ridefit-text-secondary">{message}</p>}
+        {message && <p className="mt-1.5 break-keep text-sm text-ridefit-text-secondary">{message}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"

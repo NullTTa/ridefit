@@ -7,6 +7,7 @@ import { ImageLightbox } from '../components/Lightbox'
 import ProductImage from '../components/ProductImage'
 import SafeImage from '../components/SafeImage'
 import SimilarVehicles from '../components/SimilarVehicles'
+import VehicleDeleteButton from '../components/VehicleDeleteButton'
 import Vehicle360Viewer from '../components/Vehicle360Viewer'
 import { VEHICLE_PLACEHOLDER_IMAGE } from '../constants/images'
 import { getVehicle360Frames, getVehicle360StartIndex } from '../constants/vehicle360'
@@ -40,7 +41,6 @@ function Garage() {
   const [vehicles, setVehicles] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
   const [unassigned, setUnassigned] = useState([])
   const [savingPartId, setSavingPartId] = useState(null)
   // 이 차량의 호환 부품(이름/카테고리) - "현재 구성" 부품 이름을 보여주는 데 쓴다.
@@ -151,18 +151,10 @@ function Garage() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('이 차량을 차고에서 삭제할까요?')) return
-    setDeletingId(id)
-    try {
-      await api.del(`/api/my-vehicles/${id}`)
-      setVehicles((prev) => prev.filter((v) => v.id !== id))
-      if (String(id) === selectedId) setSearchParams({}, { replace: true })
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setDeletingId(null)
-    }
+  // 삭제 확인/요청/오류 표시는 VehicleDeleteButton이 한다. 서버 삭제가 끝난 뒤에만 목록에서 뺀다.
+  const handleDeleted = (id) => {
+    setVehicles((prev) => prev.filter((v) => v.id !== id))
+    if (String(id) === selectedId) setSearchParams({}, { replace: true })
   }
 
   const vehicleName = vehicle ? vehicle.nickname || vehicle.modelYearLabel : ''
@@ -278,12 +270,16 @@ function Garage() {
                   {currentBuild.length > 0 ? '현재 구성 이어서 입혀보기' : '부품 입혀보기'}
                   <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </Link>
-                <Link
-                  to={`/garage/${vehicle.id}/edit`}
-                  className="mt-2 block w-full rounded-lg border border-ridefit-border px-3 py-2.5 text-center text-sm font-semibold text-ridefit-text transition hover:border-ridefit-primary"
-                >
-                  차량 관리
-                </Link>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Link
+                    to={`/garage/${vehicle.id}/edit`}
+                    className="block w-full rounded-lg border border-ridefit-border px-3 py-2.5 text-center text-sm font-semibold text-ridefit-text transition hover:border-ridefit-primary"
+                  >
+                    차량 관리
+                  </Link>
+                  {/* key: 다른 차량 탭으로 바꾸면 이전 차량의 삭제 오류/확인 창 상태를 남기지 않는다 */}
+                  <VehicleDeleteButton key={vehicle.id} vehicle={vehicle} onDeleted={handleDeleted} />
+                </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                   <Link to={`/parts?vehicleId=${vehicle.id}`} className="font-medium text-ridefit-primary hover:underline">
@@ -295,14 +291,6 @@ function Garage() {
                   <Link to={`/vehicles/${vehicle.vehicleModelId}`} className="font-medium text-ridefit-primary hover:underline">
                     차량 정보
                   </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(vehicle.id)}
-                    disabled={deletingId === vehicle.id}
-                    className="ml-auto text-ridefit-text-secondary hover:text-ridefit-danger disabled:opacity-50"
-                  >
-                    {deletingId === vehicle.id ? '삭제 중...' : '차고에서 삭제'}
-                  </button>
                 </div>
               </div>
             </section>

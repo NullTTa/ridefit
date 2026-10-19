@@ -83,6 +83,16 @@ export function saveFitPreset(myVehicleId, name, partIds) {
   }
 }
 
+// 차량을 삭제했을 때 이 브라우저에 남은 그 차량의 "현재 구성"과 "저장한 구성"을 지운다.
+export function clearFitData(myVehicleId) {
+  try {
+    localStorage.removeItem(key(myVehicleId))
+    localStorage.removeItem(presetsKey(myVehicleId))
+  } catch {
+    // 저장소를 쓸 수 없는 환경 - 무시
+  }
+}
+
 export function deleteFitPreset(myVehicleId, presetId) {
   try {
     const list = listFitPresets(myVehicleId).filter((p) => p.id !== presetId)
