@@ -38,6 +38,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     List<Post> findByAuthorId(Long authorId);
 
+    List<Post> findByMyVehicleId(Long myVehicleId);
+
     long countByInstalledPartId(Long partId);
 
     List<Post> findByInstalledPartIdOrderByCreatedAtDesc(Long partId);

@@ -46,6 +46,9 @@ public class MyVehicleController {
     private final PartPopularityService partPopularityService;
     private final com.ridefit.ridefit.repository.FavoriteRepository favoriteRepository;
     private final com.ridefit.ridefit.repository.ReservationRepository reservationRepository;
+    private final com.ridefit.ridefit.repository.PurchaseOrderRepository purchaseOrderRepository;
+    private final com.ridefit.ridefit.repository.PostRepository postRepository;
+    private final com.ridefit.ridefit.repository.RecentPartCheckRepository recentPartCheckRepository;
 
     @GetMapping("/api/my-vehicles")
     public List<MyVehicleResponse> getMyVehicles() {
@@ -101,6 +104,11 @@ public class MyVehicleController {
         MyVehicle myVehicle = requireOwnedVehicle(myVehicleId);
         // 이 차량으로 만든 가상 예약은 예약 기록만 남기고 차량 연결만 끊는다.
         reservationRepository.findByMyVehicleId(myVehicleId).forEach(r -> r.setMyVehicle(null));
+        // 주문/커뮤니티 글도 기록은 남기고 차량 연결만 끊는다. 부품 확인 기록(최근 확인)은 이 차량 기준이라 함께 지운다.
+        // (예전에는 이 차량으로 부품 상세를 본 적이 있으면 recent_part_check FK 때문에 차량 삭제가 500이었다.)
+        purchaseOrderRepository.findByMyVehicleId(myVehicleId).forEach(o -> o.setMyVehicle(null));
+        postRepository.findByMyVehicleId(myVehicleId).forEach(p -> p.setMyVehicle(null));
+        recentPartCheckRepository.deleteByMyVehicleId(myVehicleId);
         // 이 차량에 저장한 부품(즐겨찾기)은 차량과 함께 지운다(다른 차량/차량 미지정 저장은 그대로).
         favoriteRepository.deleteByMyVehicleId(myVehicleId);
         myVehicleRepository.delete(myVehicle);

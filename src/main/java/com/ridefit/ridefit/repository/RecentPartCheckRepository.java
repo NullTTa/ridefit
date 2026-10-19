@@ -11,4 +11,6 @@ public interface RecentPartCheckRepository extends JpaRepository<RecentPartCheck
     List<RecentPartCheck> findByMemberIdOrderByCheckedAtDesc(Long memberId, Pageable pageable);
 
     void deleteByMemberId(Long memberId);
+
+    void deleteByMyVehicleId(Long myVehicleId);
 }

@@ -69,6 +69,19 @@ class VehicleFavoriteTest {
         assertThat(rows).containsExactlyInAnyOrder(bag + ":" + vehicleB, bag + ":none");
     }
 
+    // 이 차량 기준으로 부품 호환 확인을 한 적이 있으면(recent_part_check 행) 차량 삭제가 FK 위반 500이었다(2026-10-19 발견).
+    @Test
+    void 부품_확인_기록이_있는_차량도_삭제된다() throws Exception {
+        String token = signup("fav-del");
+        long modelYearId = firstModelYearId();
+        long vehicle = postJson("/api/my-vehicles", "{\"modelYearId\":%d}".formatted(modelYearId), token, 201).get("id").asLong();
+        long part = createPart("확인 기록 차량 삭제", modelYearId, token);
+        send(get("/api/parts/" + part + "/check").param("myVehicleId", String.valueOf(vehicle)), token, 200);
+
+        send(delete("/api/my-vehicles/" + vehicle), token, 204);
+        assertThat(getJson("/api/my-vehicles", token)).isEmpty();
+    }
+
     @Test
     void 남의_차량에는_저장하거나_조회할_수_없다() throws Exception {
         String owner = signup("fav-owner");
