@@ -3,11 +3,10 @@ import { Check } from 'lucide-react'
 import { HERO_BUILD } from '../constants/heroBuild'
 import { getPartOverlays, VEHICLE_FIT_LAYOUTS } from '../constants/vehicleFitPositions'
 
-// 홈 히어로: 순정 Super Cub 110에 부품이 하나씩 자동으로 장착되는 짧은 쇼케이스(클릭/hover 없이 무한 반복).
-//   순정 -> 머플러 연결선 -> 머플러 장착 -> 잠시 유지 -> 앞바구니 연결선 -> 앞바구니 장착 -> 유지 -> 사이드백 연결선 -> 사이드백 장착
-//   -> 완성 상태를 충분히 보여줌 -> 부품과 선이 함께 서서히 사라지며 순정으로 -> 처음부터 반복
-// 다음 부품의 선은 앞 부품이 장착된 뒤에만 나타나고(동시에 세 선이 나오지 않음), 앞에서 장착한 부품은 끝까지 유지된다.
-// prefers-reduced-motion이면 반복하지 않고 완성 상태를 바로 보여준다.
+// 홈 히어로: 순정 Super Cub 110에 부품을 한 가지씩 번갈아 장착해 보여주는 짧은 쇼케이스(클릭/hover 없이 무한 반복).
+//   순정 -> 머플러 장착 -> 순정 -> 앞바구니 장착 -> 순정 -> 사이드백 장착 -> 처음부터 반복 (2026-10-19 사용자 요청 순서)
+// 한 번에 한 부품만 장착된다(앞 부품은 순정으로 돌아갈 때 서서히 사라진다). 부품마다 연결선이 먼저 그려진 뒤 장착된다.
+// prefers-reduced-motion이면 반복하지 않고 세 부품을 모두 장착한 상태를 바로 보여준다.
 //
 // 이미지(새로 그린 픽셀 없음)
 //  - 차량: vehicles/super-cub-110.png 그대로. 장착 지점 좌표는 FitRoom과 같은 VEHICLE_FIT_LAYOUTS를 읽기만 한다.
@@ -25,20 +24,19 @@ const STAGE = { width: LAYOUT.width, height: OY + LAYOUT.height + PAD_BOTTOM }
 const vehicleTop = `${(OY / STAGE.height) * 100}%`
 const pct = (v, total) => `${(v / total) * 100}%`
 
-// 장면 순서(ms). shown = 연결선이 보이는 부품 수, installed = 장착된 부품 수, fading = 완성 후 순정으로 돌아가는 중.
-const INTRO = 1400 // 순정 상태
-const LINE = 900 // 선이 그려지는 시간(그 뒤 장착)
-const HOLD = 1700 // 장착 뒤 다음 선까지 유지
-const FINAL = 2800 // 완성 상태 유지(2~3초)
-const FADE = 1100 // 순정으로 서서히 돌아가는 시간
+// 장면 순서(ms). part = 지금 차례인 부품 번호(null = 순정), installed = 그 부품이 장착된 상태인지.
+const BASE = 2200 // 순정 상태 유지(장착 해제 페이드 포함)
+const LINE = 800 // 선이 그려지는 시간(그 뒤 장착)
+const HOLD = 2600 // 장착 상태 유지(2~3초)
 const N = HERO_BUILD.length
 function buildTimeline() {
-  const steps = [{ shown: 0, installed: 0, fading: false, wait: INTRO }]
+  const steps = []
   for (let i = 0; i < N; i++) {
-    steps.push({ shown: i + 1, installed: i, fading: false, wait: LINE })
-    steps.push({ shown: i + 1, installed: i + 1, fading: false, wait: i === N - 1 ? FINAL : HOLD })
+    // 마지막 부품 뒤의 순정 장면 = 다음 반복의 첫 장면(steps[0])
+    steps.push({ part: null, installed: false, wait: BASE })
+    steps.push({ part: i, installed: false, wait: LINE })
+    steps.push({ part: i, installed: true, wait: HOLD })
   }
-  steps.push({ shown: N, installed: N, fading: true, wait: FADE })
   return steps
 }
 const TIMELINE = buildTimeline()
@@ -60,25 +58,25 @@ function HeroFitShowcase({ className = '' }) {
     return () => clearTimeout(id)
   }, [index, reduced])
 
-  const scene = reduced ? { shown: N, installed: N, fading: false } : TIMELINE[index]
-  const isInstalled = (i) => i < scene.installed && !scene.fading
-  const caption = scene.fading
-    ? '다시 순정 상태로'
-    : scene.installed === N
-      ? `완성: ${HERO_BUILD.map((p) => p.label).join(' · ')}`
-      : scene.installed === 0
-        ? scene.shown === 0
-          ? '순정 Super Cub 110'
-          : `${HERO_BUILD[0].label} 장착 중...`
-        : `장착: ${HERO_BUILD.slice(0, scene.installed).map((p) => p.label).join(' · ')}`
+  const scene = TIMELINE[index]
+  // isShown = 연결선/이름표가 보이는 부품, isInstalled = 레이어가 켜진 부품
+  const isShown = (i) => reduced || scene.part === i
+  const isInstalled = (i) => reduced || (scene.part === i && scene.installed)
+  const current = scene.part === null ? null : HERO_BUILD[scene.part]
+  const caption = reduced
+    ? `장착: ${HERO_BUILD.map((p) => p.label).join(' · ')}`
+    : !current
+      ? '순정 Super Cub 110'
+      : scene.installed
+        ? `장착: ${current.label}`
+        : `${current.label} 장착 중...`
 
   return (
     <figure
       className={`flex w-full flex-col items-center gap-4 ${className}`}
       data-testid="hero-fit-showcase"
-      data-installed={scene.installed}
-      data-shown={scene.shown}
-      data-fading={scene.fading}
+      data-installed={HERO_BUILD.filter((_, i) => isInstalled(i)).length}
+      data-part={reduced ? 'all' : (current?.category ?? 'none')}
     >
       <div
         className="relative w-full max-w-[720px] overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/50"
@@ -120,19 +118,17 @@ function HeroFitShowcase({ className = '' }) {
             )
           })}
 
-          {/* 장착 지점 -> 부품 이름 연결선. 차례가 된 부품만 그린다: 다음 차례 = 흰 선이 한 번 그려짐, 장착됨 = 파란 실선.
-              완성 뒤에는 부품과 함께 서서히 사라진다. */}
+          {/* 장착 지점 -> 부품 이름 연결선. 차례가 된 부품만 그린다: 장착 전 = 흰 선이 한 번 그려짐, 장착됨 = 파란 실선. */}
           <svg
-            className="pointer-events-none absolute inset-0 h-full w-full transition-opacity ease-out"
-            style={{ opacity: scene.fading ? 0 : 1, transitionDuration: `${FADE - 200}ms` }}
+            className="pointer-events-none absolute inset-0 h-full w-full"
             viewBox={`0 0 ${STAGE.width} ${STAGE.height}`}
             preserveAspectRatio="none"
             aria-hidden="true"
           >
             {HERO_BUILD.map((p, i) => {
-              if (i >= scene.shown) return null
+              if (!isShown(i)) return null
               const a = LAYOUT.anchors[p.category]
-              const on = i < scene.installed
+              const on = isInstalled(i)
               return (
                 <line
                   key={p.partName}
@@ -154,15 +150,11 @@ function HeroFitShowcase({ className = '' }) {
           </svg>
 
           {HERO_BUILD.map((p, i) => {
-            if (i >= scene.shown) return null
+            if (!isShown(i)) return null
             const a = LAYOUT.anchors[p.category]
-            const on = i < scene.installed
+            const on = isInstalled(i)
             return (
-              <div
-                key={p.partName}
-                className="hero-node-in transition-opacity ease-out motion-reduce:[animation:none]"
-                style={{ opacity: scene.fading ? 0 : 1, transitionDuration: `${FADE - 200}ms` }}
-              >
+              <div key={p.partName} className="hero-node-in motion-reduce:[animation:none]">
                 {/* 장착 지점 점 */}
                 <span
                   aria-hidden="true"

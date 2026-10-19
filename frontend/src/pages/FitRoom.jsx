@@ -28,7 +28,7 @@ import { containWheel, LG_QUERY, padForSticky } from '../lib/fitScroll'
 import { COMPAT_TEXT, compatDisplay } from '../lib/compatStatus'
 
 // 검색용 정규화: 대소문자/띄어쓰기 무시("사이드 백" = "사이드백").
-const normText = (s) => (s ?? '').toLowerCase().replace(/s+/g, '')
+const normText = (s) => (s ?? '').toLowerCase().replace(/\s+/g, '')
 
 const STATUS_STYLE = {
   호환가능: 'border-ridefit-success-border bg-ridefit-success-bg text-ridefit-success',
@@ -1183,9 +1183,12 @@ function FitRoom() {
           {activeParts.length > 0 && (
             <div className="rounded-lg border border-ridefit-border bg-ridefit-card p-4">
               <p className="mb-1 text-sm font-semibold text-ridefit-text">
-                현재 조합 ({activeParts.length}개) · 합계{' '}
-                {activeParts.reduce((sum, p) => sum + (p.price ?? 0), 0).toLocaleString()}원
-                {activeParts.some((p) => p.price == null) && (
+                현재 조합 ({activeParts.length}개) ·{' '}
+                {/* 가격이 하나도 확인되지 않았으면 "합계 0원" 대신 준비중으로(출처 없는 가격을 만들지 않는다) */}
+                {activeParts.every((p) => p.price == null)
+                  ? '가격 정보 준비중'
+                  : `합계 ${activeParts.reduce((sum, p) => sum + (p.price ?? 0), 0).toLocaleString()}원`}
+                {activeParts.some((p) => p.price == null) && activeParts.some((p) => p.price != null) && (
                   <span className="ml-1 text-xs font-normal text-ridefit-text-secondary">(가격 정보 없는 부품 {activeParts.filter((p) => p.price == null).length}개 제외)</span>
                 )}
               </p>

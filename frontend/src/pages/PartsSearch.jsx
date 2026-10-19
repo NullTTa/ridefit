@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Check, ExternalLink, Heart, Star } from 'lucide-react'
+import { ArrowRight, ArrowUp, Check, ExternalLink, Heart, Star } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import CategoryMenu from '../components/CategoryMenu'
 import FitVehiclePicker from '../components/FitVehiclePicker'
 import { Ico } from '../components/Icon'
 import PartBadges from '../components/PartBadges'
@@ -360,9 +361,13 @@ function PartsSearch() {
   const pending360 = vehicle360Frames ? selectedParts.filter((p) => !layers360.some((l) => l.key === p.partId)) : []
   // 카테고리 2단 필터 표시용: [대분류, 그 안에 실제로 있는 소분류들] - 대분류 순서 유지, 없는 대분류는 숨긴다.
   const groupedCategories = useMemo(() => groupCategories(categories), [categories])
-  const subCategoriesShown = categoryGroup
-    ? groupedCategories.find(([label]) => label === categoryGroup)?.[1] ?? []
-    : categories
+  // 소분류 칩은 대분류를 고른 뒤 그 안의 것만 보인다(전체 소분류 20~30개를 한 줄로 늘어놓지 않는다 - 전체는 [전체 카테고리] 메뉴).
+  const subCategoriesShown = categoryGroup ? groupedCategories.find(([label]) => label === categoryGroup)?.[1] ?? [] : []
+  const categoryCounts = useMemo(() => {
+    const m = new Map()
+    for (const p of parts) m.set(p.category, (m.get(p.category) ?? 0) + 1)
+    return m
+  }, [parts])
   const filteredParts = useMemo(() => {
     const q = keyword.trim().toLowerCase()
     return parts.filter((p) => {
@@ -560,15 +565,17 @@ function PartsSearch() {
                 aria-label="호환 부품 검색"
                 className="mb-3 w-full rounded-lg border border-ridefit-border bg-ridefit-card px-3 py-2 text-sm text-ridefit-text focus:border-ridefit-primary focus:outline-none focus:ring-1 focus:ring-ridefit-primary"
               />
-              {/* 대분류(큰 묶음) - 모바일에서도 오른쪽 패널 없이 가로로 스크롤해서 고른다. 소분류는 그 아래 줄.
+              {/* 대분류(큰 묶음) - 줄바꿈으로 모두 보이게(가로 스크롤 없음). 소분류는 대분류를 고르면 그 아래 줄에, 전체 소분류는 [전체 카테고리] 메뉴로.
                   대분류는 표시용 묶음일 뿐(lib/partCategoryGroups) - 실제 필터/저장 데이터는 소분류(category) 그대로. */}
               {groupedCategories.length > 1 && (
-                <div
-                  className="mb-2 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
-                  role="group"
-                  aria-label="부품 대분류"
-                  data-testid="parts-group-filter"
-                >
+                <div className="mb-2 flex flex-wrap items-center gap-2" role="group" aria-label="부품 대분류" data-testid="parts-group-filter">
+                  <CategoryMenu
+                    groups={groupedCategories}
+                    counts={categoryCounts}
+                    group={categoryGroup}
+                    category={category}
+                    onSelect={({ group, category: cat }) => (cat ? handleCategoryChange(cat) : handleGroupChange(group))}
+                  />
                   <button
                     type="button"
                     onClick={() => handleGroupChange(null)}
@@ -595,11 +602,8 @@ function PartsSearch() {
                   ))}
                 </div>
               )}
-              <div
-                className="mb-4 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
-                role="group"
-                aria-label="부품 소분류"
-              >
+              {subCategoriesShown.length > 0 && (
+              <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="부품 소분류" data-testid="parts-sub-filter">
                 <button
                   type="button"
                   onClick={() => handleCategoryChange(null)}
@@ -628,8 +632,9 @@ function PartsSearch() {
                   </button>
                 ))}
               </div>
+              )}
 
-              {loading && <p className="text-ridefit-text-secondary">불러오는 중...</p>}
+              {loading &&<p className="text-ridefit-text-secondary">불러오는 중...</p>}
               {error && <p className="text-ridefit-danger">에러: {error}</p>}
 
               {!loading && !error && visibleParts.length === 0 && (
@@ -816,6 +821,21 @@ function PartsSearch() {
                       className="col-span-full rounded-lg border border-ridefit-border py-2 text-sm font-medium text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary"
                     >
                       더보기 ({filteredParts.length - visibleParts.length}개 더 있음)
+                    </button>
+                  )}
+                  {/* [더보기]로 목록이 길어지면 검색/카테고리 줄로 바로 올라간다(헤더 높이만큼 띄움) */}
+                  {visibleParts.length > PAGE_SIZE && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.querySelector('[aria-label="호환 부품 검색"]')
+                        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' })
+                      }}
+                      className="col-span-full inline-flex items-center justify-center gap-1 rounded-lg py-2 text-sm font-medium text-ridefit-primary hover:underline"
+                      data-testid="parts-scroll-top"
+                    >
+                      <ArrowUp aria-hidden="true" className="h-4 w-4" />
+                      맨 위로
                     </button>
                   )}
                 </div>
