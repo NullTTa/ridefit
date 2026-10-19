@@ -6,9 +6,8 @@ import { clearFitData } from '../lib/fitBuild'
 
 // 내 차고 차량 삭제(DELETE /api/my-vehicles/{id}, 본인 차량만 - 서버가 확인).
 // 확인 창에는 서버의 실제 삭제 정책을 그대로 알린다(MyVehicleController.deleteMyVehicle):
-//  - 이 차량에 즐겨찾기한 부품, 부품 확인 기록: 함께 삭제
-//  - 예약·주문·게시글: 기록은 남고 차량 연결만 끊김
-//  - 저장한 장착 모습: 서버에 남지만 차량이 없어 더 이상 볼 수 없음(지우려면 먼저 삭제)
+//  - 이 차량에 즐겨찾기한 부품, 이 차량으로 저장한 장착 모습(이미지 파일 포함), 부품 확인 기록: 함께 삭제
+//  - 예약·주문·게시글, 차량 id 없이 저장된 예전 장착 모습: 남음(예약·주문·글은 차량 연결만 끊김)
 // 실패하면 화면에서 차량을 빼지 않고 오류만 보여준다. 요청 중에는 다시 누를 수 없다.
 function VehicleDeleteButton({ vehicle, onDeleted, className = '' }) {
   const [open, setOpen] = useState(false)
@@ -26,7 +25,14 @@ function VehicleDeleteButton({ vehicle, onDeleted, className = '' }) {
       api.get(`/api/me/favorites?myVehicleId=${vehicle.id}`),
       api.get(`/api/ai-fit/results?myVehicleId=${vehicle.id}`),
     ])
-      .then(([favs, fits]) => setCounts({ favorites: favs.length, savedFits: fits.length }))
+      // 서버가 지우는 것은 이 차량 id로 저장된 결과뿐 - 차량 id 없이 저장된 예전 결과(같은 차종으로 함께 보이던 것)는 남는다.
+      .then(([favs, fits]) =>
+        setCounts({
+          favorites: favs.length,
+          savedFits: fits.filter((r) => r.myVehicleId === vehicle.id).length,
+          legacyFits: fits.filter((r) => r.myVehicleId == null).length,
+        }),
+      )
       .catch(() => setCounts(null))
   }
 
@@ -52,13 +58,12 @@ function VehicleDeleteButton({ vehicle, onDeleted, className = '' }) {
   const message = (
     <>
       <span className="block font-semibold text-ridefit-text" data-testid="vehicle-delete-name">{name}</span>
-      <span className="mt-2 block">함께 삭제: 이 차량의 즐겨찾기{n(counts?.favorites)}, 부품 확인 기록</span>
-      {(!counts || counts.savedFits > 0) && (
-        <span className="mt-1 block">
-          볼 수 없게 됨: 저장한 장착 모습{n(counts?.savedFits)} (지우려면 먼저 삭제해 주세요)
-        </span>
-      )}
-      <span className="mt-1 block">남는 기록: 예약·주문·게시글</span>
+      <span className="mt-2 block" data-testid="vehicle-delete-targets">
+        함께 삭제: 이 차량의 즐겨찾기{n(counts?.favorites)}, 저장한 장착 모습{n(counts?.savedFits)}, 부품 확인 기록
+      </span>
+      <span className="mt-1 block">
+        남는 기록: 예약·주문·게시글{counts?.legacyFits > 0 ? `, 차량 지정 없이 예전에 저장한 장착 모습 ${counts.legacyFits}개` : ''}
+      </span>
       <span className="mt-1 block text-ridefit-danger">삭제하면 되돌릴 수 없어요.</span>
     </>
   )
