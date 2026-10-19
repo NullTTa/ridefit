@@ -83,6 +83,21 @@ class VehicleFavoriteTest {
     }
 
     @Test
+    void 차량_삭제는_본인만_가능하고_없는_차량은_404() throws Exception {
+        String owner = signup("del-owner");
+        String other = signup("del-other");
+        long vehicle = postJson("/api/my-vehicles", "{\"modelYearId\":%d}".formatted(firstModelYearId()), owner, 201).get("id").asLong();
+
+        send(delete("/api/my-vehicles/" + vehicle), other, 403);
+        send(delete("/api/my-vehicles/" + vehicle), null, 401);
+        assertThat(getJson("/api/my-vehicles", owner)).hasSize(1);
+
+        send(delete("/api/my-vehicles/99999999"), owner, 404);
+        send(delete("/api/my-vehicles/" + vehicle), owner, 204);
+        send(delete("/api/my-vehicles/" + vehicle), owner, 404);
+    }
+
+    @Test
     void 남의_차량에는_저장하거나_조회할_수_없다() throws Exception {
         String owner = signup("fav-owner");
         String other = signup("fav-other");
