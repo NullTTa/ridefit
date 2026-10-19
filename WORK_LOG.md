@@ -4,6 +4,18 @@
 
 ---
 
+## 22차 - 운영 백엔드 배포(adacd53 빌드) (2026-10-19 01:57 UTC)
+
+- **jar**: `bootJar` 후 `application-local.properties` 제거(그 외 항목/압축 방식 동일 확인), sha256 `9e73ec32…6664`(67,020,305 B).
+  임시 이름 업로드 -> 서버 해시/크기 일치 -> 기존 jar 백업 `/opt/ridefit/backup-20261019-0157-backend/`(sha `48ef4c21…b45d`, SHA256 파일 포함) -> 교체 -> 재시작(17초, profile prod).
+  롤백 = `cp -a /opt/ridefit/backup-20261019-0157-backend/ridefit.jar /opt/ridefit/ridefit.jar && sudo systemctl restart ridefit`. DB/nginx/환경변수 변경 없음.
+- **운영 확인**: 비밀번호 찾기·재설정 503, 로그인 같은 이메일 6번째 시도 429, 보호 API(my-vehicles/favorites/ai-fit/admin/payments) 비로그인·위조 토큰 401,
+  Swagger 백엔드 직접 요청 404, 공개 14화면 x 2폭 오류 0, Hero 통과, 재시작 후 ERROR 로그 0.
+- **정정**: 20차의 "운영 Swagger 공개 200"은 틀린 판단이었다 - nginx는 `/api/`만 백엔드로 넘겨 `/v3/api-docs`는 index.html(text/html)을 돌려준 것.
+  20차의 "비밀번호 찾기 400"도 확인 요청 필드명 오류(`nickname` -> 실제 `name`)로 입력 검증에서 난 400이었다(구버전 여부의 증거가 아님).
+- **운영에서 직접 못 한 것**: 차량 삭제 수정, 타 회원 리소스 403, 재설정 토큰의 일반 인증 거부는 로그인 계정/토큰이 있어야 해서 운영 데이터 생성 없이 확인 불가 -
+  로컬 테스트(VehicleFavoriteTest, SecurityHardeningTest, FitRoom 흐름 49/49)로만 검증.
+
 ## 21차 - 전체 문구 다이어트 + Git ref 복구 (2026-10-19, main)
 
 - **Git ref 복구**: 손상된 `refs/heads/main`(NUL 41바이트)을 `.git/ref-backup-20261019/main.broken`에 보관하고 reflog 값(3fe7995)으로 복구.
