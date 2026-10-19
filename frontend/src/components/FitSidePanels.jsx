@@ -34,7 +34,7 @@ export function FitEquippedPanel({ activeParts, onRemove, layerKindById, resultP
       </div>
       {activeParts.length === 0 ? (
         <p className="rounded-md border border-dashed border-ridefit-border px-3 py-3 text-xs text-ridefit-text-secondary" data-testid="fit-equipped-empty">
-          아직 선택한 부품이 없어요. 오른쪽 부품 목록이나 아래 즐겨찾기에서 [선택]을 눌러 보세요.
+          선택한 부품이 없어요.
         </p>
       ) : (
         <ul className="fit-scroll flex max-h-48 flex-col gap-1.5 overflow-y-auto overscroll-contain pr-1">
@@ -94,7 +94,7 @@ export function FitFavoritesPanel({ items, onToggleEquip, onUnfavorite, error })
       )}
       {items.length === 0 ? (
         <p className="rounded-md border border-dashed border-ridefit-border px-3 py-3 text-xs text-ridefit-text-secondary" data-testid="fit-favorites-empty">
-          즐겨찾기한 부품이 없어요. 오른쪽 부품 목록에서 [♡ 저장하기]를 누르면 여기에 모여요.
+          즐겨찾기한 부품이 없어요. 목록에서 [♡ 저장하기]를 누르세요.
         </p>
       ) : (
         <ul className="fit-scroll -mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-2" ref={wheelToHorizontal} aria-label="즐겨찾기 부품 목록">

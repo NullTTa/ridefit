@@ -7,9 +7,9 @@ import { api } from '../lib/api'
 import { formatAppliesTo, GUIDE_TYPE_ICON, GUIDE_TYPE_LABEL } from '../lib/guide'
 
 const TABS = [
-  { type: 'PART', description: '핸들 댐퍼, 머플러, 브레이크처럼 차량에 다는 부품이 무엇이고 왜 쓰는지 알아봐요.' },
-  { type: 'CONSUMABLE', description: '엔진오일, 냉각수, 요소수처럼 유지에 필요한 소모품을 종류와 교환 주기까지 알아봐요.' },
-  { type: 'DIY', description: '직접 해볼 수 있는 정비를 준비물과 순서, 주의사항까지 정리했어요.' },
+  { type: 'PART', description: '머플러·핸들 댐퍼 등 부품이 무엇이고 왜 쓰는지' },
+  { type: 'CONSUMABLE', description: '엔진오일·냉각수 등 소모품 종류와 교환 주기' },
+  { type: 'DIY', description: '직접 해볼 수 있는 정비의 준비물·순서·주의사항' },
 ]
 
 function GuideCard({ article }) {
@@ -71,14 +71,13 @@ function Guide() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-14">
       <div className="mb-8">
-        <p className="font-mono text-xs uppercase tracking-widest text-ridefit-primary">RIDEFIT GUIDE</p>
-        <h1 className="mt-1 text-2xl font-bold text-ridefit-text">부품 · 소모품 정보</h1>
+        <h1 className="text-2xl font-bold text-ridefit-text">부품 · 소모품 정보</h1>
         <p className="mt-2 max-w-2xl text-sm text-ridefit-text-secondary">
-          사기 전에 알아보고, 달고 나서 관리하는 데 필요한 정보를 모았어요. 상품을 골라보고 싶다면{' '}
+          부품과 소모품, 간단한 정비 방법을 정리했어요. 상품은{' '}
           <Link to="/parts" className="font-medium text-ridefit-primary hover:underline">
             부품 찾아보기
           </Link>
-          로 이동하세요.
+          에서 볼 수 있어요.
         </p>
       </div>
 

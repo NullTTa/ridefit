@@ -404,7 +404,7 @@ function PartsSearch() {
     <div className="mx-auto max-w-6xl px-4 py-16">
       <h1 className="mb-1 text-2xl font-bold text-ridefit-text">부품 찾아보기</h1>
       <p className="mb-6 text-sm text-ridefit-text-secondary">
-        내 차량의 호환 데이터가 있는 부품만 켜고 끄면서 조합을 맞춰볼 수 있어요.{' '}
+        내 차량에 호환되는 부품만 보여요.{' '}
         <Link to="/guide" className="font-medium text-ridefit-primary hover:underline">
           부품 · 소모품 정보
         </Link>
@@ -509,13 +509,12 @@ function PartsSearch() {
                 </p>
                 {viewMode === 'fit' && selectedParts.length === 0 && (
                   <p className="mt-1 text-center text-xs text-ridefit-text-secondary">
-                    아래 목록에서 [위치 미리보기]를 누르면 차량 위에 표시돼요.
+                    [위치 미리보기]를 누르면 차량 위에 표시돼요.
                   </p>
                 )}
                 {viewMode === '360' && pending360.length > 0 && (
                   <p className="mt-3 rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-center text-xs text-ridefit-text-secondary" data-testid="parts-360-pending">
-                    360° 장착 이미지 준비 중: {pending360.map((p) => p.name).join(', ')}
-                    <span className="mt-0.5 block">장착 상태는 그대로예요. [부품 장착] 보기에서 확인할 수 있어요.</span>
+                    360° 이미지 준비 중([부품 장착]에서 확인): {pending360.map((p) => p.name).join(', ')}
                   </p>
                 )}
                 {replaced && (
@@ -528,9 +527,11 @@ function PartsSearch() {
               {selectedParts.length > 0 && (
                 <div className="mt-4 rounded-xl border border-ridefit-border bg-ridefit-card p-4">
                   <p className="mb-1 text-sm font-semibold text-ridefit-text">
-                    장착 중 ({selectedParts.length}개) · 합계{' '}
-                    {selectedParts.reduce((sum, p) => sum + (p.price ?? 0), 0).toLocaleString()}원
-                    {selectedParts.some((p) => p.price == null) && (
+                    장착 중 ({selectedParts.length}개) ·{' '}
+                    {selectedParts.every((p) => p.price == null)
+                      ? '가격 정보 준비중'
+                      : `합계 ${selectedParts.reduce((sum, p) => sum + (p.price ?? 0), 0).toLocaleString()}원`}
+                    {selectedParts.some((p) => p.price == null) && selectedParts.some((p) => p.price != null) && (
                       <span className="ml-1 text-xs font-normal text-ridefit-text-secondary">(가격 정보 없는 부품 제외)</span>
                     )}
                   </p>

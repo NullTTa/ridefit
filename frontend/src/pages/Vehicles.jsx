@@ -41,7 +41,7 @@ function Vehicles() {
         <div>
           <h1 className="text-2xl font-bold text-ridefit-text">차량 둘러보기</h1>
           <p className="mt-1 text-sm text-ridefit-text-secondary">
-            차량을 눌러 성향과 호환 부품, 비슷한 차량까지 한 번에 확인해보세요.
+            차량을 눌러 성향과 호환 부품을 확인해요.
           </p>
         </div>
         <Link

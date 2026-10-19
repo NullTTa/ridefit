@@ -58,13 +58,12 @@ function Services() {
         <p className="font-mono text-xs uppercase tracking-widest text-ridefit-primary">서비스 · 체험판</p>
         <h1 className="mt-1 text-2xl font-bold text-ridefit-text">정비 · 세차 서비스</h1>
         <p className="mt-2 max-w-2xl text-sm text-ridefit-text-secondary">
-          정비소, 오일 교환, 타이어, 세차장을 한곳에서 살펴보고 예약 과정을 미리 체험해보세요.
+          정비소·오일 교환·타이어·세차장 예약을 체험해 보세요.
         </p>
       </div>
 
       <p className="mb-6 rounded-lg border border-ridefit-warning-border bg-ridefit-warning-bg px-4 py-3 text-sm text-ridefit-warning">
-        <Ico as={TriangleAlert} className="mr-1.5" />지금 보이는 매장은 개발용 <strong>샘플 데이터</strong>예요. 실제 방문 전에는 매장에 미리 확인해주세요.
-        실제 업체에 전달되거나 결제가 발생하지 않아요.
+        <Ico as={TriangleAlert} className="mr-1.5" />매장은 <strong>샘플 데이터</strong>예요. 예약은 실제 업체에 전달되지 않고 결제도 발생하지 않아요.
       </p>
 
       <div className="mb-10">

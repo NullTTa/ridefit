@@ -9,10 +9,10 @@ function FindPassword() {
         <div>
           <h1 className="text-2xl font-bold text-ridefit-text">비밀번호 찾기</h1>
           <p className="mt-2 text-sm text-ridefit-text-secondary">
-            비밀번호 찾기는 현재 이용할 수 없어요. 계정을 안전하게 보호하기 위해 이메일 인증 기능을 준비하고 있어요.
+            이메일 인증을 준비 중이라 지금은 이용할 수 없어요.
           </p>
           <p className="mt-2 text-sm text-ridefit-text-secondary">
-            비밀번호가 기억나지 않으면 관리자에게 문의해주세요. 로그인한 상태라면 마이페이지에서 비밀번호를 바꿀 수 있어요.
+            관리자에게 문의하거나, 로그인 상태라면 마이페이지에서 바꿀 수 있어요.
           </p>
         </div>
 

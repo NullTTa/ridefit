@@ -20,9 +20,9 @@ const PART_REASON = {
 const STATUS_TEXT = {
   READY: '선택한 부품을 함께 장착한 모습을 만들 수 있어요.',
   CACHED: '이 조합으로 만든 장착 모습이 저장되어 있어요.',
-  NOT_CONFIGURED: '장착 모습 만들기가 아직 준비되지 않았어요. 위치 미리보기는 그대로 볼 수 있어요.',
-  REFERENCE_MISSING: '선택한 부품은 아직 장착 모습을 지원하지 않아요. 위치 미리보기로 확인해주세요.',
-  UNSUPPORTED_CATEGORY: '선택한 부품 종류는 아직 장착 모습을 지원하지 않아요. 위치 미리보기로 확인해주세요.',
+  NOT_CONFIGURED: '장착 모습 만들기는 아직 준비 중이에요.',
+  REFERENCE_MISSING: '선택한 부품은 아직 지원하지 않아요. 위치 미리보기로 확인해 주세요.',
+  UNSUPPORTED_CATEGORY: '이 부품 종류는 아직 지원하지 않아요. 위치 미리보기로 확인해 주세요.',
   USE_2D_IMAGE: '사이드백은 위치 미리보기의 측면 장착 이미지로 확인해주세요.',
 }
 
@@ -163,7 +163,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
     : checking
       ? '이미지에 넣을 수 있는지 확인 중이에요.'
       : check?.code === 'NOT_CONFIGURED'
-        ? '이미지 만들기는 아직 준비 중이에요. 장착/해제와 입혀보기 전·후 비교는 위 미리보기에서 바로 볼 수 있어요.'
+        ? '이미지 만들기는 아직 준비 중이에요.'
         : null
 
   // 미리 준비한 장착 이미지가 있는 부품(직접 합성)은 FitRoom 왼쪽의 [현재 모습 저장](FitSavePanel, lib/fitComposite saveFitComposite)이 저장한다.
@@ -175,7 +175,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
     <div className="mt-6 rounded-lg border border-ridefit-border bg-ridefit-bg p-4 text-left" data-testid="ai-fit-panel">
       <p className="mb-1 text-sm font-semibold text-ridefit-text">장착한 모습 만들기</p>
       <p className="mb-3 text-xs text-ridefit-text-secondary">
-        미리 준비한 장착 이미지가 없는 부품은 버튼을 눌렀을 때 내 차량 사진에 함께 장착한 이미지 한 장을 새로 만들어요.
+        장착 이미지가 없는 부품은 버튼을 누를 때만 이미지를 새로 만들어요.
       </p>
 
       <p className="mb-1.5 text-[11px] font-semibold text-ridefit-text-secondary">이미지에 들어갈 부품 <span className="font-normal">· 장착/해제는 위 '현재 장착 중'에서</span></p>
@@ -263,7 +263,7 @@ function AiFitPanel({ vehicle, myVehicleId, activeParts, onShowResult, onShowBas
         </p>
       )}
       <p className="mt-3 text-[11px] text-ridefit-text-secondary">
-        장착 모습은 참고용 생성 이미지이며 실제 장착 상태와 차이가 있을 수 있어요. 버튼을 눌렀을 때만 만들어지고, 만든 결과는 모두 위 '내 저장 목록'에 남아요.
+        참고용 이미지라 실제 장착 모습과 다를 수 있어요. 결과는 '내 저장 목록'에 남아요.
       </p>
     </div>
   )

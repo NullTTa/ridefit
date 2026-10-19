@@ -103,11 +103,9 @@ function Finder() {
       {/* 소개 */}
       {!loading && step === -1 && total > 0 && (
         <section className="rounded-2xl border border-ridefit-border bg-ridefit-card px-6 py-12 text-center sm:px-12">
-          <p className="mb-3 font-mono text-xs uppercase tracking-widest text-ridefit-primary">RIDING TYPE FINDER</p>
           <h1 className="text-3xl font-bold text-ridefit-text sm:text-4xl">성향으로 알아보는 나의 오토바이</h1>
           <p className="mx-auto mt-4 max-w-xl text-ridefit-text-secondary">
-            질문 {total}개에 답하면 나의 라이딩 성향을 분석하고, RIDEFIT에 등록된 차량 중에서 잘 맞는 차량을 추천해 드려요.
-            로그인 없이 1~2분이면 끝나요.
+            질문 {total}개에 답하면 잘 맞는 차량을 추천해 드려요. 로그인 없이 1~2분이면 끝나요.
           </p>
           <button
             type="button"

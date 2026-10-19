@@ -18,12 +18,6 @@ import { getRecentVehicleIds } from '../lib/recentVehicles'
 // 홈 하단에 소개할 정보 글(slug). 서버에 없으면 자동으로 빠진다.
 const FEATURED_GUIDES = ['engine-oil', 'coolant', 'urea-solution', 'handle-damper', 'engine-oil-change', 'tire-pressure-check']
 
-const SERVICE_FEATURES = [
-  { title: '정확한 호환성 확인', description: '추측이 아닌, 등록된 호환 데이터를 기반으로 판정합니다.' },
-  { title: '다양한 부품 검색', description: '카테고리별로 필요한 부품을 빠르게 찾아보세요.' },
-  { title: '장착 미리보기', description: '내 오토바이에 부품을 장착한 모습을 미리 확인해보세요.' },
-]
-
 const JOURNEY = [
   { label: '차량 탐색', to: '/vehicles' },
   { label: '성향 테스트', to: '/finder' },
@@ -42,7 +36,7 @@ function SectionHead({ eyebrow, title, description, to, toLabel }) {
   return (
     <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-ridefit-primary">{eyebrow}</p>
+        {eyebrow && <p className="font-mono text-xs uppercase tracking-widest text-ridefit-primary">{eyebrow}</p>}
         <h2 className="mt-1 text-2xl font-bold text-ridefit-text sm:text-3xl">{title}</h2>
         {description && <p className="mt-2 max-w-2xl text-sm text-ridefit-text-secondary">{description}</p>}
       </div>
@@ -104,8 +98,7 @@ function Home() {
         <div className="flex flex-1 items-center justify-center px-4 py-14 md:py-16">
           <div className="flex w-full max-w-sm flex-col gap-6">
             <div>
-              <p className="font-mono text-xs uppercase tracking-widest text-ridefit-primary">MOBILITY PARTS SERVICE</p>
-              <h1 className="mt-2 break-keep text-3xl font-bold leading-tight text-ridefit-text sm:text-4xl">
+              <h1 className="break-keep text-3xl font-bold leading-tight text-ridefit-text sm:text-4xl">
                 내 바이크를 원하는
                 <br />
                 모습으로 만들어보세요.
@@ -161,9 +154,8 @@ function Home() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <Reveal>
             <SectionHead
-              eyebrow={showMyVehicles ? 'MY GARAGE' : 'FIND YOUR BIKE'}
               title={showMyVehicles ? '내 차고' : '나에게 맞는 오토바이는?'}
-              description={showMyVehicles ? '등록한 차량으로 호환 부품을 확인하고 입혀볼 수 있어요.' : '질문 몇 개로 라이딩 성향을 알아보고, 잘 맞는 차량을 추천받아보세요.'}
+              description={showMyVehicles ? '등록한 차량에 부품을 입혀보세요.' : '질문 몇 개로 잘 맞는 차량을 추천받아요.'}
               to={showMyVehicles ? '/garage' : '/vehicles'}
               toLabel={showMyVehicles ? '내 차고 전체 보기' : '전체 차량 보기'}
             />
@@ -176,7 +168,7 @@ function Home() {
                   <Compass aria-hidden="true" className="h-8 w-8 text-ridefit-primary" strokeWidth={1.75} />
                   <h3 className="mt-3 text-xl font-bold text-ridefit-text">성향으로 알아보는 나의 오토바이</h3>
                   <p className="mt-2 text-sm text-ridefit-text-secondary">
-                    출퇴근·투어링·디자인·유지비… 9개 질문으로 나의 라이딩 성향과 추천 차량을 확인해요. 로그인 없이 1~2분이면 충분해요.
+                    9개 질문, 1~2분이면 추천 차량을 확인해요. 로그인 없이 할 수 있어요.
                   </p>
                 </div>
                 <Link to="/finder" className="rounded-lg bg-ridefit-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:brightness-110">
@@ -216,9 +208,8 @@ function Home() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <Reveal>
             <SectionHead
-              eyebrow="PARTS"
               title="부품 찾아보기"
-              description="종류별로 부품이 무엇인지 알아보고, 내 차량에 호환되는 상품을 확인하세요."
+              description="내 차량에 호환되는 부품을 종류별로 찾아보세요."
               to="/parts"
               toLabel="내 차량 호환 부품"
             />
@@ -254,12 +245,11 @@ function Home() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <Reveal>
             <SectionHead
-              eyebrow="POPULAR"
               title={showcaseIsPopular ? '인기 부품' : '새로 등록된 부품'}
               description={
                 showcaseIsPopular
-                  ? 'RIDEFIT에서 실제로 조회하고 장착해본 횟수를 기준으로 뽑았어요. (판매량이 아닙니다)'
-                  : '아직 인기 순위를 매길 만큼 조회·장착 기록이 쌓이지 않았어요. 대신 새로 등록된 부품을 보여드려요.'
+                  ? 'RIDEFIT 조회·장착 횟수 기준(판매량 아님)'
+                  : '인기 순위를 매길 기록이 아직 부족해 새 부품을 보여드려요.'
               }
               to="/parts"
               toLabel="부품 전체 보기"
@@ -303,9 +293,7 @@ function Home() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <Reveal>
             <SectionHead
-              eyebrow="FITROOM"
               title="내 바이크에 달면 어떤 모습일까?"
-              description="마음에 드는 부품을 고르고, 내 차량에 장착한 모습을 미리 확인해보세요."
             />
           </Reveal>
 
@@ -315,8 +303,7 @@ function Home() {
                 <Layers aria-hidden="true" className="h-8 w-8 text-ridefit-primary" strokeWidth={1.75} />
                 <h3 className="mt-3 text-xl font-bold text-ridefit-text">부품을 여러 개 올려보고 비교하세요</h3>
                 <p className="mt-2 text-sm text-ridefit-text-secondary">
-                  호환되는 부품들을 카테고리별로 켜고 꺼보면서 동시에 비교할 수 있어요. 함께 장착하면
-                  간섭이 생기는 조합은 미리 경고해드려요.
+                  호환 부품을 켜고 끄며 장착 모습을 비교해요. 함께 달 수 없는 조합은 미리 알려드려요.
                 </p>
                 <div className="mt-5">
                   {isAuthenticated && showMyVehicles ? (
@@ -365,9 +352,8 @@ function Home() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <Reveal>
             <SectionHead
-              eyebrow="GUIDE"
               title="알아두면 유용한 정보"
-              description="엔진오일 점도, 냉각수, 핸들 댐퍼까지. 사기 전에 알아보고 달고 나서 관리하는 방법을 정리했어요."
+              description="부품과 소모품, 간단한 정비 방법을 정리했어요."
               to="/guide"
               toLabel="정보 전체 보기"
             />
@@ -380,7 +366,7 @@ function Home() {
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-ridefit-primary">{{ PART: '부품 정보', CONSUMABLE: '소모품 정보', DIY: 'DIY 가이드' }[g.type]}</p>
                     <p className="mt-0.5 font-semibold text-ridefit-text">{g.title}</p>
-                    <p className="mt-1 text-sm text-ridefit-text-secondary">{g.summary}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-ridefit-text-secondary">{g.summary}</p>
                   </div>
                 </Link>
               </Reveal>
@@ -394,9 +380,7 @@ function Home() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <Reveal>
             <SectionHead
-              eyebrow="MAINTENANCE"
               title="정비가 필요할 때, 예약까지 한 번에"
-              description="차량을 고르고, 필요한 서비스를 한 번에 골라서, 예약까지 이어가세요."
               to="/services"
               toLabel="정비·세차 서비스 보기"
             />
@@ -404,9 +388,9 @@ function Home() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { step: '01', title: '차량 선택', desc: '정비 받을 내 차량을 골라요.' },
-              { step: '02', title: '서비스 선택', desc: '오일교환, 타이어 등 필요한 서비스를 여러 개 골라요.' },
-              { step: '03', title: '예약 신청', desc: '날짜·시간을 정하면 선택 내역과 총 금액이 함께 확정돼요.' },
+              { step: '01', title: '차량 선택', desc: '정비 받을 차량을 골라요.' },
+              { step: '02', title: '서비스 선택', desc: '오일교환·타이어 등 여러 개를 골라요.' },
+              { step: '03', title: '예약 신청', desc: '날짜·시간과 총 금액을 확인해요.' },
             ].map((s, i) => (
               <Reveal key={s.step} delay={i * 0.08}>
                 <div className="h-full rounded-xl border border-ridefit-border bg-ridefit-card p-5 transition hover:-translate-y-1 hover:border-ridefit-primary/60">
@@ -434,9 +418,8 @@ function Home() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <Reveal>
             <SectionHead
-              eyebrow="COMMUNITY"
-              title="라이더들이 머무는 곳"
-              description="경험 많은 라이더의 노하우, 초보자의 질문, 자유로운 이야기까지."
+              title="라이더 커뮤니티"
+              description="노하우, 질문, 장착 후기를 나눠요."
               to="/community"
               toLabel="커뮤니티 가기"
             />
@@ -493,7 +476,7 @@ function Home() {
               <SimilarVehicles
                 ids={recentIds.slice(0, 3)}
                 title="최근 본 차량과 비슷한 차량"
-                description="최근 살펴본 차량과 배기량, 차체 형태, 가격대, 라이딩 성향이 비슷해요."
+                description="배기량·차체·가격대·성향이 비슷한 차량이에요."
                 limit={4}
               />
             ) : (
@@ -515,22 +498,11 @@ function Home() {
       <section className="bg-ridefit-bg-alt">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <Reveal>
-            <SectionHead eyebrow="ABOUT RIDEFIT" title="사고, 꾸미고, 관리하고, 소통하는 곳" description="차량 탐색부터 정비 예약 체험까지, 하나의 흐름으로 이어져요." />
+            <SectionHead title="바로가기" />
           </Reveal>
 
-          <div className="grid gap-6 sm:grid-cols-3">
-            {SERVICE_FEATURES.map((feature, i) => (
-              <Reveal key={feature.title} delay={i * 0.08}>
-                <div className="h-full rounded-xl border border-ridefit-border bg-ridefit-card p-6 shadow-lg transition hover:-translate-y-1">
-                  <h3 className="mb-2 text-lg font-bold text-ridefit-text">{feature.title}</h3>
-                  <p className="text-sm text-ridefit-text-secondary">{feature.description}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
           <Reveal delay={0.1}>
-            <ol className="mt-10 flex flex-wrap items-center gap-2">
+            <ol className="flex flex-wrap items-center gap-2">
               {JOURNEY.map((step, i) => (
                 <li key={step.label} className="flex items-center gap-2">
                   <Link to={step.to} className="rounded-full border border-ridefit-border bg-ridefit-card px-3.5 py-1.5 text-sm text-ridefit-text-secondary transition hover:border-ridefit-primary hover:text-ridefit-primary">

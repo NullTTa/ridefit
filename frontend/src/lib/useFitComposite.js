@@ -7,9 +7,9 @@ export const partKeyOf = (ids) => [...ids].map(Number).sort((a, b) => a - b).joi
 
 const REASON_TEXT = {
   'no-parts': '오른쪽 목록에서 부품을 먼저 선택해 주세요.',
-  'no-layout': '이 차량 사진은 2D 입혀보기를 아직 지원하지 않아요(현재 Super Cub 110 대표 사진만 지원). 차량 위에는 부착 위치만 표시돼요.',
-  'no-image': '선택한 부품은 이 차량 사진에 입힐 장착 이미지가 없어 입혀보기를 아직 지원하지 않아요. 차량 위에는 부착 위치만 표시돼요.',
-  'too-many': `한 번에 ${MAX_COMPOSITE_PARTS}개 부품까지 입혀볼 수 있어요. 몇 개를 빼고 다시 입혀봐 주세요.`,
+  'no-layout': '이 차량은 2D 입혀보기를 아직 지원하지 않아요(현재 Super Cub 110만 지원). 위치만 표시돼요.',
+  'no-image': '선택한 부품은 장착 이미지가 없어 위치만 표시돼요.',
+  'too-many': `한 번에 ${MAX_COMPOSITE_PARTS}개까지 입혀볼 수 있어요. 몇 개를 빼 주세요.`,
 }
 
 const preload = (src) =>
@@ -148,7 +148,7 @@ export function useFitComposite({ vehicle, myVehicleId, activeParts, onSaved }) 
       })
       setNote(
         res.cached
-          ? { kind: 'info', text: '같은 부품 조합으로 이미 저장한 결과가 있어서 그 결과를 열었어요(새로 저장하지 않음).' }
+          ? { kind: 'info', text: '같은 조합으로 저장한 결과가 있어 그 결과를 열었어요.' }
           : { kind: 'info', text: '내 저장 목록과 내 차고에 저장했어요.' },
       )
       onSaved?.(res)

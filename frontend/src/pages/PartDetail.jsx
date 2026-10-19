@@ -218,7 +218,7 @@ function PartDetail() {
           {/* 예시 판매처/가격 미확인 판매처는 서버에서 제외된 값이다(PartPopularityService). */}
           {stats.lowestPrice != null && (
             <p className="text-xs text-ridefit-text-secondary" data-testid="part-seller-price-hint">
-              외부 판매처 참고 가격 {stats.lowestPrice.toLocaleString()}원부터 · 실시간 조회 아님 · RIDEFIT 결제 금액 아님
+              외부 판매처 참고가 {stats.lowestPrice.toLocaleString()}원부터 · 결제 금액 아님
             </p>
           )}
 
@@ -285,7 +285,6 @@ function PartDetail() {
                 data-testid={`fit-try-${part.id}`}
               >
                 <span className="text-base font-bold"><Ico as={Wrench} className="mr-1.5" />장착해보기</span>
-                <span className="text-[11px] text-white/85">내 차량 → 이 부품 → 장착 결과 확인</span>
               </Link>
             ) : (
               <FitVehiclePicker partId={part.id} currentVehicleId={vehicleId} className="w-full" />
@@ -337,11 +336,17 @@ function PartDetail() {
           <p className="text-sm text-ridefit-text-secondary">아직 등록된 호환 차량 정보가 없어요.</p>
         ) : (
           <div className="flex flex-col gap-4">
-            {groupFitmentsByModel(fitments).map((g) => (
+            {groupFitmentsByModel(fitments).map((g) => {
+              // 연식마다 같은 메모/근거 미확인 안내가 반복되면 차종 아래에 한 번만 보여 준다(메모 내용은 그대로).
+              const sharedNote = g.rows.length > 1 && g.rows.every((r) => r.note === g.rows[0].note) ? g.rows[0].note : null
+              const anyUnverified = g.rows.some((r) => compatDisplay(r.status, r.note).unverified)
+              return (
               <div key={g.key}>
                 <p className="mb-1.5 text-sm font-semibold text-ridefit-text">
                   {g.manufacturerName} {g.vehicleModelName}
                 </p>
+                {sharedNote && <p className="mb-1.5 text-xs text-ridefit-text-secondary" data-testid="part-fitment-note">{sharedNote}</p>}
+                {anyUnverified && <p className="mb-1.5 text-xs text-ridefit-text-secondary">{UNVERIFIED_HINT}</p>}
                 <ul className="flex flex-col gap-1.5">
                   {g.rows.map((f) => {
                     const isMine = myVehicle && f.modelYearId === myVehicle.modelYearId
@@ -360,14 +365,14 @@ function PartDetail() {
                           {compat.label}
                         </span>
                         {isMine && <span className="text-[11px] font-semibold text-ridefit-primary">내 차량</span>}
-                        {f.note && <span className="w-full text-xs text-ridefit-text-secondary">{f.note}</span>}
-                        {compat.unverified && <span className="w-full text-xs text-ridefit-text-secondary">{UNVERIFIED_HINT}</span>}
+                        {f.note && !sharedNote && <span className="w-full text-xs text-ridefit-text-secondary">{f.note}</span>}
                       </li>
                     )
                   })}
                 </ul>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

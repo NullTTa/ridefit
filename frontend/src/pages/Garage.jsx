@@ -179,7 +179,7 @@ function Garage() {
       <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ridefit-text">내 차고</h1>
-          <p className="mt-1 text-sm text-ridefit-text-secondary">내 차량, 즐겨찾기한 부품, 저장한 장착 모습을 한곳에서 확인해요.</p>
+          <p className="mt-1 text-sm text-ridefit-text-secondary">내 차량, 즐겨찾기, 저장한 장착 모습</p>
         </div>
         <Link
           to="/garage/new"
@@ -196,7 +196,7 @@ function Garage() {
         <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-ridefit-border bg-ridefit-card px-6 py-16 text-center">
           <p className="text-ridefit-text">아직 등록된 차량이 없어요.</p>
           <p className="max-w-md text-sm text-ridefit-text-secondary">
-            차량을 등록하면 그 차량에 맞는 부품을 골라 장착해 보고, 마음에 드는 부품은 즐겨찾기로, 완성한 모습은 이미지로 저장할 수 있어요.
+            차량을 등록하면 맞는 부품을 입혀보고 저장할 수 있어요.
           </p>
           <Link
             to="/garage/new"
@@ -265,7 +265,7 @@ function Garage() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-1 text-[11px] text-ridefit-text-secondary">순정 상태예요. 부품 입혀보기에서 부품을 켜면 여기에 구성이 남아요.</p>
+                    <p className="mt-1 text-[11px] text-ridefit-text-secondary">순정 상태예요.</p>
                   )}
                 </div>
 
@@ -322,7 +322,7 @@ function Garage() {
               </div>
 
               <p className="-mt-1 mb-3 text-xs text-ridefit-text-secondary">
-                {vehicleName}에 즐겨찾기한 부품만 보여요(호환 부품을 자동으로 넣지 않아요). 다른 차량의 즐겨찾기는 그 차량을 고르면 보여요.
+                {vehicleName}에 즐겨찾기한 부품이에요.
               </p>
               {favorites === null && <p className="text-sm text-ridefit-text-secondary">불러오는 중...</p>}
 
@@ -333,7 +333,7 @@ function Garage() {
                 >
                   <p className="text-sm text-ridefit-text">아직 즐겨찾기한 부품이 없어요.</p>
                   <p className="text-xs text-ridefit-text-secondary">
-                    부품 찾아보기·부품 상세·부품 입혀보기에서 <Ico as={Heart} /> 저장하기(즐겨찾기)를 누른 부품만 여기에 모여요.
+                    부품의 <Ico as={Heart} /> 저장하기를 누르면 여기에 모여요.
                   </p>
                   <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs">
                     <Link to={`/parts?vehicleId=${vehicle.id}`} className="rounded-lg border border-ridefit-primary px-3 py-1.5 font-semibold text-ridefit-primary hover:bg-ridefit-primary/10">
@@ -450,8 +450,7 @@ function Garage() {
               )}
             </div>
             <p className="-mt-1 mb-3 text-xs text-ridefit-text-secondary">
-              이 차량({vehicleName})으로 저장한 모습이에요. 누르면 저장할 때 장착한 부품까지 그대로 다시 열려요. 즐겨찾기를 해제해도 지워지지 않아요.
-              장착 모습은 미리보기 이미지라 실제 호환 여부는 부품 정보에서 확인해주세요.
+              누르면 저장할 때의 부품 조합으로 다시 열려요. 미리보기 이미지라 실제 호환은 부품 정보에서 확인해 주세요.
             </p>
 
             {savedFits === null && <p className="text-sm text-ridefit-text-secondary">불러오는 중...</p>}
@@ -462,7 +461,7 @@ function Garage() {
                 data-testid="garage-saved-fits-empty"
               >
                 <p className="text-sm text-ridefit-text">아직 저장한 장착 모습이 없어요.</p>
-                <p className="text-xs text-ridefit-text-secondary">부품 입혀보기에서 부품을 선택하고 [입혀보기] → [저장하기]를 누르면 여기에 모여요.</p>
+                <p className="text-xs text-ridefit-text-secondary">[입혀보기] → [저장하기]로 저장할 수 있어요.</p>
                 <Link to={`/garage/${vehicle.id}/fit`} className="text-sm font-medium text-ridefit-primary hover:underline">
                   부품 입혀보기 <Ico as={ArrowRight} />
                 </Link>
@@ -554,7 +553,7 @@ function Garage() {
           <section className="mt-2" data-testid="garage-recommended">
             <h2 className="text-lg font-semibold text-ridefit-text">추천 상품</h2>
             <p className="mb-4 mt-1 text-sm text-ridefit-text-secondary">
-              {vehicleName}에 장착 가능한 부품 중 RIDEFIT에서 조회·장착해보기·후기가 많은 순이에요.
+              조회·장착해보기·후기가 많은 순이에요.
             </p>
 
             {recommended === null && <p className="text-sm text-ridefit-text-secondary">불러오는 중...</p>}
@@ -564,7 +563,7 @@ function Garage() {
                 className="rounded-xl border border-dashed border-ridefit-border bg-ridefit-card px-6 py-10 text-center"
                 data-testid="garage-recommended-empty"
               >
-                <p className="text-sm text-ridefit-text">아직 추천할 근거(조회·장착해보기·후기)가 쌓인 부품이 없어요.</p>
+                <p className="text-sm text-ridefit-text">아직 추천할 만큼 기록이 쌓인 부품이 없어요.</p>
                 <Link
                   to={`/parts?vehicleId=${vehicle.id}`}
                   className="mt-2 inline-block text-sm font-medium text-ridefit-primary hover:underline"
@@ -623,7 +622,7 @@ function Garage() {
             className="mt-12"
             ids={[...new Set(vehicles.map((v) => v.vehicleModelId))]}
             title="내 차량과 비슷한 차량"
-            description="내 차고의 차량과 배기량, 차체 형태, 가격대, 라이딩 성향이 비슷한 차량이에요."
+            description="배기량·차체·가격대·성향이 비슷한 차량이에요."
           />
             </div>
           </details>

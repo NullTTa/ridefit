@@ -101,7 +101,7 @@ function FitResultStage({ vehicle, fit, selectedParts, showOriginal, conflictPar
               </button>
             )}
             {r.kind !== 'new' && (
-              <p className="mt-1 text-[11px] text-ridefit-text-secondary">목록에서 다시 열어 보거나, 부품을 그대로 둔 채 [입혀보기]로 새로 만들 수 있어요.</p>
+              <p className="mt-1 text-[11px] text-ridefit-text-secondary">목록에서 다시 열거나 [입혀보기]로 새로 만들 수 있어요.</p>
             )}
           </div>
         </div>
@@ -119,36 +119,36 @@ function ResultStatusLine({ vehicle, fit, selectedCount, showOriginal }) {
   let tone = 'text-ridefit-text-secondary'
   let text
   if (showOriginal) {
-    text = '원본 차량(입혀보기 전)을 보고 있어요. [입혀보기 결과]를 누르면 다시 결과가 보여요.'
+    text = '원본 차량(입혀보기 전)'
   } else if (!layout) {
     text = selectedCount > 0
-      ? `선택한 부품 ${selectedCount}개의 부착 위치만 표시돼요 - 이 차량 사진은 2D 입혀보기를 아직 지원하지 않아요.`
-      : '순정 상태예요. 이 차량 사진은 2D 입혀보기를 아직 지원하지 않아 부착 위치만 표시할 수 있어요.'
+      ? `부품 ${selectedCount}개 · 위치만 표시(이 차량은 2D 입혀보기 미지원)`
+      : '순정 상태 · 이 차량은 2D 입혀보기 미지원(위치만 표시)'
   } else if (!r && fit.plan.reason === 'no-image') {
-    text = `선택한 부품 ${selectedCount}개는 이 차량 사진에 입힐 장착 이미지가 없어 부착 위치만 표시돼요 - 입혀보기를 아직 지원하지 않아요.`
+    text = `부품 ${selectedCount}개 · 장착 이미지가 없어 위치만 표시돼요`
   } else if (!r) {
     if (selectedCount > 0) {
       tone = 'text-ridefit-primary font-semibold'
-      text = `부품 ${selectedCount}개를 선택했어요 · 아직 입혀보기 전이라 원본 차량이 보여요. [입혀보기]를 눌러 적용하세요.`
+      text = `부품 ${selectedCount}개 선택 · [입혀보기]를 눌러 적용하세요`
     } else {
-      text = '순정 상태예요. 부품을 선택하고 [입혀보기]를 누르면 이 자리에 결과가 보여요.'
+      text = '순정 상태'
     }
   } else if (r.status === 'running') {
-    text = r.kind === 'new' ? '입혀보는 중이에요. 끝나면 이 자리에 결과가 보여요.' : '저장된 결과 이미지를 불러오는 중이에요.'
+    text = r.kind === 'new' ? '입혀보는 중...' : '저장된 결과를 불러오는 중...'
   } else if (r.status === 'error') {
     tone = 'text-ridefit-danger'
     text = r.kind === 'new' ? '입혀보기에 실패해 결과가 없어요.' : '저장된 결과 이미지를 열지 못했어요.'
   } else if (fit.stale) {
     tone = 'text-ridefit-warning'
-    text = `이전 선택으로 만든 결과예요(${r.title}). 지금 선택은 아직 반영되지 않았어요.`
+    text = `이전 선택의 결과예요(${r.title}) · 지금 선택은 아직 반영 전`
   } else if (r.kind === 'new') {
     tone = 'text-ridefit-success'
-    text = `방금 입혀본 결과 · 상품 이미지를 차량 사진에 배치한 2D 미리보기${r.approx ? ' · 간이 미리보기 포함' : ''} · 아직 저장 전`
+    text = `2D 미리보기${r.approx ? ' · 간이 미리보기 포함' : ''} · 저장 전`
   } else if (r.kind === 'saved') {
     tone = 'text-ridefit-success'
-    text = `저장된 입혀보기 결과${r.createdAt ? ` (${formatAt(r.createdAt)} 저장)` : ''} · 새로 입혀본 것이 아니라 저장된 이미지를 불러왔어요.`
+    text = `저장된 결과${r.createdAt ? ` · ${formatAt(r.createdAt)}` : ''}`
   } else {
-    text = `이미지 생성으로 만든 참고 이미지${r.cached ? '(저장된 결과)' : ''} · 2D 미리보기가 아니며 실제 장착 상태와 차이가 있을 수 있어요.`
+    text = `참고용 생성 이미지${r.cached ? '(저장된 결과)' : ''} · 실제 장착 모습과 다를 수 있어요`
   }
   return (
     <p className={`mt-2 text-center text-xs ${tone}`} data-testid="fit-result-status" aria-live="polite">

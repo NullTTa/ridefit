@@ -93,7 +93,7 @@ function FitVehiclePicker({ partId, vehicles: givenVehicles, currentVehicleId, c
               <p className="mb-2 text-sm font-semibold text-ridefit-text">어떤 차량에 장착해볼까요?</p>
               {fits && !sorted.some((v) => fits.get(String(v.id))) && (
                 <p className="mb-2 rounded-md border border-ridefit-warning-border bg-ridefit-warning-bg px-2.5 py-1.5 text-xs text-ridefit-warning" data-testid="fit-picker-none">
-                  등록한 차량 중 이 부품과 호환이 확인된 차량이 없어요. 아래 호환 차량 정보를 확인해 주세요.
+                  등록한 차량 중 호환이 확인된 차량이 없어요.
                 </p>
               )}
               <div className="flex flex-col gap-1.5">

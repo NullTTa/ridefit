@@ -27,7 +27,7 @@ export function ModelImageNotice({ vehicle, className = '' }) {
   if (!vehicle || vehicle.photoUrl || !vehicle.modelImageUrl) return null
   return (
     <p className={`text-center text-[11px] text-ridefit-text-secondary ${className}`} data-testid="model-image-notice">
-      {vehicle.vehicleModelName} 차종 대표 이미지예요. 연식에 따라 실제 외형은 다를 수 있어요.
+      {vehicle.vehicleModelName} 대표 이미지 · 연식별 외형은 다를 수 있어요
     </p>
   )
 }

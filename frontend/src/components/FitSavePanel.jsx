@@ -40,7 +40,7 @@ export function FitComposeBar({ fit, selectedCount, onReset, savedCount = 0, onJ
         data-testid="fit-save-included"
       >
         {selectedCount === 0 ? (
-          '오른쪽 목록에서 부품을 [선택]한 뒤 [입혀보기]를 누르면 차량 이미지에 적용돼요.'
+          '부품을 선택해 주세요.'
         ) : reasonText ? (
           reasonText
         ) : (
@@ -69,7 +69,7 @@ export function FitComposeBar({ fit, selectedCount, onReset, savedCount = 0, onJ
           onClick={onReset}
           disabled={selectedCount === 0 && !result}
           className={`${btn} border border-ridefit-border text-ridefit-text-secondary hover:border-ridefit-danger hover:text-ridefit-danger`}
-          title="선택한 부품을 모두 빼고 입혀보기 결과를 지워요(저장된 결과는 지우지 않아요). 실행 취소로 되돌릴 수 있어요."
+          title="선택한 부품과 입혀보기 결과를 지워요(저장된 결과는 그대로)"
           data-testid="fit-reset"
         >
           <RotateCcw aria-hidden="true" className="h-4 w-4" />초기화
@@ -160,7 +160,7 @@ export default function FitSavedList({ fit, savedResults, activeResultId, onOpen
       </p>
       {savedResults.length === 0 ? (
         <div className="flex flex-col items-start gap-2 rounded-md border border-dashed border-ridefit-border px-3 py-4" data-testid="fit-saved-results-empty">
-          <p className="text-xs text-ridefit-text-secondary">아직 저장한 입혀보기 결과가 없어요. 부품을 선택하고 [입혀보기] → [저장하기]를 눌러 보세요.</p>
+          <p className="text-xs text-ridefit-text-secondary">저장한 결과가 없어요.</p>
           {fit.canSave && <SaveButton fit={fit} testid="fit-save-current-empty" />}
         </div>
       ) : (

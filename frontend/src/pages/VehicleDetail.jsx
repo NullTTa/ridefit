@@ -327,11 +327,11 @@ function VehicleDetail() {
 
       <section className="mt-12">
         <h2 className="mb-1 text-xl font-bold text-ridefit-text">호환 부품</h2>
-        <p className="mb-4 text-sm text-ridefit-text-secondary">이 차량에 호환 데이터가 등록된 부품이에요. 부품 종류를 눌러 자세한 정보를 확인해보세요.</p>
+        <p className="mb-4 text-sm text-ridefit-text-secondary">호환 데이터가 등록된 부품이에요.</p>
 
         {parts.length === 0 ? (
           <p className="rounded-xl border border-dashed border-ridefit-border bg-ridefit-card px-4 py-6 text-sm text-ridefit-text-secondary">
-            아직 이 차량의 호환 부품 데이터가 준비되지 않았어요. 데이터가 등록되면 이곳에 표시됩니다.
+            아직 호환 부품 데이터가 없어요.
           </p>
         ) : (
           <div className="flex flex-col gap-5">
@@ -389,7 +389,7 @@ function VehicleDetail() {
       />
 
       <p className="mt-10 text-xs text-ridefit-text-secondary">
-        스펙·성향·가격대 분류는 개발용 초기 데이터예요. 실제 구매 전에는 제조사 공식 정보를 확인해주세요.
+        스펙·성향·가격대는 참고용 초기 데이터예요. 구매 전 제조사 정보를 확인해 주세요.
       </p>
     </div>
   )

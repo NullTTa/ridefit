@@ -39,10 +39,10 @@ const STATUS_STYLE = {
 
 // 부품 카드의 "장착하면 차량 위에 그려지는 것" 안내(getPartLayerKind 값별)
 const LAYER_KIND_TEXT = {
-  layer: '장착 이미지 있음 · [입혀보기]하면 차량 이미지에 그려져요',
-  photo: '간이 미리보기 · 상품 사진을 장착 자리에 겹친 근사치예요(실제 장착 모습과 다를 수 있어요)',
-  illustration: '간이 일러스트 · 상품 사진이 없어 단순한 그림으로 표시돼요(실제 제품 모습 아님)',
-  pin: '장착 이미지 없음 · 입혀보기 이미지에서 빠지고 부착 위치만 표시돼요',
+  layer: '장착 이미지 있음',
+  photo: '간이 미리보기 · 실제 장착 모습과 다를 수 있어요',
+  illustration: '간이 일러스트 · 실제 제품 모습 아님',
+  pin: '장착 이미지 없음 · 위치만 표시',
 }
 
 function FitRoom() {
@@ -579,7 +579,7 @@ function FitRoom() {
         {vehicle.manufacturerName} {vehicle.modelYearLabel}
       </h1>
       <p className="mb-8 mt-1 text-sm text-ridefit-text-secondary lg:mb-5">
-        ① 부품 선택 → ② [입혀보기]로 차량 이미지에 적용 → ③ [저장하기]로 내 차고에 보관. 다른 자리 부품은 여러 개를 함께 고를 수 있어요.
+        부품을 고르고 [입혀보기] → [저장하기]
       </p>
 
       {preselect && (
@@ -593,15 +593,15 @@ function FitRoom() {
         >
           {preselect.build
             ? preselect.ok
-              ? `홈에서 본 구성 중 이 차량에 호환되는 부품(${preselect.name})을 선택한 상태로 열었어요. [입혀보기]를 누르면 차량 이미지에 적용돼요.`
-              : `홈에서 본 구성은 ${josa(vehicle.nickname || vehicle.modelYearLabel, '과', '와')} 호환이 확인되지 않아 선택하지 않았어요. 부품 목록의 호환 부품을 직접 선택해 보세요.`
+              ? `홈에서 본 부품 중 호환되는 것(${preselect.name})을 선택했어요.`
+              : `홈에서 본 부품은 ${josa(vehicle.nickname || vehicle.modelYearLabel, '과', '와')} 호환이 확인되지 않아 선택하지 않았어요.`
             : preselect.ok
-            ? `${josa(`'${preselect.name}'`, '을', '를')} 선택한 상태로 열었어요. 다른 부품을 더 고른 뒤 [입혀보기]를 누르면 차량 이미지에 적용돼요.`
+            ? `${josa(`'${preselect.name}'`, '을', '를')} 선택했어요.`
             : `${preselect.name ? `${josa(`'${preselect.name}'`, '은', '는')} ` : '선택한 부품은 '}${josa(
                 vehicle.nickname || vehicle.modelYearLabel,
                 '과',
                 '와',
-              )} 호환이 확인되지 않아 선택하지 않았어요(장착 가능한 부품처럼 입혀보지 않아요). 부품 상세에서 호환 차량을 확인해 주세요. 지금 선택해 둔 다른 부품은 그대로예요.`}
+              )} 호환이 확인되지 않아 선택하지 않았어요. 부품 상세에서 호환 차량을 확인해 주세요.`}
         </div>
       )}
 
@@ -687,10 +687,10 @@ function FitRoom() {
                 {showBefore
                   ? '원본 차량(입혀보기 전)을 돌려 보고 있어요.'
                   : !resultDone
-                    ? '360°에는 [입혀보기]한 부품이 반영돼요. 아직 입혀본 결과가 없어 순정 차량이 보여요.'
+                    ? '[입혀보기]한 부품이 360°에 반영돼요.'
                     : layers360.length > 0
                       ? `360° 반영: ${stageParts.filter((p) => layers360.some((l) => l.key === p.partId)).map((p) => p.name).join(', ')}${fit.stale ? ' (이전 입혀보기 기준)' : ''}`
-                      : '입혀본 부품 중 360° 각도별 이미지가 있는 부품이 없어요.'}
+                      : '입혀본 부품은 360° 이미지가 아직 없어요.'}
               </p>
             </>
           ) : (
@@ -708,8 +708,7 @@ function FitRoom() {
 
           {viewMode === '360' && pending360.length > 0 && (
             <p className="mt-3 rounded-lg border border-ridefit-border bg-ridefit-bg px-3 py-2 text-center text-xs text-ridefit-text-secondary" data-testid="fit-360-pending">
-              360° 장착 이미지 준비 중(360°에는 안 보임): {pending360.map((p) => p.name).join(', ')}
-              <span className="mt-0.5 block">이 부품들은 [2D 미리보기] 결과에서 확인할 수 있어요.</span>
+              360° 이미지 준비 중(2D에서 확인): {pending360.map((p) => p.name).join(', ')}
             </p>
           )}
           {replaced && (
@@ -744,7 +743,7 @@ function FitRoom() {
             <p className="mt-2 text-xs text-ridefit-warning" data-testid="fit-restore-notice">
               {restoreNotice.wrongVehicle
                 ? '다른 차량에서 저장한 결과라 이 차량에서는 열 수 없어요.'
-                : `저장할 때 입혀봤던 부품 중 ${restoreNotice.skipped}개는 지금은 이 차량의 호환 후보가 아니라 선택에서 뺐어요(저장된 이미지에는 남아 있어요).`}
+                : `저장할 때의 부품 중 ${restoreNotice.skipped}개는 지금 호환 후보가 아니라 선택에서 뺐어요.`}
             </p>
           )}
           {/* 내 저장 목록 - 합성 바 바로 아래. 데스크톱에서는 이 아래만 미리보기 카드 안에서 스크롤된다. */}
@@ -951,7 +950,7 @@ function FitRoom() {
             <div>
                 {/* 짧은 데스크톱 화면(높이 700px 이하)에서는 이 도움말을 숨겨 첫 부품 카드가 보이게 한다(같은 뜻이 버튼 이름/툴팁에 있음). */}
                 <p className="text-xs text-ridefit-text-secondary lg:[@media(max-height:700px)]:hidden">
-                  이 차량의 호환 데이터(호환가능·브라켓필요)가 있는 부품만 보여요. ‘호환 근거 미확인’ 부품은 구매 전에 판매처나 제조사에 장착 가능 여부를 확인해 주세요. [선택]한 부품은 왼쪽 [입혀보기]를 눌러야 차량 이미지에 적용돼요. 같은 자리(카테고리) 부품은 하나만 선택되고, [♡ 저장하기]한 부품은 내 차고와 왼쪽 즐겨찾기에 남아요.
+                  같은 자리 부품은 하나만 선택돼요. ‘호환 근거 미확인’ 부품은 구매 전에 장착 가능 여부를 확인해 주세요.
                 </p>
                 {/* "저장한 구성" - 지금 장착 중인 조합에 이름을 붙여 저장해두고 나중에 그대로 불러온다(이 브라우저에만 저장).
                     접어 두어(기본 닫힘) 첫 부품 카드가 목록 맨 위에 바로 보이게 한다. */}
@@ -959,7 +958,7 @@ function FitRoom() {
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-ridefit-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ridefit-primary [&::-webkit-details-marker]:hidden">
                     <span>
                       <Ico as={Bookmark} className="mr-1" />저장한 구성 ({presets.length})
-                      <span className="ml-1 font-normal text-ridefit-text-secondary">· 지금 조합에 이름 붙여 저장하고 불러오기</span>
+                      <span className="ml-1 font-normal text-ridefit-text-secondary">· 조합에 이름 붙여 저장</span>
                     </span>
                     <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-ridefit-text-secondary transition group-open:rotate-180" />
                   </summary>
@@ -1045,7 +1044,7 @@ function FitRoom() {
 
           {savedOnly && !parts.some((p) => savedPartIds.has(p.partId)) && (
             <p className="rounded-lg border border-dashed border-ridefit-border px-3 py-3 text-sm text-ridefit-text-secondary" data-testid="fit-saved-empty">
-              아직 이 차량에 저장한 부품이 없어요. 마음에 드는 부품의 [저장]을 눌러보세요.
+              이 차량에 저장한 부품이 없어요.
             </p>
           )}
 

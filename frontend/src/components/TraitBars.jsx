@@ -21,7 +21,7 @@ function TraitBars({ scores, compact = false, showNote = true }) {
       </ul>
       {showNote && (
         <p className="mt-3 text-xs text-ridefit-text-secondary">
-          성향 점수는 RIDEFIT이 정한 상대 비교 값(개발용 초기 데이터)이며 제조사 공식 수치가 아니에요.
+          RIDEFIT 기준 상대 비교 값이에요(제조사 공식 수치 아님).
         </p>
       )}
     </div>
