@@ -1,8 +1,9 @@
 <div align="center">
 
-# RIDEFIT
+<img src="https://cdn.jsdelivr.net/gh/NullTTa/NullTTa@main/assets/wave-ridefit.svg" width="100%" alt="RIDEFIT · 오토바이 부품 호환 확인 + 2D 장착 미리보기" />
 
-**오토바이 부품 호환성을 확인하고, 내 차량에 장착한 모습을 2D로 미리 살펴볼 수 있는 웹 서비스**
+
+**오토바이 부품 호환성을 확인하고,<br/>내 차량에 장착한 모습을 2D로 미리 살펴볼 수 있는 웹 서비스**
 
 [![Demo](https://img.shields.io/badge/Live_Demo-ridefit-2F855A?style=flat-square)](https://ridefit.3-34-197-34.sslip.io)
 ![Java](https://img.shields.io/badge/Java-21-2D3436?style=flat-square&logo=openjdk&logoColor=white)
@@ -352,3 +353,7 @@ cd frontend; npm run lint; npm run build
 **상세 문서** · [실행·환경 설정](docs/SETUP.md) · [아키텍처](docs/ARCHITECTURE.md) · [기능 흐름](docs/FEATURE_FLOWS.md) · [테스트 기록](docs/TESTING.md) · [트러블슈팅](docs/TROUBLESHOOTING.md) · [한계와 계획](docs/LIMITATIONS.md)
 
 </div>
+
+<br/>
+
+<img src="https://cdn.jsdelivr.net/gh/NullTTa/NullTTa@main/assets/wave-footer.svg" width="100%" alt="" />
