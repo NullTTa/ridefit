@@ -11,7 +11,11 @@
 ![Vite](https://img.shields.io/badge/Vite-8-2D3436?style=flat-square&logo=vite&logoColor=white)
 ![MariaDB](https://img.shields.io/badge/MariaDB-11.8_(AWS_RDS)-2D3436?style=flat-square&logo=mariadb&logoColor=white)
 
-**[서비스 바로가기](https://ridefit.3-34-197-34.sslip.io)** · [주요 화면](#주요-화면) · [문제 해결 경험](#주요-구현-및-문제-해결-경험) · [실행 방법](#실행-방법)
+[![Live Demo](https://img.shields.io/badge/🟢_Live_Demo-배포_중-16A34A?style=for-the-badge)](https://ridefit.3-34-197-34.sslip.io)
+[![Notion](https://img.shields.io/badge/Notion-프로젝트_정리-000000?style=for-the-badge&logo=notion&logoColor=white)](https://scrawny-catfish-f6c.notion.site/RIDEFIT-3ff70177d2b4803a8860f4ff7e7a0867)
+[![Profile](https://img.shields.io/badge/GitHub-NullTTa-181717?style=for-the-badge&logo=github)](https://github.com/NullTTa)
+
+**[서비스 바로가기](https://ridefit.3-34-197-34.sslip.io)** · [테스트 계정](#서비스-데모) · [노션 정리](https://scrawny-catfish-f6c.notion.site/RIDEFIT-3ff70177d2b4803a8860f4ff7e7a0867) · [주요 화면](#주요-화면) · [문제 해결 경험](#주요-구현-및-문제-해결-경험)
 
 </div>
 
@@ -70,7 +74,13 @@
 
 **https://ridefit.3-34-197-34.sslip.io**
 
-- 회원가입 후 내 차고에 차량을 등록하면 부품 입혀보기를 쓸 수 있습니다. 공개 서버라 데모 계정은 따로 제공하지 않습니다.
+> 🔑 **테스트 계정 (관리자 권한)**
+> - 아이디: `sk05ek@naver.com`
+> - 비밀번호: `1234qwer!`
+>
+> 채용 담당자분들이 관리자 화면까지 바로 보실 수 있도록 열어 둔 공용 계정입니다. 둘러보실 때 기존 데이터 삭제는 삼가 주세요.
+
+- 내 차고에 차량을 등록하면 부품 입혀보기를 쓸 수 있습니다.
 - 2D 장착 미리보기가 가장 잘 보이는 차량은 **Honda Super Cub 110 2025(JA59)** 와 **2023(JA59)** 입니다.
 - 결제는 Toss Payments **테스트 모드**만 연결되어 있습니다.
 - 개인 학습용 서버라 데이터가 초기화되거나 서비스가 일시적으로 중단될 수 있습니다.
